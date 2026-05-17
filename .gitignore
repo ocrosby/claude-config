@@ -1,0 +1,19 @@
+# Machine-local Claude Code settings (per-machine permissions, paths, etc.)
+settings.local.json
+
+# Task tracking files used during multi-step work (per CLAUDE.md)
+TODO.md
+
+# Runtime state Claude Code creates inside ~/.claude/ — not part of the stow package
+backups/
+cache/
+projects/
+sessions/
+shell-snapshots/
+todos/
+hooks/hook-debug.log
+
+# OS / editor noise
+.DS_Store
+*.swp
+*~

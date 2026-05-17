@@ -42,3 +42,20 @@ One PR = one `type(scope)` pair. Before creating a branch, committing, or pushin
 4. Each branch gets its own PR targeting `main`
 
 **Before pushing:** run `git fetch origin main` and check whether the files you changed also changed on main since the branch diverged. If they did, rebase before opening the PR: `git rebase origin/main`.
+
+# Installing this configuration
+
+This repository (`ocrosby/claude-config`) is a GNU Stow package. Its contents are linked directly into `~/.claude/`. To (re)install or re-link, run from the repo root:
+
+```bash
+mkdir -p ~/.claude
+stow -t ~/.claude -d "$(dirname "$PWD")" "$(basename "$PWD")"
+```
+
+Equivalent absolute form, works from anywhere:
+
+```bash
+stow -t ~/.claude -d ~/src/github.com/ocrosby claude-config
+```
+
+Never add a `.claude/` wrapper directory inside this repo. The repo root *is* the stow package; its top-level items (`agents/`, `skills/`, `rules/`, `commands/`, `hooks/`, `output-styles/`, `CLAUDE.md`, `settings.json`, …) are what get linked into `~/.claude/`. **This is an intentional design decision — do not simplify it away.** Stow's default ignore list excludes `README.*`, `LICENSE.*`, `.git`, and `.gitignore`, so those stay in the repo only.
