@@ -52,6 +52,48 @@ claude-config/                ← the stow package; repo root
 └── skills/
 ```
 
+## Migrating from a dotfiles-managed setup
+
+> Transitional section — used to flip each of my machines from the old `~/dotfiles/claude` stow package to this repo. Remove once every machine is over.
+
+On each machine that still has `~/.claude/` wired through `~/dotfiles/claude`:
+
+1. **Clone this repo** if it isn't already on the machine:
+
+   ```bash
+   mkdir -p ~/src/github.com/ocrosby
+   git clone https://github.com/ocrosby/claude-config ~/src/github.com/ocrosby/claude-config
+   ```
+
+2. **Unstow the old claude package** to free `~/.claude/`:
+
+   ```bash
+   cd ~/dotfiles && stow -D claude
+   ```
+
+3. **Stow this repo** into `~/.claude/`:
+
+   ```bash
+   mkdir -p ~/.claude
+   stow -t ~/.claude -d ~/src/github.com/ocrosby claude-config
+   ```
+
+4. **Verify** symlinks now resolve into the new location:
+
+   ```bash
+   readlink ~/.claude/CLAUDE.md   # → ~/src/github.com/ocrosby/claude-config/CLAUDE.md
+   readlink ~/.claude/agents      # → ~/src/github.com/ocrosby/claude-config/agents
+   ```
+
+5. **Smoke test** by starting a fresh Claude Code session and confirming a global rule fires or a global skill (`/dir`, `/audit`, …) loads.
+
+Leave `~/dotfiles/claude/` in place for now — the two trees can coexist as long as only one is stowed at a time. Removing it from dotfiles is a separate, later step that should land in a single dotfiles PR once every machine has been flipped.
+
+### Troubleshooting
+
+- **Stow conflict on step 3** (`existing target is not owned by stow`): `~/.claude/` still has a file or symlink that step 2 didn't remove. Inspect `ls -la ~/.claude/`. For runtime directories Claude Code itself created (`backups/`, `cache/`, `projects/`, `sessions/`, `shell-snapshots/`, `todos/`), leave them — they aren't in this repo and won't conflict. For everything else, either delete it or use `stow --adopt …` then `git diff` to review what got pulled in.
+- **Orphan `~/dotfiles/.claude/settings.local.json`**: leave it. It's machine-local, gitignored in this repo, and not part of either stow package.
+
 ## When to Use What
 
 ### Rules (`rules/`)
