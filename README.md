@@ -1,6 +1,8 @@
-# Claude Code Configuration
+# My Claude Code Configuration
 
-Global Claude Code configuration — rules, skills, agents, commands, hooks, and output styles — packaged as a GNU Stow package and linked into `~/.claude/`.
+This is my personal Claude Code configuration — the rules, skills, agents, commands, hooks, output styles, and global instructions I use across every project. It lives in this repository, gets cloned onto each machine I work on, and is linked into `~/.claude/` with GNU Stow.
+
+If you're me on a fresh machine, follow the install steps below. If you're someone else, you're welcome to read it for ideas; just don't expect anything here to be tuned for your workflow.
 
 ## Installation
 
