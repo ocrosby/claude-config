@@ -160,4 +160,5 @@ Use an output style when you want to **change how Claude responds** across an en
 - [Claude Code Documentation](https://code.claude.com/docs/en/overview) — Official Claude Code docs covering configuration, skills, rules, agents, and more
 - [obra/superpowers](https://github.com/obra/superpowers) — Community collection of Claude Code skills, rules, and agents
 - [affaan-m/everything-claude-code](https://github.com/affaan-m/everything-claude-code) — Broad harness for Claude Code (and other AI agent harnesses) covering skills, instincts, memory, security, and research-first development; rich source of ideas for personal configs
+- [shanraisshan/claude-code-best-practice](https://github.com/shanraisshan/claude-code-best-practice) — Best-practice patterns and conventions for Claude Code agents, commands, and skills
 - [GNU Stow](https://www.gnu.org/software/stow/) — Symlink farm manager used to wire this package into `~/.claude/`
