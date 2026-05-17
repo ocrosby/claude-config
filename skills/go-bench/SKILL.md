@@ -1,138 +1,187 @@
 ---
-description: Write, run, and analyze Go benchmarks. Use when benchmarking Go code, investigating performance regressions, comparing before/after, or analyzing allocations and throughput.
-paths:
-  - "**/*.go"
+name: go-bench
+description: Write, run, and analyze Go benchmarks. Use when the user asks to benchmark Go code, optimize performance, compare benchmark results, or investigate allocations and throughput.
+argument-hint: [description]
+allowed-tools: Read, Grep, Glob, Edit, Write, Bash(go test *), Bash(go tool *), Bash(benchstat *)
 ---
 
-# Go Benchmarking
+Write, run, and analyze idiomatic Go benchmarks.
 
-## When to use this skill
+## Context
 
-- You suspect a function is slow and want to measure it
-- You made a performance change and want to verify improvement
-- The `/code-review` skill flagged missing benchmarks on a hot path
-- You want to compare two implementations
+$ARGUMENTS
 
-## Workflow
+## Process
 
-### 1. Identify what to benchmark
+1. **Read the code under test** — understand the function signatures, hot paths,
+   allocations, and data structures before writing anything.
+2. **Read existing benchmarks** in the package — check for `Benchmark*` functions
+   that already cover the target code. Do not duplicate existing benchmarks.
+3. **Write or update benchmarks** following the conventions below.
+4. **Run the benchmarks** and present results clearly.
+5. **Analyze results** — identify bottlenecks, allocation patterns, and
+   optimization opportunities. Provide specific, actionable suggestions with code.
 
-- Target functions that are called frequently, process large inputs, or are on latency-sensitive paths
-- Benchmark at the right granularity — one `Benchmark*` per distinct operation or input class
-- If no benchmarks exist yet, write them before making any optimization (measure first, optimize second)
+## Writing Benchmarks
 
-### 2. Write the benchmark
+### Basic Pattern
 
-Place benchmark functions in the `_test.go` file alongside the code being measured.
-
-```go
-func BenchmarkFoo(b *testing.B) {
-    // setup outside the loop — not measured
-    input := prepareInput()
-
-    b.ResetTimer() // exclude setup from measurement
-    for b.Loop() { // preferred over i := 0; i < b.N; i++ in Go 1.24+
-        Foo(input)
-    }
-}
-```
-
-**Allocation benchmarks** — use `b.ReportAllocs()` or run with `-benchmem`:
+Always use `b.Loop()` for the benchmark loop.
 
 ```go
-func BenchmarkFoo(b *testing.B) {
-    b.ReportAllocs()
+func BenchmarkParse(b *testing.B) {
+    input := []byte(`{"key": "value"}`)
     for b.Loop() {
-        Foo(input)
+        Parse(input)
     }
 }
 ```
 
-**Sub-benchmarks** for input size variations:
+### Timer Control
+
+Call `b.ResetTimer()` after expensive one-time setup.
 
 ```go
-func BenchmarkFoo(b *testing.B) {
-    sizes := []int{10, 100, 1000, 10000}
-    for _, n := range sizes {
-        b.Run(fmt.Sprintf("n=%d", n), func(b *testing.B) {
-            input := makeInput(n)
+func BenchmarkProcess(b *testing.B) {
+    data := generateLargeDataset()
+    b.ResetTimer()
+    for b.Loop() {
+        Process(data)
+    }
+}
+```
+
+### Sub-benchmarks
+
+Use `b.Run()` to compare variants, input sizes, or implementations:
+
+```go
+func BenchmarkEncode(b *testing.B) {
+    sizes := []int{64, 256, 1024, 4096}
+    for _, size := range sizes {
+        b.Run(fmt.Sprintf("size=%d", size), func(b *testing.B) {
+            data := make([]byte, size)
             b.ResetTimer()
             for b.Loop() {
-                Foo(input)
+                Encode(data)
             }
         })
     }
 }
 ```
 
-### 3. Run the benchmark
+### Throughput
+
+Call `b.SetBytes(n)` when the benchmark processes a known amount of data:
+
+```go
+func BenchmarkRead(b *testing.B) {
+    buf := make([]byte, 4096)
+    b.SetBytes(int64(len(buf)))
+    for b.Loop() {
+        Read(buf)
+    }
+}
+```
+
+### Parallel Benchmarks
+
+Use `b.RunParallel()` to measure performance under concurrent load:
+
+```go
+func BenchmarkConcurrentGet(b *testing.B) {
+    cache := NewCache()
+    b.ResetTimer()
+    b.RunParallel(func(pb *testing.PB) {
+        for pb.Next() {
+            cache.Get("key")
+        }
+    })
+}
+```
+
+### Custom Metrics
+
+Use `b.ReportMetric()` for domain-specific measurements:
+
+```go
+b.ReportMetric(float64(itemsProcessed)/elapsed.Seconds(), "items/s")
+```
+
+## Running Benchmarks
+
+Always use `-run=^$` to skip unit tests. Always use `-benchmem`. Never use
+`-race` when benchmarking — it distorts timings.
+
+### Quick run
 
 ```bash
-# Run all benchmarks in a package
-go test -bench=. -benchmem ./...
-
-# Run a specific benchmark
-go test -bench=BenchmarkFoo -benchmem ./internal/domain/...
-
-# Run multiple times for stability (default b.N auto-scales; -count for repeated runs)
-go test -bench=BenchmarkFoo -benchmem -count=5 ./...
-
-# With CPU profiling
-go test -bench=BenchmarkFoo -cpuprofile=cpu.prof ./...
-pprof -http=:8080 cpu.prof
-
-# With memory profiling
-go test -bench=BenchmarkFoo -memprofile=mem.prof -benchmem ./...
+go test -bench=BenchmarkName -benchmem -run=^$ ./path/to/package
 ```
 
-### 4. Compare before and after (regression check)
+### Statistically rigorous run
 
-Use `benchstat` to compare two runs statistically:
+Use `-count=N` to collect multiple samples for `benchstat`. Increase
+`-benchtime` if results are noisy or the operation is very fast.
 
 ```bash
-# Capture baseline
-go test -bench=. -benchmem -count=10 ./... > before.txt
-
-# Make your change, then capture new results
-go test -bench=. -benchmem -count=10 ./... > after.txt
-
-# Compare
-benchstat before.txt after.txt
+go test -bench=BenchmarkName -benchmem -run=^$ -count=10 ./path/to/package
 ```
 
-Install if needed: `go install golang.org/x/perf/cmd/benchstat@latest`
+### Testing across CPU counts
 
-### 5. Interpret results
-
-```
-BenchmarkFoo-8   1000000   1023 ns/op   256 B/op   4 allocs/op
+```bash
+go test -bench=BenchmarkName -benchmem -run=^$ -cpu=1,2,4,8 ./path/to/package
 ```
 
-| Column | Meaning |
-|---|---|
-| `-8` | GOMAXPROCS (CPU count) |
-| `1000000` | iterations run |
-| `1023 ns/op` | nanoseconds per operation |
-| `256 B/op` | bytes allocated per operation |
-| `4 allocs/op` | heap allocations per operation |
+## Comparing Results
 
-**Red flags:**
-- Allocs per op growing linearly with input size when they shouldn't
-- Unexpected heap allocations on a hot path (interface boxing, closure captures, string conversions)
-- High variance across runs — indicates the benchmark setup has noise (move allocations out of the loop)
+Always use `benchstat` for before/after comparison. Never eyeball raw numbers.
 
-### 6. Common optimizations to investigate
+```bash
+go test -bench=BenchmarkName -benchmem -run=^$ -count=N ./pkg > old.txt
+# ... make changes ...
+go test -bench=BenchmarkName -benchmem -run=^$ -count=N ./pkg > new.txt
+benchstat old.txt new.txt
+```
 
-- **Preallocate slices**: `make([]T, 0, knownCap)` eliminates append-driven reallocations
-- **`strings.Builder`**: replaces `+` concatenation in loops
-- **Avoid interface boxing on hot paths**: concrete types in tight loops
-- **`sync.Pool`**: reuse short-lived allocations (parsers, buffers)
-- **`bytes.Buffer` vs `[]byte`**: prefer `[]byte` for byte manipulation without the `Buffer` overhead
-- **Inlining**: small functions inlined by the compiler — check with `go build -gcflags='-m'`
+Present `benchstat` output to the user. Focus on:
 
-## Rules
+- **time/op** change and whether it is statistically significant (p-value)
+- **allocs/op** and **B/op** changes
+- Any regressions, even small ones
 
-- Never optimize without a benchmark showing the problem — measure first
-- A benchmark that passes immediately (trivially fast) may be testing nothing; verify with `-gcflags='-N -l'` to disable optimizations
-- Do not commit benchmarks that require external services or large fixtures without a `testing.Short()` guard
-- `b.Loop()` (Go 1.24+) is preferred over the manual `b.N` loop — it handles timer resets and loop overhead automatically; fall back to `for i := 0; i < b.N; i++` for older Go versions
+## Profiling
+
+When benchmarks alone are not enough to identify the bottleneck:
+
+```bash
+go test -bench=BenchmarkName -run=^$ -cpuprofile=cpu.out -memprofile=mem.out ./pkg
+go tool pprof -top cpu.out
+```
+
+Available profiles: `-cpuprofile`, `-memprofile`, `-blockprofile`, `-mutexprofile`.
+
+## Optimization Checklist
+
+When analyzing results, check for:
+
+- **High allocs/op**: allocations inside hot loops — slices without size hints,
+  inefficient string concatenation, interface boxing, closures capturing variables.
+- **Unnecessary copies**: large structs passed by value, `range` over large values.
+- **String/byte conversions**: repeated `[]byte(s)` or `string(b)` in hot paths.
+- **Map overhead**: map operations in hot loops — profile to determine if the access
+  pattern justifies the hash overhead.
+- **Sync overhead**: lock contention under concurrent load — profile with
+  `-mutexprofile` to identify contended locks and evaluate granularity.
+- **Interface dispatch**: hot-path virtual calls — consider generics or concrete types.
+- **Inefficient I/O**: unbuffered reads/writes — wrap with `bufio`.
+
+## Output
+
+When finished, report:
+
+- Benchmark results (formatted `go test -bench` output)
+- Key findings: hotspots, allocation patterns, throughput
+- Specific optimization suggestions with code, ordered by expected impact
+- If comparing: `benchstat` output with significance analysis
