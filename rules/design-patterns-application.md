@@ -1,6 +1,6 @@
 # Design Patterns Application
 
-> **Reference catalog**: `rules/design-patterns.md` — all 22 GoF patterns with intent, applicability, structure, and trade-offs.
+> **Reference catalog**: `skills/patterns/design-patterns.md` — all 22 GoF patterns with intent, applicability, structure, and trade-offs. Loaded on demand by the `/patterns` skill, not always-on.
 
 Patterns are language-agnostic structural solutions. Apply them in Go, Python, Lua, TypeScript, and any other language. When a pattern applies, use it completely and name it explicitly.
 

@@ -31,7 +31,7 @@ Read each file in full. Identify the language and note the relevant idioms for t
 ### 3. Load the Pattern Signals
 
 Read `rules/design-patterns-application.md` for the recognition signals table.
-Read `rules/design-patterns.md` for the full catalog when a specific pattern match needs validation.
+Read `skills/patterns/design-patterns.md` for the full catalog when a specific pattern match needs validation.
 
 ### 4. Identify Pattern Signals
 

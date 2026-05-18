@@ -84,7 +84,7 @@ If there is any change to logic, control flow, or observable behavior, it is not
 
 | File | Description |
 |---|---|
-| `owasp-top-10.md` | OWASP Top 10 recognition signals and mandatory behaviors — applies to all code touching auth, input, secrets, persistence, or network I/O |
+| `owasp-top-10.md` | OWASP Top 10 recognition signals and mandatory behaviors — path-scoped to code, shell, SQL, Dockerfiles, Terraform, and CI workflows |
 | `go-security.md` | Go-specific security patterns — input validation, crypto, SQL, subprocess, TLS |
 | `py-security.md` | Python-specific security patterns — deserialization, injection, secrets, dependency safety |
 | `nvim-security.md` | Neovim plugin security — safe API usage, avoiding arbitrary code execution, sandboxing |
@@ -133,8 +133,7 @@ If there is any change to logic, control flow, or observable behavior, it is not
 
 | File | Description |
 |---|---|
-| `design-patterns.md` | All 22 GoF patterns — intent, applicability, participants, pros/cons (reference catalog) |
-| `design-patterns-application.md` | Pattern recognition signals and mandatory behaviors — when to apply each pattern in Go, Python, and Lua |
+| `design-patterns-application.md` | Pattern recognition signals and mandatory behaviors — when to apply each pattern in Go, Python, and Lua. Catalog (`skills/patterns/design-patterns.md`) loads on demand via `/patterns`, not always-on |
 | `rest-api-conventions.md` | REST API conventions — resource naming, HTTP methods, status codes, statelessness, versioning |
 | `sql-normalization.md` | Database normalization — normal forms, when to denormalize, indexing considerations |
 
