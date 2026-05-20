@@ -76,9 +76,8 @@ If there is any change to logic, control flow, or observable behavior, it is not
 | File | Description |
 |---|---|
 | `tdd.md` | Enforces test-driven development — red step required before implementation on `.go`, `.py`, `.lua` files |
-| `review-on-implement.md` | Always recommend `/code-review` after implementing code changes |
 | `feature-skeptic.md` | Pushback protocol for feature-add requests — forces ICP fit, displacement, and smallest-version questions before the first edit |
-| `migrate-suggest.md` | Suggest `/migrate` when deprecated or outdated patterns are detected |
+| `skill-suggest.md` | Unified end-of-response skill recommendations — `/code-review` after implementation, `/migrate` for deprecated patterns, language `/docs` for new public APIs |
 
 ### Security
 
@@ -142,7 +141,6 @@ If there is any change to logic, control flow, or observable behavior, it is not
 | File | Description |
 |---|---|
 | `docs-principles.md` | Write the Docs principles — skimmable, exemplary, consistent, current; ARID guard, error message standards |
-| `docs-suggest.md` | Always recommend documentation updates when a public API changes |
 
 ### Claude configuration
 
