@@ -155,6 +155,7 @@ Run `/skill-gaps` periodically to analyze session history and surface new skill 
 | Skill | What it does |
 |---|---|
 | `/skill-gaps` | Analyze session history to find repeating tasks with no skill coverage. Run periodically to find new skill candidates. |
+| `/skill-usage` | Count `/command` invocations per skill from session history and recommend which to retire. Run periodically to prune unused skills. |
 | `/skill-audit` | Audit existing skill files for structural quality and consistency. |
 | `/skill-author` | Author a new skill file with correct structure and language. |
 | `/audit` | Audit the Claude workflow system (rules, skills, agents, hooks) and report what's suboptimal. |
