@@ -1,5 +1,6 @@
 ---
 description: Guides development of new Python features following hexagonal architecture, delegating review to /code-review and relying on the always-on TDD rule.
+aliases: py-feature
 paths:
   - "**/*.py"
 ---

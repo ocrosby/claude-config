@@ -1,5 +1,6 @@
 ---
 description: Rebases the current feature branch onto the latest main, handling stash and conflict guidance.
+aliases: sync
 ---
 
 # Sync: Rebase Feature Branch onto Main

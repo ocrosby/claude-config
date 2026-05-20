@@ -1,5 +1,6 @@
 ---
 description: Commits and ships current changes. Single group → commit, push, and open a PR on the current feature branch. Multi-group → split into separate branches/PRs from main, one PR per conceptual group.
+aliases: commit-push-pr
 # Human gate: this skill pushes to remote and opens PRs — external, hard-to-reverse side effects.
 # Block model auto-invocation; require an explicit user keystroke.
 disable-model-invocation: true

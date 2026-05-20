@@ -121,8 +121,19 @@ def first_added_timestamp(skill_md: Path) -> float | None:
     return float(lines[-1])  # last entry is the original add
 
 
+def parse_aliases(raw: str) -> list[str]:
+    """Parse a frontmatter `aliases:` value. Accepts a single name, comma-separated,
+    or a bracketed list `[a, b, c]`. Returns the list of old names (without slashes)."""
+    raw = raw.strip()
+    if not raw:
+        return []
+    if raw.startswith("[") and raw.endswith("]"):
+        raw = raw[1:-1]
+    return [a.strip().lstrip("/") for a in raw.split(",") if a.strip()]
+
+
 def gather_skills(now: datetime) -> dict[str, dict]:
-    """Return {name: {age_days, user_only, paths_scoped}} for every skill dir."""
+    """Return {name: {age_days, user_only, paths_scoped, aliases}} for every skill dir."""
     out: dict[str, dict] = {}
     for p in sorted(SKILLS_DIR.iterdir()):
         if not p.is_dir():
@@ -138,11 +149,26 @@ def gather_skills(now: datetime) -> dict[str, dict]:
             "age_days": days_ago(added_ts, now),
             "user_only": fm.get("disable-model-invocation", "").lower() == "true",
             "paths_scoped": "paths" in fm,
+            "aliases": parse_aliases(fm.get("aliases", "")),
         }
     return out
 
 
-def tally(since: timedelta | None, known: set[str]) -> tuple[Counter, int, int]:
+def build_alias_map(skills: dict[str, dict]) -> dict[str, str]:
+    """Return {any_name: canonical_name}. Includes each canonical name mapped to itself
+    plus every alias mapped to its canonical name."""
+    out: dict[str, str] = {}
+    for canonical, meta in skills.items():
+        out[canonical] = canonical
+        for alias in meta.get("aliases", []):
+            # If two skills claim the same alias, the later one wins — that's a config bug.
+            out[alias] = canonical
+    return out
+
+
+def tally(since: timedelta | None, name_to_canonical: dict[str, str]) -> tuple[Counter, int, int]:
+    """Tally invocations under the canonical skill name. `name_to_canonical` maps both
+    current names and aliases (old names from before a rename) to the canonical name."""
     counts: Counter = Counter()
     total = 0
     matched = 0
@@ -162,8 +188,8 @@ def tally(since: timedelta | None, known: set[str]) -> tuple[Counter, int, int]:
                 if ts is None or ts < cutoff:
                     continue
             cmd = extract_command(record)
-            if cmd and cmd in known:
-                counts[cmd] += 1
+            if cmd and cmd in name_to_canonical:
+                counts[name_to_canonical[cmd]] += 1
                 matched += 1
     return counts, total, matched
 
@@ -193,7 +219,8 @@ def main() -> int:
 
     now = datetime.now(timezone.utc)
     skills = gather_skills(now)
-    counts, total_lines, matched = tally(args.since, set(skills))
+    name_to_canonical = build_alias_map(skills)
+    counts, total_lines, matched = tally(args.since, name_to_canonical)
 
     window = f"last {args.since.days}d" if args.since else "all time"
     print(f"## Skill usage ({window})")

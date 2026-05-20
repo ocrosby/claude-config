@@ -1,5 +1,6 @@
 ---
 description: Guides development of new Go features following clean architecture and idiomatic Go patterns, delegating review to /code-review and relying on the always-on TDD rule.
+aliases: go-feature
 paths:
   - "**/*.go"
 ---

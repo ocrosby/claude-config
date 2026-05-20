@@ -1,5 +1,6 @@
 ---
 description: Guides writing new Gherkin feature files and step definitions, delegating review to the gherkin-reviewer agent and /code-review.
+aliases: gherkin-feature
 paths:
   - "**/*.feature"
 ---
