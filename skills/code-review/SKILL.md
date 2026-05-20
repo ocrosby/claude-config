@@ -93,29 +93,27 @@ For non-code files (config, YAML, Markdown), review inline:
 - **Security**: injection risks, hardcoded credentials, sensitive data exposure
 - **Quality**: naming clarity, dead content, structural issues
 
-For `action.yml` / `action.yaml` files (GitHub Action definitions), apply this checklist:
+For CI configuration files (GitHub Action definitions and workflow files), run the bundled deterministic checks before adding any judgment-required findings inline.
 
-| Check | Rule |
-|---|---|
-| `name` uniqueness | Must be globally unique across the marketplace; should be suffixed with `by Jedi Knights` (e.g. `Semantic Release by Jedi Knights`) |
-| `description` length | Must be **< 125 characters** — GitHub truncates longer descriptions on the marketplace |
-| `branding` present | `branding.icon` and `branding.color` should be set |
-| `inputs` documented | Every input must have a `description`; sensitive inputs must set `required: false` and document the env var fallback |
-| `runs.using` | Composite (`using: composite`) steps must all set `shell:`; `node20` is preferred over `node16` for JS actions |
-| Secrets in composite | Never pass `secrets.*` directly as `env:` values inside composite `run:` steps — pass via `inputs` only |
+**For `action.yml` / `action.yaml` files** (GitHub Action definitions):
 
-For `.github/workflows/*.yml` files, apply this additional checklist:
+```bash
+python3 ~/.claude/skills/code-review/check_action_yml.py <file>... [--severity must|should|consider] [--json]
+```
 
-| Check | What to look for |
-|---|---|
-| Go workspace | If `go.work` exists, `go test ./...` and `golangci-lint run ./...` from root will fail — commands must iterate per-module |
-| golangci-lint version | `golangci-lint-action@v9` for Go 1.26+ modules; v6 caps at golangci-lint v1 (built with Go 1.24) |
-| golangci-lint config | v2 format requires `version: "2"` in `.golangci.yml`; v1 config silently rejected |
-| Go version sync | All `go.mod` files and `go.work` must declare the same Go version |
-| Matrix fail-fast | Default `fail-fast: true` on matrix jobs cascades cancellations; set `fail-fast: false` for independent module jobs |
-| Permissions | Minimum required: `contents: read` for checkout; release workflows need `contents: write` + `pull-requests: write` + `issues: write` |
-| Concurrency | Release workflows should have `concurrency: { group: release, cancel-in-progress: false }` to prevent parallel releases |
-| Action versions | Prefer pinned major versions (`@v4`, `@v9`) over `@latest` to avoid unexpected breakage |
+The script checks: `name` suffix consistency (`by Jedi Knights`), `description` length (<125 chars for marketplace), presence of `branding.icon` + `branding.color`, every `inputs:` entry has a `description`, every composite `run:` step declares `shell:`, and no `secrets.*` interpolation inside composite-step `env:` blocks.
+
+**For `.github/workflows/*.yml` files**:
+
+```bash
+python3 ~/.claude/skills/code-review/check_workflows.py <file-or-dir>... [--repo-root <path>] [--severity must|should|consider] [--json]
+```
+
+The script checks: `go test ./...` / `golangci-lint run ./...` from root when `go.work` exists (workspace-mismatch), `golangci-lint-action` major version (v9 required for Go 1.26+), `.golangci.yml` having `version: "2"`, matrix blocks with explicit `fail-fast: false`, `permissions:` block present when `actions/checkout` is used, release workflows declaring `concurrency: { cancel-in-progress: false }`, no `uses: ...@latest` references, and `go-version` consistency within a single file.
+
+Merge both scripts' findings into the per-file report alongside the language-reviewer agent output. The scripts emit `file:line — rule_id — message` lines in the same shape as `check_docs.py` and `check_rest.py` so the report stays consistent.
+
+Findings the scripts cannot mechanize — e.g., judging whether a workflow's permissions are *over*-scoped (the scripts only catch the *under*-scoped case), or whether a particular `@latest` pin is intentional — stay as inline observations.
 
 ### 5. Compile the Report
 
