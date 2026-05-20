@@ -10,19 +10,19 @@ allowed-tools: Bash(git add *) Bash(git commit *) Bash(git push *) Bash(git stat
 
 Use this skill for daily shipping. When the diff is one conceptual change, it commits on the current branch and opens a PR. When the diff spans multiple groups, it creates a fresh branch per group from `main` and opens one PR per group.
 
-For direct-to-main commits or to trigger a patch release, use `/ship -m` or `/ship -p`.
+For direct-to-main commits or to trigger a patch release, use `/git-ship -m` or `/git-ship -p`.
 
 ## Usage
 
 ```
-/commit-push-pr
+/git-cpr
 ```
 
 No arguments. Branches, messages, and PR bodies are derived from the working tree.
 
 ## When NOT to use
 
-- A direct-to-`main` commit is needed (trivial doc/config change, patch release) → use `/ship -m` or `/ship -p`
+- A direct-to-`main` commit is needed (trivial doc/config change, patch release) → use `/git-ship -m` or `/git-ship -p`
 - A force-push or `--no-verify` commit is needed → refused; this skill never bypasses hooks or rewrites pushed history
 
 ## Workflow
@@ -57,7 +57,7 @@ If exactly one group is identified, continue at step 3. If multiple groups are i
 
 ### 3. Single-group flow (one PR on the current branch)
 
-- **If on `main` or `master`: stop and do not proceed.** Tell the user to switch to a feature branch, or recommend `/ship` (which creates one from a clean main).
+- **If on `main` or `master`: stop and do not proceed.** Tell the user to switch to a feature branch, or recommend `/git-ship` (which creates one from a clean main).
 - Stage exactly this group's files (see step 5 — staging rules apply to both flows).
 - Continue at step 5 (Stage → Commit → Push → PR → Verify), staying on the current branch.
 
@@ -220,7 +220,7 @@ Output the PR URL on its own line so the user can open it directly. In multi-gro
 
 ## Rules
 
-- Never commit to `main` or `master` directly — refuse (recommend `/ship -m` if intended)
+- Never commit to `main` or `master` directly — refuse (recommend `/git-ship -m` if intended)
 - Never `--no-verify`, never `--force` / `--force-with-lease`, never amend a pushed commit
 - Single-group flow only runs when already on a feature branch; on `main` or `master` it refuses
 - Multi-group flow always branches each group from the **latest** `main` — never from another group's branch

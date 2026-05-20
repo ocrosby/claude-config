@@ -9,8 +9,8 @@ Use this skill to bring a feature branch up to date with the latest main without
 ## Usage
 
 ```
-/sync              # rebase current branch onto main
-/sync <base>       # rebase current branch onto a different base (e.g. /sync develop)
+/git-sync              # rebase current branch onto main
+/git-sync <base>       # rebase current branch onto a different base (e.g. /git-sync develop)
 ```
 
 ## Workflow
@@ -22,7 +22,7 @@ git status
 git branch --show-current
 ```
 
-- If already on `main` or `master`: tell the user to use `/main` instead and stop
+- If already on `main` or `master`: tell the user to use `/git-main` instead and stop
 - Record the current branch name for the report
 
 ### 2. Stash Uncommitted Changes (if any)

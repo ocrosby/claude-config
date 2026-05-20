@@ -33,7 +33,7 @@ Prose and workflow steps here.
 | Field | Required | Description |
 |---|---|---|
 | `description` | Yes | Shown in skill listings; used by Claude to decide which skill fits a task |
-| `triggers` | Conditional | Slash commands that invoke this skill (e.g. `/ship`) |
+| `triggers` | Conditional | Slash commands that invoke this skill (e.g. `/git-ship`) |
 | `paths` | Conditional | Glob patterns — skill fires automatically when matching files are in context |
 
 At least one of `triggers` or `paths` must be present. A skill with neither is unreachable.
@@ -42,7 +42,7 @@ At least one of `triggers` or `paths` must be present. A skill with neither is u
 
 | Mechanism | Best for |
 |---|---|
-| **Skill** | Multi-step workflows invoked on demand (`/ship`, `/code-review`, `/refactor`) |
+| **Skill** | Multi-step workflows invoked on demand (`/git-ship`, `/code-review`, `/refactor`) |
 | **Rule** | Always-on behavioral constraints that apply every session without being called |
 | **Hook** | Guaranteed enforcement at specific tool lifecycle events (before/after edit, commit, push) |
 
@@ -76,9 +76,10 @@ Use mandatory language in every workflow step. Advisory language drifts across s
 
 | Command | Skill | Description |
 |---|---|---|
-| `/ship` | `ship` | Creates a branch, commits, pushes, and opens a PR. Supports `-m` (direct to main) and `-p` (patch release) |
-| `/sync` | `sync` | Rebases the current feature branch onto the latest main |
-| `/main` | `main` | Checks out main and pulls the latest from remote |
+| `/git-ship` | `git-ship` | Creates a branch, commits, pushes, and opens a PR. Supports `-m` (direct to main) and `-p` (patch release) |
+| `/git-sync` | `git-sync` | Rebases the current feature branch onto the latest main |
+| `/git-main` | `git-main` | Checks out main and pulls the latest from remote |
+| `/git-cpr` | `git-cpr` | Commits, pushes, and opens a PR (or splits a multi-group diff into per-group PRs) |
 | `/release-notes` | `release-notes` | Generates a changelog from conventional commits since the last tag |
 
 ### Code quality
@@ -104,12 +105,12 @@ Feature skills own language-specific design decisions. TDD enforcement is always
 
 | Command | Skill | Description |
 |---|---|---|
-| `/go-feature` | `go-feature` | Guides new Go feature development; delegates TDD and review |
-| `/py-feature` | `py-feature` | Guides new Python feature development; delegates TDD and review |
-| `/nvim-feature` | `nvim-feature` | Guides new Neovim plugin feature development; delegates review |
+| `/go-feat` | `go-feat` | Guides new Go feature development; delegates TDD and review |
+| `/py-feat` | `py-feat` | Guides new Python feature development; delegates TDD and review |
+| `/nvim-feat` | `nvim-feat` | Guides new Neovim plugin feature development; delegates review |
 | `/rest-spec` | `rest-spec` | Writes/updates the OpenAPI entry for a new or changed REST endpoint (design-first; output: validated spec entry) |
 | `/rest-implement` | `rest-implement` | Implements a handler against an existing OpenAPI entry; delegates review |
-| `/gherkin-feature` | `gherkin-feature` | Guides writing new Gherkin feature files; delegates review |
+| `/gherkin-feat` | `gherkin-feat` | Guides writing new Gherkin feature files; delegates review |
 
 ### Documentation
 

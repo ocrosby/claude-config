@@ -9,13 +9,13 @@ Use this skill when the user wants to ship work on a new branch and open a pull 
 ## Usage
 
 ```
-/ship                                  # infer everything from the diff and proceed automatically
-/ship <branch-name>                    # use this name, infer prefix from commit type
-/ship feature <branch-name>           # force feature/ prefix
-/ship hotfix <branch-name>            # force hotfix/ prefix
-/ship [feature|hotfix] <branch-name> <base-branch>  # override base branch (default: main)
-/ship -m                               # commit and push directly to main — no branch, no PR
-/ship -p                               # patch release: commit directly to main, force fix: commit type
+/git-ship                                  # infer everything from the diff and proceed automatically
+/git-ship <branch-name>                    # use this name, infer prefix from commit type
+/git-ship feature <branch-name>           # force feature/ prefix
+/git-ship hotfix <branch-name>            # force hotfix/ prefix
+/git-ship [feature|hotfix] <branch-name> <base-branch>  # override base branch (default: main)
+/git-ship -m                               # commit and push directly to main — no branch, no PR
+/git-ship -p                               # patch release: commit directly to main, force fix: commit type
 ```
 
 **Prefix inference** (when not explicitly provided):
@@ -153,7 +153,7 @@ Before touching git, run the project's lint/format checks. Detect what's availab
 
 **Go workspace detection**: Before running `golangci-lint run ./...`, check for `go.work` in the repository root. If present, the repo is a Go workspace and `./...` from the root will fail — you must iterate per-module. Prefer `task lint` if a `Taskfile.yml` is present, since it already encodes the correct per-module iteration.
 
-**If any lint check fails: stop, report the failures, and do not proceed.** Tell the user what failed and ask them to fix it before running `/ship` again. Do not attempt to auto-fix lint errors unless the user explicitly asks.
+**If any lint check fails: stop, report the failures, and do not proceed.** Tell the user what failed and ask them to fix it before running `/git-ship` again. Do not attempt to auto-fix lint errors unless the user explicitly asks.
 
 ### 3. Pre-flight: Tests
 
