@@ -38,9 +38,10 @@ The script:
 - Parses every record in `~/.claude/history.jsonl`
 - Extracts the leading `/<command>` from each prompt
 - Restricts matches to commands that map to directories under `~/.claude/skills/`
-- Tallies invocation counts per skill
+- Resolves renamed skills via the `aliases:` frontmatter field — historical invocations under a previous name (e.g. `/ship` before the `/git-ship` rename) count toward the canonical name
+- Tallies invocation counts per skill (canonical name)
 - Reads each skill's `SKILL.md` frontmatter to detect `disable-model-invocation: true` (a skill that only fires on explicit user input — zero usage is a stronger retirement signal)
-- Uses file mtime as a proxy for "age in catalog" so newly-added skills with zero counts are held rather than retired
+- Uses git first-add time (via `git log --diff-filter=A --follow`) as "age in catalog", with file mtime as the fallback, so newly-added skills with zero counts are held rather than retired
 - Produces a ranked retirement recommendation as the final section
 
 ### 3. Present the Report

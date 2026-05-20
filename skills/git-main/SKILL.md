@@ -1,5 +1,6 @@
 ---
 description: Checks out the main branch and pulls the latest changes from remote.
+aliases: main
 ---
 
 # Main: Checkout and Pull Latest

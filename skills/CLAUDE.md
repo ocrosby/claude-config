@@ -91,6 +91,7 @@ Every field is optional. Only `description` is recommended so Claude knows when 
 ---
 description: <one sentence — specific, not generic; key use case first>
 when_to_use: <optional trigger phrases or example requests>
+aliases: <old-name>                  # prior names this skill was renamed from (comma-separated for multiple)
 disable-model-invocation: true       # block Claude/sub-agents from auto-invoking
 user-invocable: false                # hide from the / menu
 allowed-tools: Bash(git *) Read Grep # pre-approve tools while the skill is active
@@ -109,6 +110,7 @@ Notable fields beyond identity:
 
 - **`allowed-tools`** — pre-approves the listed tools while the skill is active, suppressing per-use permission prompts. Does **not** restrict other tools; permission settings still apply. Use to make a skill feel native (e.g. a commit skill pre-approving `Bash(git add *)`, `Bash(git commit *)`)
 - **`paths`** — glob patterns that limit when Claude auto-loads the skill. The skill remains user-invocable even if no paths match
+- **`aliases`** — prior name(s) this skill was renamed from. Used by `/skill-usage` to attribute historical invocations to the current canonical name. Single value or comma-separated. Example: `aliases: ship` on the renamed `git-ship` skill means past `/ship` invocations count toward `/git-ship` in usage reports
 - **`context: fork`** + **`agent`** — runs the skill body as a prompt to a subagent (e.g. `Explore`, `Plan`, a custom agent). Use for read-heavy or context-isolated work that should not pollute the main session
 
 ## Invocation control

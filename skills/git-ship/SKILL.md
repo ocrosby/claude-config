@@ -1,5 +1,6 @@
 ---
 description: Creates a feature or hotfix branch, commits staged changes, pushes to remote, and opens a detailed PR against main. Supports -m to commit directly to main, or -p to commit a patch fix directly to main.
+aliases: ship
 ---
 
 # Ship: Branch → Commit → Push → PR

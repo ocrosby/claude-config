@@ -1,5 +1,6 @@
 ---
 description: Guides development of new Neovim plugin features using idiomatic Lua and the Neovim API, delegating review to /code-review.
+aliases: nvim-feature
 paths:
   - "**/*.lua"
 ---
