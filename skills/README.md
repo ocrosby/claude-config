@@ -138,6 +138,7 @@ Feature skills own language-specific design decisions. TDD enforcement is always
 | `/skill-author` | `skill-author` | Guides creation of a new skill from scratch |
 | `/skill-audit` | `skill-audit` | Audits all skill files for quality, durability, and consistency |
 | `/skill-gaps` | `skill-gaps` | Analyzes session history to find repeating tasks with no skill coverage |
+| `/skill-usage` | `skill-usage` | Counts explicit `/command` invocations per skill from session history and recommends which to retire |
 
 ### Utilities
 
