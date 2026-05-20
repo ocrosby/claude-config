@@ -1,5 +1,31 @@
 ---
 description: OWASP Top 10 recognition signals and mandatory behaviors. Apply to all code that handles untrusted input, authentication, authorization, secrets, persistence, network I/O, or deployment configuration.
+paths:
+  - "**/*.go"
+  - "**/*.py"
+  - "**/*.lua"
+  - "**/*.ts"
+  - "**/*.tsx"
+  - "**/*.js"
+  - "**/*.jsx"
+  - "**/*.rb"
+  - "**/*.rs"
+  - "**/*.java"
+  - "**/*.kt"
+  - "**/*.cs"
+  - "**/*.c"
+  - "**/*.cpp"
+  - "**/*.h"
+  - "**/*.hpp"
+  - "**/*.php"
+  - "**/*.sh"
+  - "**/*.bash"
+  - "**/*.zsh"
+  - "**/*.sql"
+  - "**/*.tf"
+  - "**/Dockerfile*"
+  - "**/docker-compose*.y*ml"
+  - "**/.github/workflows/*.y*ml"
 ---
 
 # OWASP Top 10 Application Security
