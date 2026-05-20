@@ -87,7 +87,7 @@ Use mandatory language in every workflow step. Advisory language drifts across s
 |---|---|---|
 | `/code-review` | `code-review` | Structured review delegating to language-specialist agents. Supports `-f` (fix) and `-fc` (fix + loop until clean) |
 | `/refactor` | `refactor` | Structural refactoring of Go, Python, or Neovim code without changing behavior |
-| `/debug` | `debug` | Systematic bug triage across Go, Python, Neovim, and Gherkin |
+| `/debug` | `debug` | Systematic bug triage — emits a minimal-repro artifact, then delegates root-cause analysis to the language debugger agent |
 | `/migrate` | `migrate` | Identifies and replaces deprecated patterns across supported languages |
 | `/patterns` | `patterns` | Recommends applicable GoF design patterns with implementation sketches |
 
@@ -97,23 +97,24 @@ Use mandatory language in every workflow step. Advisory language drifts across s
 |---|---|---|
 | `/architect` | `architect` | Delegates to the appropriate language-specialist architect agent |
 | `/rest-review` | `rest-review` | Reviews HTTP handlers for REST convention compliance |
-| `/tdd` | `test-driven-development` | Full TDD reference — red-green-refactor cycle, tooling, and anti-patterns |
 
 ### Language-specific features
 
+Feature skills own language-specific design decisions. TDD enforcement is always-on via `rules/tdd.md`; the final review pass delegates to `/code-review -fc` rather than re-implementing it inline.
+
 | Command | Skill | Description |
 |---|---|---|
-| `/go-feature` | `go-feature` | Guides new Go feature development following clean architecture patterns |
-| `/py-feature` | `py-feature` | Guides new Python feature development following hexagonal architecture |
-| `/nvim-feature` | `nvim-feature` | Guides new Neovim plugin feature development using idiomatic Lua |
-| `/rest-feature` | `rest-feature` | Guides new REST endpoint development following OpenAPI-first design |
-| `/gherkin-feature` | `gherkin-feature` | Guides writing new Gherkin feature files following BDD best practices |
+| `/go-feature` | `go-feature` | Guides new Go feature development; delegates TDD and review |
+| `/py-feature` | `py-feature` | Guides new Python feature development; delegates TDD and review |
+| `/nvim-feature` | `nvim-feature` | Guides new Neovim plugin feature development; delegates review |
+| `/rest-spec` | `rest-spec` | Writes/updates the OpenAPI entry for a new or changed REST endpoint (design-first; output: validated spec entry) |
+| `/rest-implement` | `rest-implement` | Implements a handler against an existing OpenAPI entry; delegates review |
+| `/gherkin-feature` | `gherkin-feature` | Guides writing new Gherkin feature files; delegates review |
 
 ### Documentation
 
 | Command | Skill | Description |
 |---|---|---|
-| `/docs` | `docs` | Generates and audits documentation, routing to the appropriate language specialist |
 | `/go-docs` | `go-docs` | Generates and audits Go package documentation following godoc conventions |
 | `/py-docs` | `py-docs` | Generates and audits Python documentation following Google-style docstring conventions |
 | `/nvim-docs` | `nvim-docs` | Generates Neovim plugin documentation in vimdoc format |
@@ -124,7 +125,6 @@ Use mandatory language in every workflow step. Advisory language drifts across s
 
 | Command | Skill | Description |
 |---|---|---|
-| `/bench` | `bench` | Routes to the appropriate language-specialist bench skill |
 | `/go-bench` | `go-bench` | Writes, runs, and analyzes Go benchmarks |
 | `/py-bench` | `py-bench` | Writes, runs, and analyzes Python benchmarks |
 | `/nvim-bench` | `nvim-bench` | Writes, runs, and analyzes Neovim plugin benchmarks |
@@ -142,5 +142,4 @@ Use mandatory language in every workflow step. Advisory language drifts across s
 
 | Command | Skill | Description |
 |---|---|---|
-| `/dir` | `dir` | Reports the current working directory with project context and git status |
 | `/here-now` | `here-now` | Researches a topic using live sources and publishes a structured report |

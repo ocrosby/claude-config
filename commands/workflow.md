@@ -108,4 +108,3 @@ These run without being asked:
 |---|---|---|
 | Daily task journal | `/work` | Add, list, complete, and note tasks in a date-structured work log at `~/work/` |
 | Research and publish | `/here-now` | Research any topic via live web sources and publish a self-contained report to here.now — returns a live URL |
-| Orientation snapshot | `/dir` / `/pwd` | Report current directory, project type, and git branch |
