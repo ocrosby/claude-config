@@ -149,5 +149,4 @@ If there is any change to logic, control flow, or observable behavior, it is not
 | File | Description |
 |---|---|
 | `skill-conventions.md` | Structural and language conventions when editing Claude skill files — mandatory language, numbered steps, hard-stop conditions |
-| `readme-standard.md` | Enforces required sections, badge synchronization, and formatting in root `README.md` files |
-| `readme-learnings.md` | Automatically documents new Claude configuration learnings in `README.md` and ships to main |
+| `readme-standard.md` | Enforces required sections, badge synchronization, and formatting in root `README.md` files; also covers how to document Claude-configuration learnings in the dotfiles README |
