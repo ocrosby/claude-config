@@ -30,12 +30,17 @@ Read each file in full. Identify the language and note the relevant idioms for t
 
 ### 3. Load the Pattern Signals
 
-Read `rules/design-patterns-application.md` for the recognition signals table.
-Read `skills/patterns/design-patterns.md` for the full catalog when a specific pattern match needs validation.
+```bash
+python3 ~/.claude/skills/patterns/pattern_signals.py [--language go|py|lua] [--category creational|structural|behavioral|all]
+```
+
+The script emits JSON: `{signals: [{pattern, category, signal}], language_notes: [{pattern, note}]}`. The catalog mirrors `rules/design-patterns-application.md` — use the script so Claude does not re-parse the rule prose every invocation.
+
+Read `skills/patterns/design-patterns.md` only when a specific pattern match needs validation against the full GoF catalog.
 
 ### 4. Identify Pattern Signals
 
-Apply the recognition signals exactly as defined in `rules/design-patterns-application.md`. Do not substitute your own judgment for the signal table — match against that table only.
+Apply the recognition signals from the script's `signals` array exactly as listed. Do not substitute your own judgment for the signal table — match against the script's output only. Use the `language_notes` array (when present) for implementation-style guidance specific to the language being analyzed.
 
 For each signal found, record:
 - The exact code location (file, line number or function name)
