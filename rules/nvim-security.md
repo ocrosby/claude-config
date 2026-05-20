@@ -1,22 +1,22 @@
 ---
+description: Neovim plugin security — editor-API-specific idioms. The general signal table lives in owasp-top-10.md.
 paths:
   - "**/*.lua"
 ---
 
 # Neovim Plugin Security
 
-## Shell Command Execution
+> See `owasp-top-10.md` for the general signal table and mandatory behaviors. This file covers Neovim/Lua-specific idioms only — patterns that exist because of the editor's API surface.
 
-- Never pass user input or buffer content directly to `vim.fn.system()`, `io.popen()`, or
-  `vim.fn.jobstart()` without sanitization
-- Use `vim.system()` (0.10+) with an argument list — it does not invoke a shell, so no
-  shell injection is possible:
+## Shell command execution — `vim.system()` over `vim.fn.system()`
+
+`vim.fn.system()` and `io.popen()` invoke a shell, so any unescaped string is a shell injection vector. `vim.system()` (Neovim 0.10+) takes an argument list and does not invoke a shell:
 
 ```lua
--- Bad: shell injection risk
+-- Bad — shell injection risk
 vim.fn.system("grep " .. user_input .. " " .. filepath)
 
--- Good: argument list via vim.system, no shell interpretation
+-- Good — argument list via vim.system, no shell interpretation
 vim.system({ "grep", "--", user_input, filepath }, { text = true }, function(obj)
   if obj.code == 0 then
     vim.schedule(function() handle(obj.stdout) end)
@@ -24,18 +24,19 @@ vim.system({ "grep", "--", user_input, filepath }, { text = true }, function(obj
 end)
 ```
 
-- Validate and escape any dynamic values before passing to subprocess commands
-- Prefer Neovim API operations (`nvim_buf_get_lines`, `nvim_exec_autocmds`) over shelling out
+Prefer Neovim API operations (`nvim_buf_get_lines`, `nvim_exec_autocmds`) over shelling out whenever the API covers the task.
 
-## Dynamic Code Execution
+## Dynamic code execution — never on untrusted input
 
-- Never pass user-controlled input to `vim.api.nvim_exec()` or `loadstring()` — these execute arbitrary Vimscript or Lua
-- Treat any string sourced from a file, buffer, or user prompt as untrusted
-- If executing dynamic expressions is required, use a strict allowlist of permitted values
+`vim.api.nvim_exec()`, `loadstring()`, and `load()` evaluate arbitrary Vimscript/Lua. Never pass strings sourced from a buffer, file, user prompt, or remote response. If dynamic dispatch is required, use a strict allowlist of permitted values:
 
-## File Path Safety
+```lua
+local actions = { open = open_fn, close = close_fn, reload = reload_fn }
+local fn = actions[user_choice]
+if fn then fn() end
+```
 
-- Validate file paths derived from buffer names or user input before I/O operations:
+## File path safety — confine to a base directory
 
 ```lua
 local function safe_path(base, user_path)
@@ -47,23 +48,18 @@ local function safe_path(base, user_path)
 end
 ```
 
-- Never write files to paths derived directly from untrusted input
+`vim.fn.fnamemodify(..., ":p")` produces an absolute path; `vim.fn.resolve` follows symlinks.
 
-## Global Variable Exposure
+## Sensitive state — module-local, never `vim.g.*`
 
-- Do not store sensitive data (tokens, credentials, session state) in global Vim variables (`vim.g.*`) — they are readable by any other plugin
-- Use module-local Lua variables for sensitive state:
+`vim.g.*` is process-global and readable by every other plugin in the same Neovim instance. Tokens, credentials, and session state must live in module-local Lua variables:
 
 ```lua
--- Bad: globally accessible
+-- Bad — any other plugin can read this
 vim.g.myplugin_api_token = token
 
--- Good: module-local, not reachable by other plugins
+-- Good — closed over by the module, not exposed
 local _api_token = token
 ```
 
-## Network Requests
-
-- If the plugin makes HTTP requests (via `curl` subprocess or Lua HTTP library), validate URLs before use
-- Never forward raw buffer content or user input as HTTP request bodies without sanitization
-- Treat all HTTP responses as untrusted — validate structure before using
+This is unique to the Neovim plugin model — there is no isolation between plugins beyond Lua scope.

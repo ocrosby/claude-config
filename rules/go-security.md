@@ -1,92 +1,71 @@
 ---
+description: Go-specific security idioms — stdlib functions and patterns. The general signal table lives in owasp-top-10.md.
 paths:
   - "**/*.go"
 ---
 
-# Go Security
+# Go Security Idioms
 
-## Secrets & Credentials
+> See `owasp-top-10.md` for the general signal table and mandatory behaviors. This file lists the Go-specific *how*.
 
-- Never hardcode secrets, API keys, tokens, or passwords in source code
-- Load sensitive values from environment variables or a config file excluded from version control
-- Use `os.Getenv` or a config library (e.g., `viper`, `envconfig`) — never string literals for credentials
-- Add credential files to `.gitignore`
+## SQL — parameterized queries
 
-## SQL Injection
-
-- Always use parameterized queries — never string-format SQL with user input:
+Use the driver's placeholder (`$1` for pgx/lib-pq, `?` for mysql/sqlite). Never `fmt.Sprintf` or `+` to build SQL.
 
 ```go
-// Bad
-query := fmt.Sprintf("SELECT * FROM users WHERE email = '%s'", email)
-
-// Good
 row := db.QueryRowContext(ctx, "SELECT * FROM users WHERE email = $1", email)
 ```
 
-- Use an ORM or query builder that parameterizes automatically
-- Never use `fmt.Sprintf`, `+`, or string interpolation to build SQL
-
-## Command Injection
-
-- Never pass user input to `os/exec` via shell: `exec.Command("sh", "-c", userInput)` is forbidden
-- Always use the argument list form:
+## Subprocess — argument list, never `sh -c`
 
 ```go
-// Bad
-exec.Command("sh", "-c", "grep " + userInput)
-
-// Good
-exec.Command("grep", "--", userInput, filename)
+exec.Command("grep", "--", userInput, filename)   // no shell
 ```
 
-- Validate and allowlist inputs before passing to any subprocess
+Use `--` to terminate flag parsing before any user-supplied positional argument.
 
-## Path Traversal
-
-- Always clean and validate file paths before use:
+## Path traversal — confine to base
 
 ```go
 clean := filepath.Clean(filepath.Join(baseDir, userPath))
 if !strings.HasPrefix(clean, baseDir+string(os.PathSeparator)) {
-    return errors.New("path traversal detected")
+    return errors.New("path traversal")
 }
 ```
 
-- Never serve or open files at paths derived from user input without this check
-
-## SSRF (Server-Side Request Forgery)
-
-- Validate URLs before making outbound HTTP requests from user-supplied input
-- Use an allowlist of permitted hosts/schemes where possible
-- Disable redirect following when not needed: `http.Client{CheckRedirect: func(...) error { return http.ErrUseLastResponse }}`
-- Never proxy raw user-supplied URLs to internal services
-
-## Cryptography
-
-- Use `crypto/rand` for all security-sensitive random values — never `math/rand`:
+## CSPRNG — `crypto/rand`, never `math/rand`
 
 ```go
-// Bad
-n := mathrand.Int63()
-
-// Good
 b := make([]byte, 32)
 _, err := cryptorand.Read(b)
 ```
 
-- Use standard library crypto packages (`crypto/aes`, `crypto/sha256`) — never roll your own
-- Use `bcrypt` or `argon2` for password hashing — never plain SHA or MD5
-- Use `hmac.Equal` for constant-time secret comparison to prevent timing attacks
+For tokens, take bytes from `crypto/rand` and base64-encode.
 
-## TLS
+## Constant-time comparison — `hmac.Equal`
 
-- Never set `InsecureSkipVerify: true` in production `tls.Config`
-- Use `tls.Config` with a minimum version of `tls.VersionTLS12`
-- Pin certificates or use system roots — don't disable certificate verification
+Never `==` or `bytes.Equal` on secrets, signatures, or HMACs.
 
-## Input Validation
+## TLS — `MinVersion: tls.VersionTLS12`, verification on
 
-- Validate all input at system boundaries: HTTP handlers, gRPC handlers, CLI flags, file readers
-- Reject unexpected or oversized input early — set `http.MaxBytesReader` on request bodies
-- Parse and validate before trusting: don't pass raw strings from requests into domain logic
+Never `InsecureSkipVerify: true` outside explicit local test fixtures. If a cert chain fails, fix the chain.
+
+## Outbound HTTP — block redirect chains when not needed
+
+```go
+&http.Client{CheckRedirect: func(*http.Request, []*http.Request) error {
+    return http.ErrUseLastResponse
+}}
+```
+
+Prevents the redirect-after-allowlist pivot to internal hosts.
+
+## Request body bounds — `http.MaxBytesReader`
+
+```go
+r.Body = http.MaxBytesReader(w, r.Body, 1<<20) // 1 MiB cap
+```
+
+## Password hashing — `golang.org/x/crypto/bcrypt`
+
+`bcrypt.GenerateFromPassword` / `bcrypt.CompareHashAndPassword`. Never `crypto/sha256` for passwords.
