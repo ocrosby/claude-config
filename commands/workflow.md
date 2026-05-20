@@ -15,7 +15,7 @@ Invoke for anything beyond a trivial change: new packages, significant new abstr
 Use `/go-feat`, `/py-feat`, `/nvim-feat`, or `/gherkin-feat`. The `tdd` rule auto-invokes `/tdd` (red-green-refactor). The lint hook runs automatically after every file save.
 
 ### 3. `/code-review` — catch issues before shipping
-Delegates to `go-reviewer`, `py-reviewer`, `nvim-reviewer`, or `gherkin-reviewer` agents for deep, criteria-driven review. Also routes to `rest-reviewer` when HTTP handler patterns are detected. The `review-on-implement` rule suggests this after significant implementation.
+Delegates to `go-reviewer`, `py-reviewer`, `nvim-reviewer`, or `gherkin-reviewer` agents for deep, criteria-driven review. Also routes to `rest-reviewer` when HTTP handler patterns are detected. The `skill-suggest` rule suggests this after significant implementation.
 
 ### 4. `/git-ship` — branch, commit, push, open PR
 Pre-flight runs lint + tests. Validates conventional commit format. Never commits directly to main (hook enforced). Returns the PR URL.
@@ -38,9 +38,9 @@ Checkout main, pull latest, delete merged branches.
 
 | Task | Command | When |
 |---|---|---|
-| Deprecated API calls | `/migrate` | Suggested by `migrate-suggest` rule when old patterns detected |
+| Deprecated API calls | `/migrate` | Suggested by `skill-suggest` rule when old patterns detected |
 | Structural design issues | `/refactor` | Go, Python, and Neovim supported |
-| Missing documentation | `/go-docs` / `/py-docs` / `/nvim-docs` / `/gherkin-docs` | Suggested by `docs-suggest` rule when public API added without docs |
+| Missing documentation | `/go-docs` / `/py-docs` / `/nvim-docs` / `/gherkin-docs` | Suggested by `skill-suggest` rule when public API added without docs |
 | Post-review code quality | `/simplify` | After `/code-review` to apply fixes for reuse, quality, and efficiency (team plugin — not in dotfiles) |
 | REST API compliance | `/rest-review` | Review HTTP handlers for REST convention compliance (resource naming, status codes, statelessness) |
 | Go performance analysis | `/go-bench` | When benchmarking Go code or investigating allocations and throughput |
@@ -96,9 +96,7 @@ These run without being asked:
 | Rule | Fires when | Suggests |
 |---|---|---|
 | `tdd` | Implementing new features or bug fixes | `/tdd` skill |
-| `review-on-implement` | After significant implementation | `/code-review` |
-| `docs-suggest` | Public API added without documentation | `/go-docs`, `/py-docs`, or `/nvim-docs` |
-| `migrate-suggest` | Deprecated patterns detected in edited files | `/migrate` |
+| `skill-suggest` | After significant implementation, deprecated patterns, or new public APIs | `/code-review`, `/migrate`, or language `/docs` skill |
 
 ---
 
