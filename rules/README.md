@@ -93,7 +93,9 @@ If there is any change to logic, control flow, or observable behavior, it is not
 
 | File | Description |
 |---|---|
-| `go-conventions.md` | Idiomatic Go — naming, error handling, interfaces, dependency injection, package structure |
+| `go-conventions.md` | Idiomatic Go — principles, naming, interfaces, API design, allocation, control flow, embedding |
+| `go-errors.md` | Go error handling — wrapping, sentinels, typed-nil interface hazard, panic discipline |
+| `go-concurrency.md` | Go concurrency patterns — channels, select, worker pools, context, leak prevention |
 | `go-project-architecture.md` | Go project layout following clean architecture — cmd, internal, pkg boundaries |
 | `go-testing.md` | Go testing conventions — table-driven tests, subtests, testify usage, race detector |
 | `go-docs.md` | Go documentation conventions — godoc format, package comments, example functions |
