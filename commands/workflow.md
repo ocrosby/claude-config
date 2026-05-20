@@ -5,22 +5,22 @@ Complete reference for the development workflow and when to use each skill, agen
 ## Standard Feature Workflow
 
 ```
-/architect → /*-feature (TDD) → /code-review → /ship → /main
+/architect → /*-feature (TDD) → /code-review → /git-ship → /git-main
 ```
 
 ### 1. `/architect` — design before implementing
 Invoke for anything beyond a trivial change: new packages, significant new abstractions, cross-cutting concerns. Routes to `go-architect`, `py-architect`, `nvim-architect`, or `gherkin-architect` based on language. Output: module map, dependency graph, public API surface, trade-offs. Capture decisions in `ARCHITECTURE.md`.
 
 ### 2. `/*-feature` — implement with TDD
-Use `/go-feature`, `/py-feature`, `/nvim-feature`, or `/gherkin-feature`. The `tdd` rule auto-invokes `/tdd` (red-green-refactor). The lint hook runs automatically after every file save.
+Use `/go-feat`, `/py-feat`, `/nvim-feat`, or `/gherkin-feat`. The `tdd` rule auto-invokes `/tdd` (red-green-refactor). The lint hook runs automatically after every file save.
 
 ### 3. `/code-review` — catch issues before shipping
 Delegates to `go-reviewer`, `py-reviewer`, `nvim-reviewer`, or `gherkin-reviewer` agents for deep, criteria-driven review. Also routes to `rest-reviewer` when HTTP handler patterns are detected. The `review-on-implement` rule suggests this after significant implementation.
 
-### 4. `/ship` — branch, commit, push, open PR
+### 4. `/git-ship` — branch, commit, push, open PR
 Pre-flight runs lint + tests. Validates conventional commit format. Never commits directly to main (hook enforced). Returns the PR URL.
 
-### 5. `/main` — after PR merges
+### 5. `/git-main` — after PR merges
 Checkout main, pull latest, delete merged branches.
 
 ---
@@ -29,8 +29,8 @@ Checkout main, pull latest, delete merged branches.
 
 | Situation | Command |
 |---|---|
-| Feature branch needs to catch up with main | `/sync` — rebase onto main, handle conflicts |
-| PR merged, ready for next task | `/main` — checkout + pull + clean |
+| Feature branch needs to catch up with main | `/git-sync` — rebase onto main, handle conflicts |
+| PR merged, ready for next task | `/git-main` — checkout + pull + clean |
 
 ---
 

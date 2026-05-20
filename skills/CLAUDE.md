@@ -50,7 +50,7 @@ When authoring a skill, before writing inline code in a workflow step, ask: "Wou
 ## Layout
 
 - One folder per skill: `skills/<skill-name>/SKILL.md`
-- The directory name **is** the invocation command — `skills/ship/` automatically provides `/ship`. There is no separate `triggers` field
+- The directory name **is** the invocation command — `skills/git-ship/` automatically provides `/git-ship`. There is no separate `triggers` field
 - Supporting files (templates, scripts, reference docs) live alongside `SKILL.md` in the same folder
 
 ## Frontmatter

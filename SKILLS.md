@@ -16,9 +16,10 @@ Run `/skill-gaps` periodically to analyze session history and surface new skill 
 
 | Skill | What it does |
 |---|---|
-| `/ship` ★ | Branch → commit → push → PR. Use `-m` to commit directly to main, `-p` for a patch release to main. |
-| `/main` ★ | Checkout main, pull latest, delete merged branches. |
-| `/sync` | Rebase current feature branch onto latest main. |
+| `/git-ship` ★ | Branch → commit → push → PR. Use `-m` to commit directly to main, `-p` for a patch release to main. |
+| `/git-main` ★ | Checkout main, pull latest, delete merged branches. |
+| `/git-sync` | Rebase current feature branch onto latest main. |
+| `/git-cpr` | Commit, push, and open a PR (multi-group → split into per-group PRs). |
 | `/commit` | Create a well-formatted conventional commit for staged changes. |
 | `/fix` | Run code review and apply all findings (Must Fix + Should Fix + Consider), looping until clean. Shorthand for `/code-review -fc`. |
 
@@ -135,16 +136,16 @@ Run `/skill-gaps` periodically to analyze session history and surface new skill 
 
 | Skill | What it does |
 |---|---|
-| `/go-feature` | Scaffold a new Go feature with tests. |
+| `/go-feat` | Scaffold a new Go feature with tests. |
 | `/go-docs` | Generate Go documentation. |
 | `/go-bench` | Write Go benchmarks for a function or package. |
-| `/py-feature` | Scaffold a new Python feature with tests. |
+| `/py-feat` | Scaffold a new Python feature with tests. |
 | `/py-docs` | Generate Python documentation. |
 | `/py-bench` | Write Python benchmarks. |
-| `/nvim-feature` | Scaffold a Neovim plugin feature with tests. |
+| `/nvim-feat` | Scaffold a Neovim plugin feature with tests. |
 | `/nvim-docs` | Generate Neovim plugin documentation. |
 | `/nvim-bench` | Write Neovim plugin benchmarks. |
-| `/gherkin-feature` | Scaffold a Gherkin feature file with scenarios. |
+| `/gherkin-feat` | Scaffold a Gherkin feature file with scenarios. |
 | `/gherkin-docs` | Generate documentation from Gherkin feature files. |
 
 ---
@@ -198,4 +199,4 @@ The 7 skills added on 2026-05-17 based on this analysis:
 | `/jenkinsfiles` | "review my jenkinsfiles" appeared 8 times |
 | `/skill-gaps` | The analysis itself is now a repeatable skill |
 
-**Discoverability gap found:** `/commit` exists with 0 invocations while "commit and push changes" was typed 381 times. Consider using `/commit` for staging + committing before `/ship`.
+**Discoverability gap found:** `/commit` exists with 0 invocations while "commit and push changes" was typed 381 times. Consider using `/commit` for staging + committing before `/git-ship`.

@@ -58,4 +58,4 @@ Work journal manager. Maintains a date-structured daily log at `~/work/YYYY/M/D.
 
 ### `/workflow`
 
-Development workflow reference. Documents the full feature workflow (`/architect` → `/*-feature` → `/code-review` → `/ship` → `/main`), branch management, maintenance commands, debugging paths, automated quality gates, and rules that fire automatically. Use this when orienting to the workflow or deciding which tool to reach for.
+Development workflow reference. Documents the full feature workflow (`/architect` → `/*-feat` → `/code-review` → `/git-ship` → `/git-main`), branch management, maintenance commands, debugging paths, automated quality gates, and rules that fire automatically. Use this when orienting to the workflow or deciding which tool to reach for.

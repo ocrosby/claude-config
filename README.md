@@ -85,7 +85,7 @@ On each machine that still has `~/.claude/` wired through `~/dotfiles/claude`:
    readlink ~/.claude/agents      # → ~/src/github.com/ocrosby/claude-config/agents
    ```
 
-5. **Smoke test** by starting a fresh Claude Code session and confirming a global rule fires or a global skill (`/audit`, `/ship`, …) loads.
+5. **Smoke test** by starting a fresh Claude Code session and confirming a global rule fires or a global skill (`/audit`, `/git-ship`, …) loads.
 
 Leave `~/dotfiles/claude/` in place for now — the two trees can coexist as long as only one is stowed at a time. Removing it from dotfiles is a separate, later step that should land in a single dotfiles PR once every machine has been flipped.
 
