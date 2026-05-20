@@ -8,6 +8,8 @@ paths:
 
 Use this skill to generate human-readable documentation from feature files — useful for sharing test coverage with non-technical stakeholders, building a product spec, or auditing what behaviors are actually tested.
 
+The `.feature` file parsing (multi-line steps, tags, Background, Scenario Outlines with Examples) lives in the bundled `parse_gherkin.py` script so this body stays small. The skill consumes the parsed JSON and renders the final Markdown.
+
 ## Usage
 
 ```
@@ -18,24 +20,21 @@ Use this skill to generate human-readable documentation from feature files — u
 
 ## Workflow
 
-### 1. Discover Feature Files
+### 1. Parse Feature Files
 
 ```bash
-find . -name "*.feature" -not -path "*/node_modules/*" -not -path "*/.venv/*"
+python3 ~/.claude/skills/gherkin-docs/parse_gherkin.py <path-or-glob>... [--summary]
 ```
 
-Group files by directory — each directory typically represents a domain area.
+The script walks `.feature` files (excluding `node_modules/`, `.venv/`) and emits JSON: an array of `{file, feature_name, description, tags, background_steps, scenarios: [{name, tags, steps, outline, examples}], rules}`. With `--summary`, it emits a one-line-per-file Markdown summary instead.
 
-### 2. Parse Each Feature File
+**If no `.feature` files are found: stop and report "No feature files in scope".**
 
-For each `.feature` file, extract:
-- Feature title and description
-- Background steps (shared preconditions)
-- Each scenario title and its Given/When/Then steps
-- Scenario Outline tables
-- Tags (used to indicate scope, environment, or criticality)
+### 2. Group Features by Domain
 
-### 3. Generate Documentation
+The script returns features in file-system order. Group them by their parent directory — each directory typically represents a domain area (auth/, users/, payments/).
+
+### 3. Render Markdown
 
 Produce a Markdown document structured as:
 
@@ -43,6 +42,14 @@ Produce a Markdown document structured as:
 # Feature Coverage
 
 > Generated from {N} feature files across {M} domain areas.
+
+## Summary
+
+| Domain | Features | Scenarios | Smoke |
+|---|---|---|---|
+| auth | 3 | 14 | 5 |
+| users | 2 | 9 | 3 |
+| **Total** | **5** | **23** | **8** |
 
 ---
 
@@ -55,40 +62,37 @@ Produce a Markdown document structured as:
 | Scenario | Tags | Steps |
 |---|---|---|
 | {Scenario name} | `@smoke` `@auth` | Given ... / When ... / Then ... |
-| {Scenario name} | — | Given ... / When ... / Then ... |
 
 **Background:** {Background steps if present}
 
 ---
 ```
 
-For Scenario Outlines, show one representative row and note "N variants" rather than expanding every example.
+For Scenario Outlines, show one representative row from the Examples table and note "N variants".
 
-### 4. Add a Coverage Summary
+Truncate step summaries at 80 characters. Preserve the feature ordering from the parser output (file-system order).
 
-At the top of the document, include:
+### 4. Add Coverage Summary
 
-```markdown
-## Summary
+Compute totals from the parsed JSON: total features, total scenarios, count of `@smoke` (or other priority) tags per domain. Insert the summary table at the top of the document.
 
-| Domain | Features | Scenarios | Smoke |
-|---|---|---|---|
-| auth | 3 | 14 | 5 |
-| users | 2 | 9 | 3 |
-| **Total** | **5** | **23** | **8** |
-```
+### 5. Write Output
 
-### 5. Output
+Default output path: `docs/features.md` — create `docs/` if it does not exist. If the user specified a different path, use it. Confirm the output path before writing.
 
-Write the output to `docs/features.md` (or a path specified by the user). If `docs/` doesn't exist, create it.
+### 6. Verify
 
-Confirm the output path before writing.
+After writing, confirm:
+
+- The output file exists at the expected path
+- The feature count matches the parser's input file count
+- Every feature has at least one scenario row (parsing did not silently drop content)
+
+**If any check fails: stop and report which check failed.** Do not declare the documentation complete.
 
 ## Rules
 
 - Do not modify feature files — this skill is read-only except for writing the output doc
-- If a feature file has no description, use the file path as context for grouping
-- Keep scenario step summaries short — truncate at 80 characters if needed
-- Preserve the order of features as they appear in the file system
+- If a feature file has no `Feature:` line, the parser emits `feature_name: ""` — call it out as `(no name)` in the output
+- Flag scenarios with `@wip` or `@skip` tags in the summary as excluded
 - Flag scenarios with no tags as potentially uncategorized
-- If `@wip` or `@skip` tags are found, call them out in the summary as excluded scenarios

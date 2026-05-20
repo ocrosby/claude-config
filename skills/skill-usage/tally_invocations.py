@@ -35,12 +35,18 @@ def parse_since(arg: str) -> timedelta:
 def parse_timestamp(record: dict) -> datetime | None:
     for key in ("timestamp", "ts", "time", "created_at"):
         raw = record.get(key)
-        if not isinstance(raw, str):
-            continue
-        try:
-            return datetime.fromisoformat(raw.replace("Z", "+00:00"))
-        except ValueError:
-            continue
+        if isinstance(raw, str):
+            try:
+                return datetime.fromisoformat(raw.replace("Z", "+00:00"))
+            except ValueError:
+                continue
+        if isinstance(raw, (int, float)):
+            # Heuristic: >= 10^12 means milliseconds, otherwise seconds
+            seconds = raw / 1000.0 if raw >= 1_000_000_000_000 else float(raw)
+            try:
+                return datetime.fromtimestamp(seconds, tz=timezone.utc)
+            except (ValueError, OSError):
+                continue
     return None
 
 

@@ -38,22 +38,22 @@ git status --short
 
 ### 2. Identify conceptual groups
 
-A *group* is a set of files that share the same intent and a single conventional-commit type + scope. Analyze the diff and classify every changed/untracked file into exactly one group.
+A *group* is a set of files that share the same intent and a single conventional-commit `(type, scope)` pair. Run the bundled grouper to get an initial classification:
 
-**Split signals — treat these as separate groups:**
+```bash
+python3 ~/.claude/skills/git-cpr/commit_group_parser.py
+```
 
-- Different commit types (e.g. `feat` vs `fix` vs `docs` vs `chore`)
-- Different scopes within the same type (e.g. `feat(auth)` vs `feat(api)`)
-- Files that are logically unrelated (a new CLI flag + an unrelated bug fix + doc updates)
-- Changes in independent modules that have no runtime dependency on each other
+The script emits JSON: `{branch, is_main, groups: [{type, scope, files, suggested_branch}]}`. It uses path-based heuristics — Claude validates and adjusts the output against the signals below before proceeding.
 
-**Keep together — do NOT split when:**
+**Override signals — split or merge the script's groups when:**
 
-- All changed files implement the same feature end-to-end (handler + model + test for one feature)
-- A fix and its test live in the same scope
-- A refactor touches multiple files but has a single unified intent
+- Two suggested groups represent the same intent end-to-end (handler + model + test for one feature) → merge into one
+- One suggested group contains files with different intents (a new CLI flag + an unrelated bug fix) → split
+- A fix and its test live in the same scope → keep merged
+- The script grouped `*_test.go` files separately from their implementation counterparts → consider merging them with the implementation group (test type is the script's default for test files; reclassify to match)
 
-If exactly one group is identified, continue at step 3. If multiple groups are identified, continue at step 4.
+If the validated grouping is exactly one group, continue at step 3. If multiple groups, continue at step 4.
 
 ### 3. Single-group flow (one PR on the current branch)
 

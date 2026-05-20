@@ -1,84 +1,70 @@
 ---
 description: Analyze Claude Code session history to find repeating tasks with no skill coverage. Run periodically to discover new skill candidates.
-triggers:
-  - /skill-gaps
 ---
 
 # Skill Gaps: Identify Missing Skills from History
 
 Scans `~/.claude/history.jsonl` to surface tasks you type repeatedly that are not covered by an existing skill. Run after a few weeks of sessions to find the next batch of skills worth writing.
 
+The JSONL parsing and frequency tally live in the bundled `analyze_history.py` script so this body stays small. The *gap interpretation* (deciding which repeated phrases are real gaps vs already-covered) stays inline because it requires reading the current skill catalog.
+
 ## Usage
 
 ```
-/skill-gaps
+/skill-gaps                  # all-time
+/skill-gaps --since 30d      # last 30 days
+/skill-gaps --since 90d      # last 90 days
 ```
 
 ## Workflow
 
-### Step 1 — Extract command patterns
+### 1. Tally history
 
 ```bash
-python3 - << 'EOF'
-import json
-from collections import Counter
-
-displays = []
-with open("/Users/omar.crosby/.claude/history.jsonl") as f:
-    for line in f:
-        try:
-            entry = json.loads(line.strip())
-            d = entry.get("display", "")
-            if d:
-                displays.append(d.strip())
-        except:
-            pass
-
-print(f"Total entries: {len(displays)}")
-
-# Slash command frequency
-slash = [d for d in displays if d.startswith("/")]
-counts = Counter(slash)
-print(f"\n=== TOP SKILL INVOCATIONS ({len(slash)} total) ===")
-for cmd, count in counts.most_common(30):
-    print(f"{count:4d}  {cmd[:80]}")
-
-# Common natural language task starts (first 8 words)
-non_slash = [d for d in displays if not d.startswith("/") and d != "exit" and len(d) > 10]
-phrase_counts = Counter()
-for d in non_slash:
-    words = d.split()[:8]
-    phrase = " ".join(words).lower()
-    phrase_counts[phrase] += 1
-
-print(f"\n=== COMMON NATURAL LANGUAGE TASK STARTS ===")
-for phrase, count in phrase_counts.most_common(40):
-    if count >= 2:
-        print(f"{count:4d}  {phrase}")
-EOF
+python3 ~/.claude/skills/skill-gaps/analyze_history.py [--since 30d] [--min-count N]
 ```
 
-### Step 2 — List existing skills
+The script emits two Markdown sections:
+
+- **Top slash-command invocations** — which skills are getting used (signal that they exist and work)
+- **Repeating natural-language phrases** — phrases typed N+ times with no `/command` prefix; candidates for unmet skill gaps
+
+### 2. List existing skills
 
 ```bash
 ls ~/.claude/skills/
-ls ~/dotfiles/claude/.claude/skills/ 2>/dev/null
 ```
 
-### Step 3 — Identify gaps
+### 3. Identify gaps
 
-For each pattern appearing 5+ times as natural language (not a slash command), check whether an existing skill covers it. A pattern is a gap if:
-- No skill triggers on the same intent
+For each pattern that appears ≥5 times in the natural-language section, check the existing skill catalog. A pattern is a **gap** if:
+
+- No skill's description matches the intent
 - The user is typing freeform what a skill could automate
+- The pattern is mechanical enough to be a workflow (not a one-off question)
 
-### Step 4 — Report
+Skip patterns that are:
+
+- Conversational (`thanks`, `ok`, `continue`)
+- Already covered by an existing skill (just rare invocation)
+- Personal/contextual (not portable to a skill)
+
+### 4. Report
 
 Present a ranked table of candidates:
 
-| Suggested Skill | Count | Example message | Gap reason |
+| Suggested Skill | Count | Example phrase | Gap reason |
 |---|---|---|---|
 | ... | ... | ... | ... |
 
-Order by frequency descending. Include only gaps with 5+ occurrences and no existing skill. For each gap, suggest a skill name and one-line description.
+Order by frequency descending. For each gap, propose a skill name and a one-line description. Also include the top slash commands by frequency — these confirm which skills are getting used.
 
-Also report the top slash commands by frequency — these confirm which skills are getting used.
+### 5. Verify
+
+Confirm the output includes:
+
+- The history-scanned count and in-window count
+- Both sections (slash commands AND natural-language phrases)
+- A ranked gap table OR a `_No gaps identified_` line
+
+**If any of those are missing, the script failed silently — re-run with the same arguments and inspect stderr.**

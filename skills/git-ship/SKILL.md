@@ -86,20 +86,21 @@ After pushing (`git push -u origin <branch>`), run `gh pr create` to open a new 
 
 ### 1.5. Group Changes into PRs
 
-Analyze whether the working-tree changes span multiple conceptual areas. A group is a set of files that share the same intent and a single conventional-commit type+scope.
+Run the shared grouping script (lives under `/git-cpr` but used by both skills):
 
-**Split signals** — treat these as separate groups:
-- Different commit types (e.g., `feat` vs `fix` vs `docs` vs `chore`)
-- Different scopes within the same type (e.g., `feat(auth)` vs `feat(api)`)
-- Files that are logically unrelated (e.g., a new CLI flag + an unrelated bug fix + doc updates)
-- Changes in independent modules that have no runtime dependency on each other
+```bash
+python3 ~/.claude/skills/git-cpr/commit_group_parser.py
+```
 
-**Keep together** — do NOT split when:
-- All changed files implement the same feature end-to-end (handler + model + test for one feature)
-- A fix and its test live in the same scope
-- A refactor touches multiple files but has a single unified intent
+The script emits JSON: `{branch, is_main, groups: [{type, scope, files, suggested_branch}]}`. Validate the output against these override signals before proceeding:
 
-**If a single group covers all changes**, proceed as one PR (existing behavior).
+**Override signals — split or merge the script's groups when:**
+- Two suggested groups represent the same intent end-to-end (handler + model + test for one feature) → merge
+- One suggested group contains files with different intents (a new CLI flag + an unrelated bug fix) → split
+- A fix and its test live in the same scope → keep merged
+- The script grouped `*_test.go` files separately from their implementation counterparts → consider merging them with the implementation group
+
+**If the validated grouping is a single group**, proceed as one PR (existing behavior).
 
 **If multiple groups are identified**, present the proposed split to the user:
 

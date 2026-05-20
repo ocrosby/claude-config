@@ -70,6 +70,12 @@ Use mandatory language in every workflow step. Advisory language drifts across s
 - Define hard-stop conditions explicitly: "if tests fail, stop and report — do not proceed"
 - Define exceptions with literal examples, not vague category names
 
+### Prefer extracted scripts over inline logic
+
+Whenever a workflow step does parsing, scanning, validating, or transforming data, extract it into a `verb_noun.py` (or `.sh`) script alongside `SKILL.md`. Inline code is allowed only when it is **under 20 lines AND** will not be regenerated on the next invocation. Inlining wastes tokens on every invocation; a bundled script is a Level 3 resource that costs zero tokens until Claude runs it.
+
+See `skills/CLAUDE.md` for the recognition signals and the full token-economics rationale. The canonical exemplar is `skills/skill-usage/tally_invocations.py` — standard library only, argparse CLI, structured stdout. `/skill-author` walks through this decision when authoring new skills.
+
 ## Existing skills
 
 ### Development workflow

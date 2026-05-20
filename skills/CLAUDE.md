@@ -2,6 +2,24 @@
 
 This directory holds Claude skills. Each skill lives in its own folder as `<skill-name>/SKILL.md`. When creating or editing a skill, the full conventions live in `rules/skill-conventions.md` and the guided workflow lives in the `/skill-author` skill — use those as the source of truth. The summary below is a fast reference.
 
+## Design preferences
+
+Two mandates apply to every skill — read these before authoring.
+
+### 1. Skills must be composable and focused
+
+Each skill does **one** thing well. If the description needs the word "and", the skill is two skills wearing one hat — split it. A workflow that could be re-described as two independent jobs is two skills.
+
+This is also enforced under "Design qualities → Composable" further down; it lives at the top of this file because it shapes every other authoring decision.
+
+### 2. Prefer extracted scripts over inline logic
+
+Whenever a workflow step does parsing, scanning, validating, or transforming data, extract it into a script alongside `SKILL.md`. Inline code is allowed only when the logic is **under 20 lines** AND will not be regenerated across invocations.
+
+The canonical exemplar is `skills/skill-usage/tally_invocations.py` — copy its shape (standard library only, argparse CLI, Markdown or JSON to stdout, exit 0/1). The detailed economics live under "Reusable scripts beat regenerated code" below.
+
+---
+
 ## Progressive disclosure: the three levels
 
 A skill is organized in three levels so that only relevant content occupies the context window at any given time. When authoring, decide which level each piece of content belongs to. Misplaced content is expensive: reference material in Level 2 inflates every invocation; workflow steps in Level 3 are invisible to Claude until something happens to fetch them.
@@ -38,12 +56,24 @@ A skill is organized in three levels so that only relevant content occupies the 
 
 If a workflow needs the same Python (or shell, or other) logic on every invocation, save it once as a script in the skill folder and execute it via Bash. Regenerating logic in chat costs tokens twice — once to write it, once to read it back — and drifts between runs.
 
-- **Save it when:** the same parsing, formatting, validation, or transformation would otherwise be regenerated across invocations, or the logic exceeds ~20 lines
+**Recognition signals** — extract a script when any of these are true:
+
+- Multi-line shell pipeline with state, grouping, or conditionals (sed/awk/jq chains)
+- The same parsing happens on every invocation (history files, git output, OpenAPI specs, frontmatter)
+- The skill emits format-stable structured output (JSON or a fixed Markdown shape)
+- Validation against a fixed ruleset (frontmatter checks, doc-review rules, deprecation patterns)
+- Aggregation across many files (counting, classifying, summarizing)
+
+**Conventions:**
+
+- **Save it when:** any recognition signal applies, OR the logic exceeds ~20 lines
 - **Where it lives:** `skills/<skill-name>/<verb_noun>.py` (or `.sh`, `.js`) alongside `SKILL.md` — a Level 3 resource
-- **How the workflow invokes it:** Level 2 describes only the command (`python skills/<skill-name>/extract_frontmatter.py <args>`); the implementation stays out of context
+- **How the workflow invokes it:** Level 2 describes only the command (`python3 ~/.claude/skills/<skill-name>/extract_frontmatter.py <args>`); the implementation stays out of context
 - **Token math:** a 200-line helper inlined in Level 2 costs ~1,500 tokens on every invocation. The same helper saved as a script costs zero tokens to invoke — only its output enters context
 - **Naming:** scripts describe the action they perform (`validate_links.sh`, `extract_frontmatter.py`), not the skill they belong to
-- **When to inline anyway:** one-off transformations that genuinely will not repeat, or logic small enough (a few lines) that a script's overhead exceeds its savings
+- **Inline allowed only when:** the logic is a single bash call (`git status`, `find . -name "*.go"`), a 3-line range derivation, or another genuinely one-off transformation that will not be regenerated on the next invocation. "Small enough to ignore" is not an exception — measure against the recognition signals above.
+
+**Exemplar:** `skills/skill-usage/tally_invocations.py` — standard library only, argparse CLI, Markdown to stdout, exits 0/1. Copy its shape for new scripts.
 
 When authoring a skill, before writing inline code in a workflow step, ask: "Would I regenerate this on the next invocation?" If yes, save it as a script.
 
