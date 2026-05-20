@@ -114,7 +114,6 @@ Run `/skill-gaps` periodically to analyze session history and surface new skill 
 
 | Skill | What it does |
 |---|---|
-| `/docs` | Generate or update documentation for the current project. |
 | `/doc-review` | Review documentation against the Write the Docs principles. |
 | `/release-notes` | Generate a changelog / release notes from git history. |
 | `/user-story` | Break a raw story description into INVEST-compliant user stories with Gherkin criteria. |
@@ -171,9 +170,7 @@ Run `/skill-gaps` periodically to analyze session history and surface new skill 
 | Skill | What it does |
 |---|---|
 | `/sql` | Write, explain, or optimize SQL queries. |
-| `/bench` | Run benchmarks for the current project. |
 | `/test-runner` | Run the test suite and report only failures. Detects pytest, jest, vitest, and make automatically. |
-| `/test-driven-development` | TDD reference — red/green/refactor cycle, tooling, and anti-patterns. |
 | `/research` | Research a topic and return a structured summary. |
 | `/mcp-test` | Test MCP server connectivity and tool availability. |
 | `/loop` | Run a prompt or slash command on a recurring interval. |

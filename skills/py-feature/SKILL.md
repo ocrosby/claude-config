@@ -1,10 +1,12 @@
 ---
-description: Guides development of new Python features following hexagonal architecture and clean code principles.
+description: Guides development of new Python features following hexagonal architecture, delegating review to /code-review and relying on the always-on TDD rule.
 paths:
   - "**/*.py"
 ---
 
 # Python Feature Development
+
+Use this skill when implementing a new Python feature. This skill owns Python-specific design decisions (hexagonal layering, FastAPI/FastMCP patterns, Pydantic models, dependency injection). TDD enforcement (red-green-refactor with observable failure output) comes from the always-on `rules/tdd.md` — do not re-implement that rule inline. Final review delegates to `/code-review -fc`.
 
 ## Workflow
 
@@ -14,22 +16,26 @@ paths:
 - Identify which layer it belongs to: domain, port, adapter, or application
 - Determine if it needs new API endpoints, CLI commands, MCP tools, or background tasks
 
+> Run `/architect` first only when the feature introduces a new module boundary, a new port/adapter pair, or significant domain abstractions. For incremental additions, skip it.
+
 ### 2. Design the Interface
 
 - Define the public API: functions, classes, and their signatures with full type hints
-- Design configuration with pydantic Settings if new config is needed
-- Plan the request/response models with Pydantic `BaseModel`
+- Define configuration with pydantic `Settings` if new config is needed
+- Define request/response models with Pydantic `BaseModel`
 
-> For features that introduce new modules, ports, or significant domain abstractions, invoke `/architect` before implementing to get a comprehensive structural proposal.
+### 3. Implement via TDD
 
-### 3. Implement (Domain First)
+The always-on `rules/tdd.md` enforces red-green-refactor. Apply that cycle in this order for Python features:
 
-- Start with domain models and services — pure Python, no framework imports
-- Define ports (Protocol classes) for any new external dependencies
-- Implement adapters: FastAPI routes, DB repositories, API clients
-- Wire dependencies via injection (`Depends()` in FastAPI, constructor injection elsewhere)
+1. Domain models and services first — pure Python, no framework imports
+2. Ports (Protocol classes) for new external dependencies
+3. Adapters: FastAPI routes, DB repositories, API clients
+4. Wire dependencies via injection (`Depends()` in FastAPI, constructor injection elsewhere)
 
-### 4. Structure
+Do not write production code in this skill before a failing test exists for that behavior.
+
+### 4. Apply Python-Specific Structure
 
 - One module per concern — split at 300 lines
 - Domain logic has no I/O, no framework imports
@@ -37,7 +43,7 @@ paths:
 - FastAPI routes use `APIRouter`, one router per domain area
 - FastMCP tools use `@mcp.tool()` with type hints and docstrings for schema derivation
 
-### 5. FastAPI Specifics
+### 5. Apply FastAPI Specifics (if applicable)
 
 - Define request/response models with Pydantic `BaseModel`
 - Use `Depends()` for shared logic (auth, DB sessions, config)
@@ -45,18 +51,19 @@ paths:
 - Return explicit status codes (`status_code=201` for creation)
 - Use `HTTPException` for error responses with appropriate status codes
 
-### 6. FastMCP Specifics
+### 6. Apply FastMCP Specifics (if applicable)
 
 - Declare tools with `@mcp.tool()`, resources with `@mcp.resource()`
 - Tool functions derive their schema from type hints and docstrings
 - Keep tool functions thin: validate, delegate to domain, return
 - Use `Context` for logging and progress reporting
 
-### 7. Review Checklist
+### 7. Review via /code-review
 
-- [ ] Type hints on all function signatures and class attributes
-- [ ] Domain logic is pure — no framework or I/O imports
-- [ ] Dependencies injected, not hardcoded
-- [ ] Pydantic models for all API boundaries
-- [ ] Error cases raise domain-specific exceptions
-- [ ] No global mutable state
+Invoke `/code-review -fc` on the changed files. The review skill owns:
+
+- Running `ruff check` and `ruff format --check`
+- Delegating to `py-reviewer` for idiomatic, architectural, and type-safety checks
+- Auto-fixing Must Fix and Should Fix findings, looping until clean
+
+Do not re-implement the review checklist here — `py-reviewer` covers type hints, domain purity, dependency injection, Pydantic boundaries, and global state. If `/code-review -fc` reports findings that require manual judgment, address them before declaring the feature complete.
