@@ -1,47 +1,20 @@
 ---
+description: Python-specific security idioms — library calls and patterns. The general signal table lives in owasp-top-10.md.
 paths:
   - "**/*.py"
   - "**/pyproject.toml"
 ---
 
-# Python Security
+# Python Security Idioms
 
-## Secrets & Environment Variables
+> See `owasp-top-10.md` for the general signal table and mandatory behaviors. This file lists the Python-specific *how*.
 
-- Never hardcode secrets, API keys, tokens, or passwords in source code
-- Load all sensitive values from environment variables via pydantic Settings
-- Never commit `.env` files containing real credentials — use `.env.example` with placeholder values
-- Add `.env` to `.gitignore` in every project
-
-## Injection
-
-- **SQL**: always use parameterized queries or ORM query builders — never string-format SQL
-- **Command**: never pass user input to `subprocess`, `os.system`, `eval`, or `exec` without sanitization; prefer `subprocess.run` with a list of arguments (never `shell=True` with user input)
-- **Template**: never pass user-controlled data into `str.format()` used as a template engine; use Jinja2 with autoescaping enabled for HTML
-
-## Input Validation
-
-- Validate all input at system boundaries: HTTP request bodies, CLI arguments, file uploads, external API responses
-- Use Pydantic models at every API boundary — never pass raw dicts into domain logic
-- Reject unexpected fields with `model_config = ConfigDict(extra="forbid")` where strictness matters
-- Validate file paths: use `pathlib.Path.resolve()` and confirm the result is within the expected directory to prevent path traversal
-
-## Sensitive Data Exposure
-
-- Never log passwords, tokens, API keys, PII, or full request bodies containing sensitive fields
-- Scrub sensitive fields before logging: redact or replace with `[REDACTED]`
-- Do not include sensitive values in exception messages or error responses returned to clients
-- Use `SecretStr` from pydantic for fields that must not appear in serialized output or logs
-
-## Authentication & Authorization
-
-- Never roll your own auth — use established libraries (e.g., `python-jose`, `passlib`, FastAPI's security utilities)
-- Verify JWT signatures; never decode without verification (`decode(..., options={"verify_signature": False})` is forbidden in production)
-- Check authorization on every endpoint — do not assume a valid token implies all permissions
-- Use constant-time comparison (`hmac.compare_digest`) for secret comparison to prevent timing attacks
-
-## Dependency Security
-
-- Pin dependency versions in `pyproject.toml` and lock with `uv lock`
-- Run `uv audit` (or `pip-audit`) in CI to catch known CVEs in dependencies
-- Do not use `pickle` to deserialize untrusted data — use JSON or a safe schema-validated format instead
+- **Secrets**: `pydantic_settings.BaseSettings` + `SecretStr`. `get_secret_value()` is the only extraction path; `str()`/`repr()` return `'**********'`.
+- **Subprocess**: `subprocess.run(["cmd", "--", user_input], check=True)`. Never `shell=True` with dynamic input.
+- **Deserialization**: never `pickle.loads` on untrusted input. `yaml.load` → `yaml.safe_load`. Prefer JSON + Pydantic.
+- **Input validation**: Pydantic at every boundary; set `model_config = ConfigDict(extra="forbid")` where strictness matters. Never pass raw dicts into domain logic.
+- **Path traversal**: `(base / user_path).resolve()` then check `base == target or base in target.parents`.
+- **Constant-time compare**: `hmac.compare_digest`. Never `==` on secrets, signatures, or HMACs.
+- **JWT**: `jwt.decode(token, key, algorithms=["RS256"])`. Pin `algorithms` (blocks `alg: none` and key confusion); never `verify_signature=False` in production.
+- **Password hashing**: `passlib.context.CryptContext(schemes=["argon2"])` or `argon2.PasswordHasher()`. Never `hashlib.sha256`.
+- **Dependencies**: pin in `pyproject.toml`, lock with `uv lock`, run `pip-audit` in CI as a build gate.

@@ -85,9 +85,9 @@ If there is any change to logic, control flow, or observable behavior, it is not
 | File | Description |
 |---|---|
 | `owasp-top-10.md` | OWASP Top 10 recognition signals and mandatory behaviors — path-scoped to code, shell, SQL, Dockerfiles, Terraform, and CI workflows |
-| `go-security.md` | Go-specific security patterns — input validation, crypto, SQL, subprocess, TLS |
-| `py-security.md` | Python-specific security patterns — deserialization, injection, secrets, dependency safety |
-| `nvim-security.md` | Neovim plugin security — safe API usage, avoiding arbitrary code execution, sandboxing |
+| `go-security.md` | Go-specific security idioms — stdlib functions and patterns (parameterized SQL, `exec.Command`, `crypto/rand`, `hmac.Equal`, TLS config); refers to `owasp-top-10.md` for the general signal table |
+| `py-security.md` | Python-specific security idioms — Pydantic `Settings`/`SecretStr`, `subprocess` arg-list form, `hmac.compare_digest`, JWT verification; refers to `owasp-top-10.md` for the general signal table |
+| `nvim-security.md` | Neovim plugin security — `vim.system()` vs shell, dynamic code execution risks, path confinement, module-local secrets vs `vim.g.*`; refers to `owasp-top-10.md` for the general signal table |
 
 ### Go
 
