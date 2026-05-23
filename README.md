@@ -148,6 +148,107 @@ Use an output style when you want to **change how Claude responds** across an en
 | Run a simple prompt when I ask | Command |
 | Change its response style globally | Output Style |
 
+## Tips from the Claude Code Team
+
+> Sourced from [Boris Cherny's thread (Jan 2026)](https://x.com/bcherny/status/2017742741636321619), where the Claude Code team shared their own workflow tips. Boris created Claude Code at Anthropic.
+
+### Parallelism
+
+- Run 3–5 Claude sessions in parallel using git worktrees
+- Use subagents to throw more compute at problems
+- Offload tasks to subagents to keep your main context clean
+- Route permission requests to Opus 4.5 via a hook to auto-approve safe ones
+
+### Planning
+
+- Start complex tasks in plan mode (shift+tab)
+- When things go sideways, re-plan instead of pushing through
+- Use plan mode for verification steps, not just builds
+
+### Configuration
+
+- Invest in your CLAUDE.md — update it after every mistake
+- Create reusable skills and commit them to git
+- Use `/statusline` to show context usage and git branch
+- Color-code and name terminal tabs, one per task/worktree
+
+### Prompting
+
+- Challenge Claude: "Grill me on these changes"
+- Demand proof: "Prove to me this works"
+- Reset mediocre work: "Scrap this, implement the elegant solution"
+- Write detailed specs to reduce ambiguity
+
+### Workflow
+
+- Paste Slack bug threads and just say "fix"
+- Say "Go fix the failing CI tests" — don't micromanage how
+- Point Claude at docker logs to troubleshoot distributed systems
+- Use Claude for analytics — works with any database CLI, MCP, or API
+
+### Learning
+
+- Enable "Explanatory" output style in `/config` to learn the *why*
+- Have Claude generate visual HTML presentations for unfamiliar code
+- Ask Claude to draw ASCII diagrams of protocols and codebases
+- Use voice dictation (fn x2 on macOS) — you speak 3x faster than you type
+
+### Terminal
+
+- The team recommends Ghostty for its synchronized rendering and unicode support
+
+## Power Features
+
+> Sourced from [Boris Cherny's thread (Mar 2026)](https://x.com/bcherny/status/2038454336355999749) covering his favorite hidden and under-utilized Claude Code features.
+
+### Mobile & Cross-Device
+
+- Claude Code has a mobile app (iOS/Android) — open the Claude app and use the Code tab
+- Use `/teleport` or `claude --teleport` to continue a cloud session on your local machine
+- Use `/remote-control` to control a local session from your phone or browser
+- Set "Enable Remote Control for all sessions" in `/config` for always-on access
+
+### Automation & Scheduling
+
+- `/loop` runs a skill on a recurring interval (e.g., `/loop 5m /babysit` for auto code review and rebase)
+- `/schedule` runs Claude on a cron schedule, up to a week at a time
+- Example loops: auto-address code review, auto-rebase PRs, sweep post-merge comments, prune stale PRs
+- Turn workflows into skills, then loop them for hands-free automation
+
+### Hooks
+
+- Use hooks to run deterministic logic at each stage of the agent lifecycle
+- `SessionStart` — dynamically load context when Claude starts
+- `PreToolUse` — log every bash command the model runs
+- `PermissionRequest` — route approval prompts to WhatsApp or other channels
+- `Stop` — poke Claude to keep going whenever it stops
+- Docs: https://code.claude.com/docs/en/hooks
+
+### Desktop & Browser Integration
+
+- **Cowork Dispatch** — secure remote control for Claude Desktop; catch up on Slack, emails, manage files from mobile
+- **Chrome extension** — connect Claude to your browser for frontend work; Claude iterates until the result looks right
+- **Desktop app** — auto-starts web servers and tests them in a built-in browser
+
+### Session Management
+
+- `/branch` forks your current session; or use `claude --resume <session-id> --fork-session` from CLI
+- `/btw` answers quick side questions without interrupting the agent's current work
+- `/voice` enables voice input — hold space bar in CLI, or use the voice button in Desktop
+
+### Parallel Work at Scale
+
+- `claude -w` starts a new session directly in a git worktree
+- `/batch` fans out massive changesets to dozens, hundreds, or thousands of worktree agents
+- Use `WorktreeCreate` hook for non-git VCS worktree creation
+
+### SDK & CLI Flags
+
+- `--bare` speeds up SDK startup by up to 10x — skips auto-loading CLAUDE.md, settings, MCPs
+- `--add-dir` (or `/add-dir`) gives Claude access to additional repos; also grants permissions there
+- `--agent=<name>` runs a custom agent defined in `.claude/agents/` — works for non-interactive mode too
+- Add `"additionalDirectories"` to `settings.json` to always load extra folders
+
 ## Related documentation
 
 - `CLAUDE.md` — global instructions loaded into every Claude Code session
@@ -161,5 +262,5 @@ Use an output style when you want to **change how Claude responds** across an en
 - [obra/superpowers](https://github.com/obra/superpowers) — Community collection of Claude Code skills, rules, and agents
 - [affaan-m/everything-claude-code](https://github.com/affaan-m/everything-claude-code) — Broad harness for Claude Code (and other AI agent harnesses) covering skills, instincts, memory, security, and research-first development; rich source of ideas for personal configs
 - [shanraisshan/claude-code-best-practice](https://github.com/shanraisshan/claude-code-best-practice) — Best-practice patterns and conventions for Claude Code agents, commands, and skills
-- [0xquinto/bcherny-claude](https://github.com/0xquinto/bcherny-claude) — Boris Cherny's personal Claude Code configuration (commands, agents, and settings); useful reference for how one of the tool's creators shapes their own setup
+- [0xquinto/bcherny-claude](https://github.com/0xquinto/bcherny-claude) — Boris Cherny's personal Claude Code configuration (commands, agents, and settings). Many workflow agents/commands in this repo and the "Tips from the Claude Code Team" and "Power Features" sections above are sourced from his repo and X threads
 - [GNU Stow](https://www.gnu.org/software/stow/) — Symlink farm manager used to wire this package into `~/.claude/`
