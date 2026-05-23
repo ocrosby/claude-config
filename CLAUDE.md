@@ -59,3 +59,38 @@ stow -t ~/.claude -d ~/src/github.com/ocrosby claude-config
 ```
 
 Never add a `.claude/` wrapper directory inside this repo. The repo root *is* the stow package; its top-level items (`agents/`, `skills/`, `rules/`, `commands/`, `hooks/`, `output-styles/`, `CLAUDE.md`, `settings.json`, …) are what get linked into `~/.claude/`. **This is an intentional design decision — do not simplify it away.** Stow's default ignore list excludes `README.*`, `LICENSE.*`, `.git`, and `.gitignore`, so those stay in the repo only.
+
+# Self-Improvement
+
+After every correction or mistake, update the relevant rule, skill, or `CLAUDE.md` itself with a guard to prevent repeating it. Claude is good at writing rules for itself.
+
+When ending a correction, prompt with: "Now update the relevant rule/skill/CLAUDE.md so you don't make that mistake again."
+
+Iterate until the mistake rate measurably drops.
+
+# Working with Plan Mode
+
+- Start every complex task in plan mode (shift+tab to cycle).
+- Pour energy into the plan so Claude can 1-shot the implementation.
+- When something goes sideways, switch back to plan mode and re-plan. Don't keep pushing.
+- Use plan mode for verification steps too, not just for the build.
+
+# Parallel Work
+
+- For tasks that need more compute, use subagents to work in parallel.
+- Offload individual tasks to subagents to keep the main context window clean and focused.
+- When working in parallel, only one agent should edit a given file at a time.
+- For fully parallel workstreams, use git worktrees: `git worktree add .claude/worktrees/<name> origin/main`.
+
+# Session Management
+
+- `/branch` forks a session (or `claude --resume <session-id> --fork-session` from CLI).
+- `/btw` answers quick side queries without interrupting the agent's current work.
+- `/teleport` continues a cloud session on your local machine.
+- `/remote-control` controls a local session from your phone or browser.
+- `/voice` (CLI) or the voice button (Desktop) enables voice input.
+
+# Multi-Repo Work
+
+- Use `--add-dir` (or `/add-dir`) to give Claude access to additional repositories.
+- Add `"additionalDirectories"` to `settings.json` to always load extra folders on startup (this repo's `settings.json` already has `/tmp` here).
