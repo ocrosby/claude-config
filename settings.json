@@ -112,6 +112,17 @@
     "additionalDirectories": ["/tmp"]
   },
   "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo \"Session started at $(date). Branch: $(git branch --show-current 2>/dev/null || echo 'N/A'). Last commit: $(git log --oneline -1 2>/dev/null || echo 'N/A').\""
+          }
+        ]
+      }
+    ],
     "PreToolUse": [
       {
         "matcher": "Bash(git commit:*)",
@@ -200,6 +211,10 @@
           {
             "type": "command",
             "command": "~/.claude/hooks/session-stop.sh"
+          },
+          {
+            "type": "command",
+            "command": "echo \"If there is remaining work, keep going. Check your task list.\""
           }
         ]
       }
