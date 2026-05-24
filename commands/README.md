@@ -28,7 +28,23 @@ Both are invoked with a `/command`. The distinction is where the file lives and 
 
 Use a command when the content is primarily a reference document or a dispatcher that Claude reads top-to-bottom. Use a skill when the workflow has numbered steps that must be followed in order with hard-stop conditions.
 
-## Existing commands
+## Two kinds of commands
+
+Commands in this directory fall into two roles. Both are user-invocable; the difference is whether they are also called from inside skills.
+
+### Building blocks
+
+Commands that exist so that 2+ skills can share the same focused action without duplicating it. The skill invokes the command as a numbered step, and the user can also invoke it standalone.
+
+| Command | Used by | Purpose |
+|---|---|---|
+| `/conventional-commit-msg` | `/git-ship`, `/git-cpr` | Compose a Conventional Commits message from staged diff and commit. No staging, no push, no branch. |
+
+See `rules/skill-conventions.md` → "Skills as orchestrators, commands as building blocks" for the extraction rule.
+
+### Standalone commands
+
+Commands that exist as their own entry point — references, dispatchers, or single-action prompts that no skill needs to reuse.
 
 ### `/audit`
 
@@ -44,17 +60,13 @@ Runs a BDD feature file's pytest stub against a target environment and region. P
 /bdd historical_postal -e prod -r use1 --serial
 ```
 
-### `/work`
+### `/grill`
 
-Work journal manager. Maintains a date-structured daily log at `~/work/YYYY/M/D.md`. Carries over incomplete tasks from the previous session automatically.
+Adversarial code review. Invokes `/code-review` in strictest-interpretation mode and refuses to clear changes until every Must Fix, Should Fix, and Consider item is resolved. Use to stress-test changes before shipping. Mechanically identical to `/code-review`; only the persona and rating scale differ.
 
-| Subcommand | Description |
-|---|---|
-| `/work add <task>` | Add a task to today's journal |
-| `/work list [period]` | List tasks for today, yesterday, this-week, or last-week |
-| `/work done [task text]` | Mark a task complete |
-| `/work update` | Rename a task |
-| `/work note <text>` | Append a note to today's journal |
+### `/test-and-fix`
+
+Run the test suite, diagnose failures, fix them in place, re-run until green.
 
 ### `/workflow`
 

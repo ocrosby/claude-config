@@ -17,14 +17,14 @@ paths:
 
 ### 1. Identify what to benchmark
 
-Target one of these categories:
+Target exactly one category per timed block:
 
 - **Startup cost** — does the plugin slow Neovim launch? (use `--startuptime`)
 - **Hot-path callbacks** — autocmds, keymaps, LSP handlers called on every keypress or event
 - **Expensive operations** — treesitter queries, file reads, API batching loops
 - **Comparison** — measuring two implementations against each other
 
-Benchmark at the right granularity — one timed block per distinct operation.
+**If the target spans multiple categories: stop and split into separate benchmarks.** One timed block measures one operation.
 
 ### 2. Write the benchmark
 
@@ -129,7 +129,17 @@ For startup benchmarks use the `diff` approach from Step 2.
 - Table construction inside tight loops — allocates GC pressure
 - High variance across runs with no obvious cause — background plugin state (LSP server polling, autocmds firing) can interfere. Run benchmarks in a minimal `nvim --clean` session with `--noplugin` if results are inconsistent
 
-### 6. Common optimizations to investigate
+### 6. Apply optimizations
+
+Pick the matching item from [Common Optimizations](#common-optimizations) below, apply it, and re-run step 3 to measure the change.
+
+### 7. Verify
+
+Re-run the benchmark with a fresh `nvim` invocation. Confirm the change is measurable per `vim.loop.hrtime()` and not within run-to-run variance. **If the change is within noise or regresses: revert and report.**
+
+---
+
+## Common Optimizations
 
 - **Cache `require()` results**: `local M = require("my_module")` at the top of the file, not inside callbacks
 - **`vim.schedule` for deferred work**: move non-urgent updates out of synchronous autocmd handlers

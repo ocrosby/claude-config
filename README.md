@@ -128,7 +128,9 @@ Use a command when you want a **simple, single-file prompt** invoked with `/comm
 
 - Same as a skill but without supporting files — just one markdown file
 - Best for: lightweight prompts that don't need bundled references
-- Prefer skills for anything complex; commands are the simpler alternative
+- Also the right home for **shared building blocks**: when 2+ skills repeat the same focused action (compose a Conventional Commits message, open a PR with `gh`, branch from main), extract it as a command and have the skills invoke `/command-name` as a numbered step
+- Deterministic logic (parsing, scanning, classification) goes in `scripts/` instead — commands are for prompted reasoning, scripts are for code
+- See `rules/skill-conventions.md` → "Skills as orchestrators, commands as building blocks" for the extraction rule
 
 ### Output Styles (`output-styles/`)
 

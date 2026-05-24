@@ -38,6 +38,19 @@ Rules are appropriate when a behavior should apply **automatically and consisten
 | You want Claude to recognize a pattern and respond to it | The workflow involves flags, arguments, or user choices |
 | A constraint should never be bypassed by forgetting to ask | The user needs to opt in explicitly |
 
+## When to write a skill vs. a command
+
+Skills and commands are both user-invocable. The difference is shape and role.
+
+| Write a skill when... | Write a command when... |
+|---|---|
+| The work is a multi-step workflow with decision logic | The work is a single focused action |
+| It needs supporting files (scripts, templates, references) | A single markdown prompt is sufficient |
+| Two or more commands or skills will share its mechanics | It is the atomic mechanic being shared |
+| The orchestration owns the user-visible name (e.g. `/git-ship`) | It is a building block (e.g. `/conventional-commit-msg`) |
+
+When a skill needs to repeat a concrete mechanic that already lives in another skill, **extract the shared mechanic into a command (for prompted reasoning) or a script (for deterministic logic)**. The skill then invokes the command/script as a numbered step. See `skill-conventions.md` → "Skills as orchestrators, commands as building blocks" for the full rule.
+
 ## Writing rules that hold
 
 Rules written with advisory language drift across sessions — Claude interprets "consider" and "should" as optional. Use mandatory language.
