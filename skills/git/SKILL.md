@@ -1,5 +1,5 @@
 ---
-description: Git workflow dispatcher — ship, cpr, sync, main, worktree, release-notes. The first word of $ARGUMENTS selects the subcommand. Subcommands ship, cpr, and worktree push to remote or mutate parallel checkouts; treat them as human-gated.
+description: Git workflow dispatcher — ship, sync, main, worktree, release-notes. The first word of $ARGUMENTS selects the subcommand. Subcommands ship and worktree push to remote or mutate parallel checkouts; treat them as human-gated.
 argument-hint: "<subcommand> [arguments]"
 aliases: git-ship, git-cpr, git-sync, git-main, worktree, release-notes, ship, sync, main, commit-push-pr
 allowed-tools: Bash(git *) Bash(gh pr *) Bash(uv lock) Read
@@ -7,7 +7,7 @@ allowed-tools: Bash(git *) Bash(gh pr *) Bash(uv lock) Read
 
 # Git: Workflow Dispatcher
 
-Use this skill for any git-graph operation: shipping a branch, committing on the current branch, rebasing, switching to main, creating a parallel worktree, or generating release notes.
+Use this skill for any git-graph operation: shipping a branch (creating it from main or committing onto your existing branch), rebasing, switching to main, creating a parallel worktree, or generating release notes.
 
 The orchestration delegates to atomic building blocks: `/branch-from-main`, `/conventional-commit-msg`, `/open-pr`, and the shared scripts at `~/.claude/scripts/git_group.py` and `~/.claude/scripts/classify_commits.py`. This skill never re-implements their mechanics.
 
@@ -15,18 +15,20 @@ The orchestration delegates to atomic building blocks: `/branch-from-main`, `/co
 
 ```
 /git                                  # show this help
-/git ship                             # branch → commit → push → PR (multi-group aware)
+/git ship                             # branch (or current) → commit → push → PR (multi-group aware)
 /git ship <branch-name>               # use this name, infer prefix from commit type
 /git ship feature <branch-name>       # force feature/ prefix
 /git ship hotfix <branch-name>        # force hotfix/ prefix
 /git ship -m                          # commit directly to main, no branch, no PR
 /git ship -p                          # patch: commit directly to main with fix: prefix
-/git cpr                              # commit + push + PR on current branch (refuses on main)
+/git ship --quick                     # skip pre-flight lint + tests (daily iteration)
 /git sync [<base>]                    # rebase current branch onto main (or <base>)
 /git main                             # checkout main, pull, prune merged branches
 /git worktree [<name>]                # create parallel worktree under .claude/worktrees/
 /git release-notes [<range>]          # generate changelog (default: since last tag)
 ```
+
+`/git ship` subsumes the previous `/git cpr` subcommand. If you are already on a feature branch with a prior push, the branch is kept; only pre-flight, commit, push, and PR run. The `--quick` flag skips pre-flight for the same daily-iteration use case.
 
 ## Workflow
 
@@ -35,14 +37,23 @@ The orchestration delegates to atomic building blocks: `/branch-from-main`, `/co
 Split `$ARGUMENTS` on the first space. The first word is the subcommand; everything after is its argument string.
 
 - If the subcommand is empty or `help`: print the **Usage** block above and stop.
-- If the subcommand is not one of `ship`, `cpr`, `sync`, `main`, `worktree`, `release-notes`: stop and print the **Usage** block.
+- If the subcommand is `cpr`: print `/git cpr was merged into /git ship — for the daily-iteration ergonomics use /git ship --quick`, then dispatch to `ship` with `--quick` prepended to the remaining argument string. If `--quick` is already present in the remaining argument string, do not prepend a duplicate — treat the argument string as-is.
+- If the subcommand is not one of `ship`, `sync`, `main`, `worktree`, `release-notes`: stop and print the **Usage** block.
 - Dispatch to the matching step.
 
 ### 2. Dispatch — `ship`
 
-Replicates the prior `/git-ship` skill.
+Subsumes the prior `/git-ship` and `/git-cpr` skills.
 
-**Pre-flight.** Run lint and tests before touching git:
+**Flag parsing.** Inspect the argument string for these flags before doing anything else:
+
+- `--quick` — skip the **Pre-flight** block below; the workflow proceeds directly to the **Branch state** inspection.
+- `-m` — direct-to-main mode. Mutually exclusive with `-p`.
+- `-p` — direct-to-main patch mode (forces commit type to `fix`). Mutually exclusive with `-m`.
+
+Remaining positional words after flags are the optional `<branch-name>` or `feature`/`hotfix` prefix override.
+
+**Pre-flight.** Unless `--quick` was passed, run lint and tests before touching git:
 
 | Tool | Command |
 |---|---|
@@ -114,36 +125,7 @@ After the last group: `git stash drop`.
 
 **Verify.** Branch mode: PR URL is reachable and state is `OPEN`. Direct-to-main: `git log -1 origin/main --oneline` shows the new commit.
 
-### 3. Dispatch — `cpr`
-
-Replicates the prior `/git-cpr` skill. For daily shipping when already on a branch.
-
-1. **Inspect state.**
-   ```bash
-   git branch --show-current
-   git status --short
-   ```
-   **If the working tree is clean: stop.**
-
-2. **Identify conceptual groups** via `python3 ~/.claude/scripts/git_group.py`. Apply the same merge/split signals as `ship`.
-
-3. **Single-group flow.**
-   - **If on `main`/`master`: stop. Recommend `/git ship` instead.**
-   - Stage exactly this group's files.
-   - Invoke `/conventional-commit-msg`.
-   - Invoke `/open-pr`. Print the URL.
-
-4. **Multi-group flow.**
-   - Present proposed split, wait for confirmation.
-   - `git stash push -u -m "git cpr: split into PRs"`.
-   - For each group: invoke `/branch-from-main <suggested-branch>`, restore that group's files from stash, stage, `/conventional-commit-msg`, `/open-pr`, print URL.
-   - After the last group: `git stash drop`.
-
-5. **Verify.** PR(s) reachable; multi-group emits a consolidated URL list.
-
-**Rules for `cpr`.** Never commit to `main`/`master` directly (recommend `/git ship -m`). Never `--no-verify`/`--force`/amend pushed commits. Multi-group always branches from latest `main` via `/branch-from-main`, never from another group's branch. Always assign every PR to `@me`. If a PR already exists for a branch, `/open-pr` updates it via push.
-
-### 4. Dispatch — `sync`
+### 3. Dispatch — `sync`
 
 Replicates the prior `/git-sync` skill. Rebases the current branch onto main without merging.
 
@@ -173,7 +155,7 @@ Replicates the prior `/git-sync` skill. Rebases the current branch onto main wit
 
 **Rules for `sync`.** Never `git merge` — always rebase. Never force-push unless the user asks (`--force-with-lease` is safer). If `main` does not exist but `master` does, use `master`. If already up to date, stop — do not create an empty rebase. Always pop the stash even if rebase fails.
 
-### 5. Dispatch — `main`
+### 4. Dispatch — `main`
 
 Replicates the prior `/git-main` skill. Switch to main and sync.
 
@@ -190,7 +172,7 @@ Replicates the prior `/git-main` skill. Switch to main and sync.
 
 **Rules for `main`.** If there are uncommitted changes on the current branch, warn and ask (stash / commit / abort) before switching. If `main` doesn't exist but `master` does, use `master`. Omit "no deleted branches" from the report.
 
-### 6. Dispatch — `worktree`
+### 5. Dispatch — `worktree`
 
 Replicates the prior `/worktree` skill. Create a parallel checkout.
 
@@ -207,7 +189,7 @@ Replicates the prior `/worktree` skill. Create a parallel checkout.
 4. **Verify** with `git worktree list`. **If the new path is absent: stop and report.**
 5. **Print follow-ups:** launch, alternative (`claude -w`), list (`git worktree list`), remove (`git worktree remove .claude/worktrees/$name`).
 
-### 7. Dispatch — `release-notes`
+### 6. Dispatch — `release-notes`
 
 Replicates the prior `/release-notes` skill. Argument is an optional commit range.
 
@@ -244,7 +226,7 @@ Replicates the prior `/release-notes` skill. Argument is an optional commit rang
 
 5. **Verify.** Every flagged Breaking Change appears; no commit hashes in the final notes; entries grouped under expected headings. **If a section the script populated is missing: stop and explain which commits were dropped and why.**
 
-### 8. Final verification step
+### 7. Final verification step
 
 For every subcommand, the dispatch block above ends with its own verification gate. Before this skill exits, confirm the gate fired (PR URL reachable, branch pruned report emitted, worktree listed, etc.) — if any verification was skipped, re-run it.
 
@@ -252,6 +234,6 @@ For every subcommand, the dispatch block above ends with its own verification ga
 
 - Never `--force` push; never `--no-verify`; never amend a pushed commit.
 - Never commit to `main`/`master` except via `ship -m` / `ship -p`.
-- If the working tree is unexpectedly clean for `ship`/`cpr`: stop.
+- If the working tree is unexpectedly clean for `ship`: stop.
 - Multi-group flows always branch each group from the latest `main`.
 - Always assign PRs to `@me` (handled by `/open-pr`).

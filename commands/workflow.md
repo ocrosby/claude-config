@@ -18,7 +18,7 @@ Auto-detects language and dispatches to the matching workflow (go, py, nvim, ghe
 Delegates to `go-reviewer`, `py-reviewer`, `nvim-reviewer`, or `gherkin-reviewer` for deep, criteria-driven review. Auto-routes to `rest-reviewer` when HTTP handler patterns are detected. The `skill-suggest` rule recommends this after significant implementation. For an adversarial pass, use `/code grill`.
 
 ### 4. `/git ship` — branch, commit, push, open PR
-Pre-flight runs lint + tests. Validates conventional commit format. Never commits directly to main (hook enforced) unless `-m` or `-p` is passed. Returns the PR URL. For daily shipping on an existing branch, use `/git cpr`.
+Pre-flight runs lint + tests (skip with `--quick` for daily iteration on a branch with established CI coverage). Validates conventional commit format. Never commits directly to main (hook enforced) unless `-m` or `-p` is passed. Returns the PR URL.
 
 ### 5. `/git main` — after PR merges
 Checkout main, pull latest, delete merged branches.

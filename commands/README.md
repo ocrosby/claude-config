@@ -41,9 +41,9 @@ These exist so 2+ skills can share the same focused action without duplicating i
 
 | Command | Used by | Purpose |
 |---|---|---|
-| `/branch-from-main` | `/git ship`, `/git cpr`, `/git sync`, `/git worktree` | Create a clean feature/hotfix branch from the latest `main`, stashing and re-applying uncommitted work. |
-| `/conventional-commit-msg` | `/git ship`, `/git cpr` | Compose a Conventional Commits message from the staged diff and commit. No staging, no push, no branch. |
-| `/open-pr` | `/git ship`, `/git cpr` | Push the current branch upstream and open (or update) a PR with a structured body. |
+| `/branch-from-main` | `/git ship`, `/git sync`, `/git worktree` | Create a clean feature/hotfix branch from the latest `main`, stashing and re-applying uncommitted work. |
+| `/conventional-commit-msg` | `/git ship` | Compose a Conventional Commits message from the staged diff and commit. No staging, no push, no branch. |
+| `/open-pr` | `/git ship` | Push the current branch upstream and open (or update) a PR with a structured body. |
 | `/test-and-fix` | `/feature`, `/code`, `/debug` workflows | Run the test suite, diagnose failures, fix them in place, re-run until green. |
 
 See `rules/skill-conventions.md` → "Skills as orchestrators, commands as building blocks" for the extraction rule.

@@ -71,7 +71,7 @@ Each top-level skill is a dispatcher: the first word of `$ARGUMENTS` selects a s
 
 | Skill | Subcommands | Description |
 |---|---|---|
-| `/git` | `ship`, `cpr`, `sync`, `main`, `worktree`, `release-notes` | Branch / commit / push / PR / rebase / merge cleanup / parallel worktrees / changelog generation. `ship`, `cpr`, and `worktree` push to remote or mutate parallel checkouts. |
+| `/git` | `ship`, `sync`, `main`, `worktree`, `release-notes` | Branch / commit / push / PR / rebase / merge cleanup / parallel worktrees / changelog generation. `ship` (with `--quick` for daily iteration) and `worktree` push to remote or mutate parallel checkouts. |
 
 ### Code quality and transformation
 
@@ -135,7 +135,7 @@ These live in `commands/` rather than `skills/` because they are single focused 
 
 | Command | Used by |
 |---|---|
-| `/branch-from-main` | `/git ship`, `/git cpr`, `/git sync`, `/git worktree` |
-| `/conventional-commit-msg` | `/git ship`, `/git cpr` |
-| `/open-pr` | `/git ship`, `/git cpr` |
+| `/branch-from-main` | `/git ship`, `/git sync`, `/git worktree` |
+| `/conventional-commit-msg` | `/git ship` |
+| `/open-pr` | `/git ship` |
 | `/test-and-fix` | `/feature`, `/code`, `/debug` |
