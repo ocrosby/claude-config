@@ -162,7 +162,7 @@ Every skill must be composable, portable, efficient, and powerful. Apply these c
 ### Portable — works anywhere, depends on little
 
 - No hardcoded absolute paths outside `~/.claude/`. Project paths are derived from the current working directory.
-- No assumption of language, framework, or OS unless the skill is explicitly language-scoped (e.g. `go-bench`). Language-agnostic skills route to specialists rather than embedding language logic.
+- No assumption of language, framework, or OS unless the skill is explicitly language-scoped via a subcommand (e.g. `/feature go`, `/bench py`). Top-level dispatchers auto-detect the language from the working directory and route to specialist agents rather than embedding language logic.
 - Tools used are the standard set (Read, Edit, Write, Bash, Grep, Agent) or the agent-set the skill explicitly declares. No reliance on machine-specific binaries without a version check or install hint.
 - No assumption of unsaved conversation state — a skill must work on a fresh invocation with only the user's arguments.
 
