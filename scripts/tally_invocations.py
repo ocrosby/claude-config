@@ -9,45 +9,22 @@ from __future__ import annotations
 import argparse
 import json
 import re
-import subprocess
 import sys
 from collections import Counter
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).parent))
+from _lib import cli as _cli  # noqa: E402  # type: ignore[import-not-found]
+from _lib import git as _git  # noqa: E402  # type: ignore[import-not-found]
+from _lib import history as _history  # noqa: E402  # type: ignore[import-not-found]
+
 HOME = Path.home()
-HISTORY = HOME / ".claude" / "history.jsonl"
+HISTORY = _history.HISTORY_PATH
 SKILLS_DIR = HOME / ".claude" / "skills"
 
 COMMAND_RE = re.compile(r"^/([a-z][a-z0-9-]*)\b")
-SINCE_RE = re.compile(r"(\d+)([dh])")
 NEW_SKILL_DAYS = 30  # mtime newer than this excludes a skill from "Retire"
-
-
-def parse_since(arg: str) -> timedelta:
-    m = SINCE_RE.fullmatch(arg)
-    if not m:
-        raise argparse.ArgumentTypeError(f"invalid --since: {arg}")
-    n, unit = int(m.group(1)), m.group(2)
-    return timedelta(days=n) if unit == "d" else timedelta(hours=n)
-
-
-def parse_timestamp(record: dict) -> datetime | None:
-    for key in ("timestamp", "ts", "time", "created_at"):
-        raw = record.get(key)
-        if isinstance(raw, str):
-            try:
-                return datetime.fromisoformat(raw.replace("Z", "+00:00"))
-            except ValueError:
-                continue
-        if isinstance(raw, (int, float)):
-            # Heuristic: >= 10^12 means milliseconds, otherwise seconds
-            seconds = raw / 1000.0 if raw >= 1_000_000_000_000 else float(raw)
-            try:
-                return datetime.fromtimestamp(seconds, tz=timezone.utc)
-            except (ValueError, OSError):
-                continue
-    return None
 
 
 def extract_command(record: dict) -> str | None:
@@ -94,25 +71,18 @@ def first_added_timestamp(skill_md: Path) -> float | None:
     """
     real = skill_md.resolve()
     repo_dir = real.parent
-    try:
-        out = subprocess.run(
-            [
-                "git",
-                "-C",
-                str(repo_dir),
-                "log",
-                "--diff-filter=A",
-                "--follow",
-                "--format=%at",
-                "--",
-                real.name,
-            ],
-            capture_output=True,
-            text=True,
-            timeout=5,
-        )
-    except (FileNotFoundError, subprocess.TimeoutExpired):
-        return None
+    out = _git.run_checked(
+        [
+            "-C", str(repo_dir),
+            "log",
+            "--diff-filter=A",
+            "--follow",
+            "--format=%at",
+            "--",
+            real.name,
+        ],
+        timeout=5,
+    )
     if out.returncode != 0:
         return None
     lines = [ln.strip() for ln in out.stdout.splitlines() if ln.strip()]
@@ -184,7 +154,7 @@ def tally(since: timedelta | None, name_to_canonical: dict[str, str]) -> tuple[C
             except json.JSONDecodeError:
                 continue
             if cutoff:
-                ts = parse_timestamp(record)
+                ts = _history.parse_timestamp(record)
                 if ts is None or ts < cutoff:
                     continue
             cmd = extract_command(record)
@@ -206,16 +176,17 @@ def print_bucket(title: str, items: list[tuple[int, str]]) -> None:
 
 
 def main() -> int:
+    # NOTE: pass __doc__ verbatim (not just the first line) so the argparse
+    # description matches the prior `description=__doc__` behavior — the
+    # baseline --help snapshot reflects that.
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--since", type=parse_since, default=None)
+    parser.add_argument("--since", type=_history.parse_since, default=None)
     args = parser.parse_args()
 
     if not HISTORY.exists():
-        print(f"error: {HISTORY} not found", file=sys.stderr)
-        return 1
+        return _cli.die(f"{HISTORY} not found")
     if not SKILLS_DIR.exists():
-        print(f"error: {SKILLS_DIR} not found", file=sys.stderr)
-        return 1
+        return _cli.die(f"{SKILLS_DIR} not found")
 
     now = datetime.now(timezone.utc)
     skills = gather_skills(now)

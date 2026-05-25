@@ -9,11 +9,14 @@ require conditional logic and judgment.
 """
 from __future__ import annotations
 
-import argparse
 import json
 import re
-import subprocess
 import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).parent))
+from _lib import cli as _cli  # noqa: E402  # type: ignore[import-not-found]
+from _lib import git as _git  # noqa: E402  # type: ignore[import-not-found]
 
 CONV_RE = re.compile(
     r"^(?P<type>feat|fix|docs|style|refactor|perf|test|build|ci|chore|security|revert)"
@@ -38,8 +41,8 @@ EXCLUDED_TYPES = {"docs", "style", "refactor", "perf", "test", "build", "ci", "c
 CHANGED_HINTS = re.compile(r"\b(update|change|modify|rename|tweak|adjust|improve|enhance|expand)\b", re.IGNORECASE)
 
 
-def parse_args() -> argparse.Namespace:
-    p = argparse.ArgumentParser(description=(__doc__ or "").splitlines()[0])
+def parse_args():
+    p = _cli.make_parser(__doc__)
     p.add_argument(
         "range",
         help="Commit range (e.g. v1.0.0..HEAD, HEAD~20..HEAD). Use '..' to separate base..head.",
@@ -62,11 +65,7 @@ def git_log(rng: str) -> list[dict]:
     """Read commits in the range. Each entry: {hash, subject, body}."""
     sep = "\x1e"
     fmt = f"%H%x1f%s%x1f%b{sep}"
-    out = subprocess.run(
-        ["git", "log", "--format=" + fmt, rng],
-        capture_output=True,
-        text=True,
-    )
+    out = _git.run_checked(["log", "--format=" + fmt, rng])
     if out.returncode != 0:
         print(f"error: git log failed: {out.stderr.strip()}", file=sys.stderr)
         sys.exit(1)

@@ -9,11 +9,13 @@ Claude consumes the JSON and renders the final Markdown documentation.
 """
 from __future__ import annotations
 
-import argparse
 import json
 import re
 import sys
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).parent))
+from _lib import cli as _cli  # noqa: E402  # type: ignore[import-not-found]
 
 TAG_RE = re.compile(r"^\s*(@\S+(?:\s+@\S+)*)\s*$")
 KEYWORDS = ("Feature:", "Background:", "Scenario:", "Scenario Outline:", "Example:", "Examples:", "Rule:")
@@ -132,18 +134,11 @@ def parse_feature(path: Path) -> dict:
 
 
 def expand(patterns: list[str]) -> list[Path]:
-    out: list[Path] = []
-    for pattern in patterns:
-        p = Path(pattern)
-        if p.is_file():
-            out.append(p)
-        elif p.is_dir():
-            out.extend(q for q in p.rglob("*.feature") if q.is_file())
-        else:
-            for match in Path(".").glob(pattern):
-                if match.is_file():
-                    out.append(match)
-    return sorted(set(out))
+    return _cli.expand_paths(
+        patterns,
+        dir_globs=("*.feature",),
+        recursive=True,
+    )
 
 
 def summarize(features: list[dict]) -> None:
@@ -157,15 +152,14 @@ def summarize(features: list[dict]) -> None:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description=(__doc__ or "").splitlines()[0])
+    parser = _cli.make_parser(__doc__)
     parser.add_argument("paths", nargs="+", help="Feature files, directories, or globs")
     parser.add_argument("--summary", action="store_true", help="One-line-per-file summary instead of full JSON")
     args = parser.parse_args()
 
     files = expand(args.paths)
     if not files:
-        print("error: no .feature files matched", file=sys.stderr)
-        return 1
+        return _cli.die("no .feature files matched")
 
     features = [parse_feature(f) for f in files]
     if args.summary:

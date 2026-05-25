@@ -8,9 +8,12 @@ hands — only the catalog moves to a script.
 """
 from __future__ import annotations
 
-import argparse
 import json
 import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).parent))
+from _lib import cli as _cli  # noqa: E402  # type: ignore[import-not-found]
 
 SIGNALS: list[dict] = [
     # Creational
@@ -67,7 +70,7 @@ LANGUAGE_NOTES: dict[str, list[dict]] = {
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description=(__doc__ or "").splitlines()[0])
+    parser = _cli.make_parser(__doc__)
     parser.add_argument("--category", choices=["creational", "structural", "behavioral", "all"], default="all")
     parser.add_argument("--language", choices=["go", "py", "lua"], default=None)
     args = parser.parse_args()

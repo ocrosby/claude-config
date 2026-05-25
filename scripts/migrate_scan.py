@@ -10,11 +10,13 @@ job because most modernizations require context-aware edits.
 """
 from __future__ import annotations
 
-import argparse
 import json
 import re
 import sys
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).parent))
+from _lib import cli as _cli  # noqa: E402  # type: ignore[import-not-found]
 
 # Per-language pattern catalog. Each entry: regex, deprecated_form, modern_form, category.
 PATTERNS: dict[str, list[dict]] = {
@@ -64,8 +66,8 @@ EXTENSIONS = {"go": [".go"], "py": [".py"], "lua": [".lua"], "gherkin": [".featu
 IGNORE_DIRS = {".git", "node_modules", ".venv", "venv", "vendor", "third_party", ".tox", "__pycache__", "target", "dist", "build"}
 
 
-def parse_args() -> argparse.Namespace:
-    p = argparse.ArgumentParser(description=(__doc__ or "").splitlines()[0])
+def parse_args():
+    p = _cli.make_parser(__doc__)
     p.add_argument(
         "--language",
         choices=["go", "py", "lua", "gherkin", "all"],
@@ -73,7 +75,7 @@ def parse_args() -> argparse.Namespace:
         help="Language to scan (default: all)",
     )
     p.add_argument("--root", default=".", help="Codebase root to scan (default: cwd)")
-    p.add_argument("--json", action="store_true", help="Emit findings as JSON instead of Markdown")
+    _cli.add_json_flag(p, help_text="Emit findings as JSON instead of Markdown")
     return p.parse_args()
 
 
@@ -137,8 +139,7 @@ def main() -> int:
     args = parse_args()
     root = Path(args.root).resolve()
     if not root.is_dir():
-        print(f"error: root not found: {root}", file=sys.stderr)
-        return 1
+        return _cli.die(f"root not found: {root}")
 
     languages = list(PATTERNS) if args.language == "all" else [args.language]
     by_language: dict[str, list[dict]] = {}
