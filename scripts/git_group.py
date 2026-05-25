@@ -11,13 +11,15 @@ overrides when the heuristic is wrong.
 """
 from __future__ import annotations
 
-import argparse
 import json
 import re
-import subprocess
 import sys
 from collections import defaultdict
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).parent))
+from _lib import cli as _cli  # noqa: E402  # type: ignore[import-not-found]
+from _lib import git as _git  # noqa: E402  # type: ignore[import-not-found]
 
 # Type inference by path. First match wins.
 TYPE_RULES: list[tuple[re.Pattern, str]] = [
@@ -38,8 +40,8 @@ TYPE_RULES: list[tuple[re.Pattern, str]] = [
 SCOPE_PREFIXES = ("internal/", "pkg/", "cmd/", "src/", "app/", "apps/", "lib/", "skills/", "rules/", "agents/", "hooks/", "commands/")
 
 
-def parse_args() -> argparse.Namespace:
-    p = argparse.ArgumentParser(description=(__doc__ or "").splitlines()[0])
+def parse_args():
+    p = _cli.make_parser(__doc__)
     p.add_argument(
         "--include-untracked",
         action="store_true",
@@ -61,24 +63,17 @@ def parse_args() -> argparse.Namespace:
     return p.parse_args()
 
 
-def run(cmd: list[str]) -> str:
-    out = subprocess.run(cmd, capture_output=True, text=True)
-    if out.returncode != 0:
-        return ""
-    return out.stdout
-
-
 def current_branch() -> str:
-    return run(["git", "branch", "--show-current"]).strip()
+    return _git.run(["branch", "--show-current"]).strip()
 
 
 def changed_files(include_untracked: bool, from_ref: str | None) -> list[tuple[str, str]]:
     """Return (status_code, path) pairs for changed files."""
     if from_ref:
         # Compare against a ref — only show files that differ
-        raw = run(["git", "diff", "--name-status", from_ref])
+        raw = _git.run(["diff", "--name-status", from_ref])
         return [(line.split(maxsplit=1)[0], line.split(maxsplit=1)[1]) for line in raw.splitlines() if line.strip()]
-    raw = run(["git", "status", "--porcelain"])
+    raw = _git.run(["status", "--porcelain"])
     pairs: list[tuple[str, str]] = []
     for line in raw.splitlines():
         if not line.strip():

@@ -27,24 +27,24 @@ the skill must surface before writing the file.
 """
 from __future__ import annotations
 
-import argparse
 import json
 import re
-import subprocess
 import sys
 import tomllib
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).parent))
+from _lib import cli as _cli  # noqa: E402  # type: ignore[import-not-found]
+from _lib import git as _git  # noqa: E402  # type: ignore[import-not-found]
 
-def run(cmd: list[str]) -> str:
-    out = subprocess.run(cmd, capture_output=True, text=True)
-    if out.returncode != 0:
-        return ""
-    return out.stdout.strip()
+
+def _git_out(*args: str) -> str:
+    """Shorthand wrapper preserving the original `.strip()` behavior of this script."""
+    return _git.run(list(args)).strip()
 
 
 def github_slug() -> tuple[str, str]:
-    url = run(["git", "remote", "get-url", "origin"])
+    url = _git_out("remote", "get-url", "origin")
     if not url:
         return "", "no origin remote configured"
     m = re.search(r"github\.com[:/]([^/]+/[^/\s]+?)(\.git)?$", url)
@@ -54,12 +54,12 @@ def github_slug() -> tuple[str, str]:
 
 
 def repo_root() -> Path:
-    out = run(["git", "rev-parse", "--show-toplevel"])
+    out = _git_out("rev-parse", "--show-toplevel")
     return Path(out) if out else Path.cwd()
 
 
 def default_branch() -> str:
-    ref = run(["git", "symbolic-ref", "refs/remotes/origin/HEAD"])
+    ref = _git_out("symbolic-ref", "refs/remotes/origin/HEAD")
     if ref:
         return ref.rsplit("/", 1)[-1]
     return "main"
@@ -188,7 +188,7 @@ def scan_sibling_catalogs(root: Path, field: str) -> list[dict]:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description=(__doc__ or "").splitlines()[0])
+    parser = _cli.make_parser(__doc__)
     parser.add_argument("--root", default=None, help="Override repo root (default: derived from git)")
     args = parser.parse_args()
 

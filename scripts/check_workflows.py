@@ -11,15 +11,14 @@ version) — the script accepts --repo-root for that. Defaults to cwd.
 """
 from __future__ import annotations
 
-import argparse
-import json
 import re
 import sys
 from pathlib import Path
 
-MUST = "Must Fix"
-SHOULD = "Should Fix"
-CONSIDER = "Consider"
+sys.path.insert(0, str(Path(__file__).parent))
+from _lib import cli as _cli  # noqa: E402  # type: ignore[import-not-found]
+from _lib import findings as _findings  # noqa: E402  # type: ignore[import-not-found]
+from _lib.findings import MUST, SHOULD, CONSIDER  # noqa: E402  # type: ignore[import-not-found]
 
 USES_GOLANGCI_RE = re.compile(r"^\s*-?\s*uses:\s*golangci/golangci-lint-action@v(\d+)")
 USES_LATEST_RE = re.compile(r"^\s*-?\s*uses:\s*[^@\s]+@latest\s*$")
@@ -35,38 +34,23 @@ CANCEL_IN_PROGRESS_FALSE_RE = re.compile(r"cancel-in-progress:\s*false")
 GO_VERSION_RE = re.compile(r"\bgo-version:\s*['\"]?([0-9][0-9.]+)['\"]?")
 
 
-def parse_args() -> argparse.Namespace:
-    p = argparse.ArgumentParser(description=(__doc__ or "").splitlines()[0])
+def parse_args():
+    p = _cli.make_parser(__doc__)
     p.add_argument("paths", nargs="+", help="Workflow files or globs (.github/workflows/*.yml)")
     p.add_argument("--repo-root", default=".", help="Repo root (for go.work / .golangci.yml lookups)")
-    p.add_argument("--json", action="store_true", help="Emit findings as JSON")
-    p.add_argument(
-        "--severity",
-        choices=["must", "should", "consider", "all"],
-        default="all",
-    )
+    _cli.add_json_flag(p)
+    _cli.add_severity_flag(p)
     return p.parse_args()
 
 
 def expand_paths(patterns: list[str]) -> list[Path]:
-    out: list[Path] = []
-    for pattern in patterns:
-        p = Path(pattern)
-        if p.is_file() and p.suffix in (".yml", ".yaml"):
-            out.append(p)
-            continue
-        if p.is_dir():
-            out.extend(q for q in p.glob("*.yml") if q.is_file())
-            out.extend(q for q in p.glob("*.yaml") if q.is_file())
-            continue
-        # Skip glob fallback for absolute paths (Pathlib disallows it) — the
-        # path was neither a file nor a directory, so nothing to match.
-        if Path(pattern).is_absolute():
-            continue
-        for match in Path(".").glob(pattern):
-            if match.is_file() and match.suffix in (".yml", ".yaml"):
-                out.append(match)
-    return sorted(set(out))
+    return _cli.expand_paths(
+        patterns,
+        accept_file=lambda q: q.suffix in (".yml", ".yaml"),
+        dir_globs=("*.yml", "*.yaml"),
+        recursive=False,
+        skip_absolute_glob=True,
+    )
 
 
 def detect_repo_state(repo_root: Path) -> dict:
@@ -206,36 +190,21 @@ def check_file(path: Path, state: dict) -> list[tuple[int, str, str, str]]:
     return sorted(findings, key=lambda f: (f[0], f[1]))
 
 
-def filter_severity(findings, wanted: str):
-    if wanted == "all":
-        return findings
-    keep = {"must": MUST, "should": SHOULD, "consider": CONSIDER}[wanted]
-    return [f for f in findings if f[1] == keep]
-
-
 def main() -> int:
     args = parse_args()
     files = expand_paths(args.paths)
     if not files:
-        print("error: no workflow files matched", file=sys.stderr)
-        return 1
+        return _cli.die("no workflow files matched")
     state = detect_repo_state(Path(args.repo_root).resolve())
 
     by_file: dict[str, list[tuple[int, str, str, str]]] = {}
     for path in files:
-        findings = filter_severity(check_file(path, state), args.severity)
+        findings = _findings.filter_by_severity(check_file(path, state), args.severity)
         if findings:
             by_file[str(path)] = findings
 
     if args.json:
-        payload = {
-            str(path): [
-                {"line": line, "severity": sev, "rule_id": rule, "message": msg}
-                for (line, sev, rule, msg) in findings
-            ]
-            for path, findings in by_file.items()
-        }
-        print(json.dumps(payload, indent=2))
+        print(_findings.format_json(by_file))
         return 0
 
     total = sum(len(v) for v in by_file.values())
@@ -246,17 +215,7 @@ def main() -> int:
         print("_No mechanical violations detected._")
         return 0
 
-    for path, findings in sorted(by_file.items()):
-        print(f"## `{path}`\n")
-        for sev in (MUST, SHOULD, CONSIDER):
-            tier = [f for f in findings if f[1] == sev]
-            if not tier:
-                continue
-            print(f"### {sev}")
-            for line, _, rule, msg in tier:
-                line_str = f"line {line}" if line > 0 else "document-level"
-                print(f"- `{rule}` ({line_str}) — {msg}")
-            print()
+    _findings.print_markdown(by_file)
     return 0
 
 

@@ -11,15 +11,14 @@ parser is required (consistent with the rest of the script catalog).
 """
 from __future__ import annotations
 
-import argparse
-import json
 import re
 import sys
 from pathlib import Path
 
-MUST = "Must Fix"
-SHOULD = "Should Fix"
-CONSIDER = "Consider"
+sys.path.insert(0, str(Path(__file__).parent))
+from _lib import cli as _cli  # noqa: E402  # type: ignore[import-not-found]
+from _lib import findings as _findings  # noqa: E402  # type: ignore[import-not-found]
+from _lib.findings import MUST, SHOULD  # noqa: E402  # type: ignore[import-not-found]
 
 NAME_RE = re.compile(r"^name:\s*['\"]?([^'\"\n]+)['\"]?\s*$")
 DESC_RE = re.compile(r"^description:\s*['\"]?(.+?)['\"]?\s*$")
@@ -35,36 +34,24 @@ BRANDING_BLOCK_RE = re.compile(r"^branding:\s*$")
 BRANDING_FIELD_RE = re.compile(r"^  (icon|color):\s*")
 
 
-def parse_args() -> argparse.Namespace:
-    p = argparse.ArgumentParser(description=(__doc__ or "").splitlines()[0])
+def parse_args():
+    p = _cli.make_parser(__doc__)
     p.add_argument("paths", nargs="+", help="action.yml / action.yaml files")
-    p.add_argument("--json", action="store_true", help="Emit findings as JSON")
-    p.add_argument(
-        "--severity",
-        choices=["must", "should", "consider", "all"],
-        default="all",
-    )
+    _cli.add_json_flag(p)
+    _cli.add_severity_flag(p)
     return p.parse_args()
 
 
+_ACTION_NAMES = ("action.yml", "action.yaml")
+
+
 def expand_paths(patterns: list[str]) -> list[Path]:
-    out: list[Path] = []
-    for pattern in patterns:
-        p = Path(pattern)
-        if p.is_file():
-            if p.name in ("action.yml", "action.yaml"):
-                out.append(p)
-            continue
-        if p.is_dir():
-            for name in ("action.yml", "action.yaml"):
-                cand = p / name
-                if cand.exists():
-                    out.append(cand)
-            continue
-        for match in Path(".").glob(pattern):
-            if match.is_file() and match.name in ("action.yml", "action.yaml"):
-                out.append(match)
-    return sorted(set(out))
+    return _cli.expand_paths(
+        patterns,
+        accept_file=lambda q: q.name in _ACTION_NAMES,
+        dir_globs=_ACTION_NAMES,
+        recursive=False,
+    )
 
 
 def check_name(lines: list[str]) -> list[tuple[int, str, str, str]]:
@@ -240,35 +227,20 @@ def check_file(path: Path) -> list[tuple[int, str, str, str]]:
     return sorted(findings, key=lambda f: (f[0], f[1]))
 
 
-def filter_severity(findings, wanted: str):
-    if wanted == "all":
-        return findings
-    keep = {"must": MUST, "should": SHOULD, "consider": CONSIDER}[wanted]
-    return [f for f in findings if f[1] == keep]
-
-
 def main() -> int:
     args = parse_args()
     files = expand_paths(args.paths)
     if not files:
-        print("error: no action.yml/action.yaml files matched", file=sys.stderr)
-        return 1
+        return _cli.die("no action.yml/action.yaml files matched")
 
     by_file: dict[str, list[tuple[int, str, str, str]]] = {}
     for path in files:
-        findings = filter_severity(check_file(path), args.severity)
+        findings = _findings.filter_by_severity(check_file(path), args.severity)
         if findings:
             by_file[str(path)] = findings
 
     if args.json:
-        payload = {
-            str(path): [
-                {"line": line, "severity": sev, "rule_id": rule, "message": msg}
-                for (line, sev, rule, msg) in findings
-            ]
-            for path, findings in by_file.items()
-        }
-        print(json.dumps(payload, indent=2))
+        print(_findings.format_json(by_file))
         return 0
 
     total = sum(len(v) for v in by_file.values())
@@ -277,17 +249,7 @@ def main() -> int:
         print("_No mechanical violations detected._")
         return 0
 
-    for path, findings in sorted(by_file.items()):
-        print(f"## `{path}`\n")
-        for sev in (MUST, SHOULD, CONSIDER):
-            tier = [f for f in findings if f[1] == sev]
-            if not tier:
-                continue
-            print(f"### {sev}")
-            for line, _, rule, msg in tier:
-                line_str = f"line {line}" if line > 0 else "document-level"
-                print(f"- `{rule}` ({line_str}) — {msg}")
-            print()
+    _findings.print_markdown(by_file)
     return 0
 
 

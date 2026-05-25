@@ -10,16 +10,14 @@ Output: Markdown findings grouped per file by severity (Must Fix / Should Fix
 """
 from __future__ import annotations
 
-import argparse
-import json
 import re
 import sys
 from pathlib import Path
 
-# Severity tiers
-MUST = "Must Fix"
-SHOULD = "Should Fix"
-CONSIDER = "Consider"
+sys.path.insert(0, str(Path(__file__).parent))
+from _lib import cli as _cli  # noqa: E402  # type: ignore[import-not-found]
+from _lib import findings as _findings  # noqa: E402  # type: ignore[import-not-found]
+from _lib.findings import MUST, SHOULD, CONSIDER  # noqa: E402  # type: ignore[import-not-found]
 
 VAGUE_LINK_TEXTS = {"click here", "here", "this link", "this page", "read more"}
 CODE_FENCE_RE = re.compile(r"^(\`{3,}|~{3,})(\w*)\s*$")
@@ -159,65 +157,36 @@ def check_file(path: Path) -> list[tuple[int, str, str, str]]:
     return sorted(findings, key=lambda f: (f[0], f[1]))
 
 
-def parse_args() -> argparse.Namespace:
-    p = argparse.ArgumentParser(description=(__doc__ or "").splitlines()[0])
+def parse_args():
+    p = _cli.make_parser(__doc__)
     p.add_argument("paths", nargs="+", help="Files or globs to check")
-    p.add_argument("--json", action="store_true", help="Emit findings as JSON")
-    p.add_argument(
-        "--severity",
-        choices=["must", "should", "consider", "all"],
-        default="all",
-        help="Filter by severity level",
-    )
+    _cli.add_json_flag(p)
+    _cli.add_severity_flag(p, help_text="Filter by severity level")
     return p.parse_args()
 
 
 def expand_paths(patterns: list[str]) -> list[Path]:
-    out: list[Path] = []
-    for pattern in patterns:
-        p = Path(pattern)
-        if p.is_file():
-            out.append(p)
-            continue
-        if "*" in pattern or "?" in pattern:
-            for match in Path(".").glob(pattern):
-                if match.is_file():
-                    out.append(match)
-        elif p.is_dir():
-            for ext in (".md", ".rst", ".txt", ".adoc"):
-                out.extend(q for q in p.rglob(f"*{ext}") if q.is_file())
-    return sorted(set(out))
-
-
-def filter_severity(findings: list[tuple[int, str, str, str]], wanted: str) -> list[tuple[int, str, str, str]]:
-    if wanted == "all":
-        return findings
-    keep = {"must": MUST, "should": SHOULD, "consider": CONSIDER}[wanted]
-    return [f for f in findings if f[1] == keep]
+    return _cli.expand_paths(
+        patterns,
+        dir_globs=("*.md", "*.rst", "*.txt", "*.adoc"),
+        recursive=True,
+    )
 
 
 def main() -> int:
     args = parse_args()
     files = expand_paths(args.paths)
     if not files:
-        print("error: no documentation files matched", file=sys.stderr)
-        return 1
+        return _cli.die("no documentation files matched")
 
     by_file: dict[str, list[tuple[int, str, str, str]]] = {}
     for path in files:
-        findings = filter_severity(check_file(path), args.severity)
+        findings = _findings.filter_by_severity(check_file(path), args.severity)
         if findings:
             by_file[str(path)] = findings
 
     if args.json:
-        payload = {
-            str(path): [
-                {"line": line, "severity": sev, "rule_id": rule, "message": msg}
-                for (line, sev, rule, msg) in findings
-            ]
-            for path, findings in by_file.items()
-        }
-        print(json.dumps(payload, indent=2))
+        print(_findings.format_json(by_file))
         return 0
 
     total = sum(len(v) for v in by_file.values())
@@ -226,17 +195,10 @@ def main() -> int:
         print("_All files clean._")
         return 0
 
-    for path, findings in sorted(by_file.items()):
-        print(f"## `{path}` ({classify(Path(path))})\n")
-        for sev in (MUST, SHOULD, CONSIDER):
-            tier = [f for f in findings if f[1] == sev]
-            if not tier:
-                continue
-            print(f"### {sev}")
-            for line, _, rule, msg in tier:
-                line_str = f"line {line}" if line > 0 else "document-level"
-                print(f"- `{rule}` ({line_str}) — {msg}")
-            print()
+    _findings.print_markdown(
+        by_file,
+        path_label=lambda p: f"`{p}` ({classify(Path(p))})",
+    )
     return 0
 
 

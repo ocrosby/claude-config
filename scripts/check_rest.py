@@ -11,15 +11,14 @@ shape, same flags.
 """
 from __future__ import annotations
 
-import argparse
-import json
 import re
 import sys
 from pathlib import Path
 
-MUST = "Must Fix"
-SHOULD = "Should Fix"
-CONSIDER = "Consider"
+sys.path.insert(0, str(Path(__file__).parent))
+from _lib import cli as _cli  # noqa: E402  # type: ignore[import-not-found]
+from _lib import findings as _findings  # noqa: E402  # type: ignore[import-not-found]
+from _lib.findings import MUST, SHOULD, CONSIDER  # noqa: E402  # type: ignore[import-not-found]
 
 # Verbs commonly mis-used in URI paths (each becomes part of the verb-in-URI regex).
 URI_VERBS = (
@@ -48,34 +47,20 @@ ROUTE_PATTERNS: dict[str, list[re.Pattern]] = {
 }
 
 
-def parse_args() -> argparse.Namespace:
-    p = argparse.ArgumentParser(description=(__doc__ or "").splitlines()[0])
+def parse_args():
+    p = _cli.make_parser(__doc__)
     p.add_argument("paths", nargs="+", help="Handler files, directories, or globs")
-    p.add_argument("--json", action="store_true", help="Emit findings as JSON")
-    p.add_argument(
-        "--severity",
-        choices=["must", "should", "consider", "all"],
-        default="all",
-    )
+    _cli.add_json_flag(p)
+    _cli.add_severity_flag(p)
     return p.parse_args()
 
 
 def expand_paths(patterns: list[str]) -> list[Path]:
-    out: list[Path] = []
-    extensions = set(ROUTE_PATTERNS)
-    for pattern in patterns:
-        p = Path(pattern)
-        if p.is_file():
-            out.append(p)
-            continue
-        if p.is_dir():
-            for ext in extensions:
-                out.extend(q for q in p.rglob(f"*{ext}") if q.is_file())
-            continue
-        for match in Path(".").glob(pattern):
-            if match.is_file():
-                out.append(match)
-    return sorted(set(out))
+    return _cli.expand_paths(
+        patterns,
+        dir_globs=tuple(f"*{ext}" for ext in ROUTE_PATTERNS),
+        recursive=True,
+    )
 
 
 def detect_routes(path: Path, lines: list[str]) -> list[tuple[int, str, str]]:
@@ -196,35 +181,20 @@ def check_file(path: Path) -> list[tuple[int, str, str, str]]:
     return sorted(findings, key=lambda f: (f[0], f[1]))
 
 
-def filter_severity(findings, wanted: str):
-    if wanted == "all":
-        return findings
-    keep = {"must": MUST, "should": SHOULD, "consider": CONSIDER}[wanted]
-    return [f for f in findings if f[1] == keep]
-
-
 def main() -> int:
     args = parse_args()
     files = expand_paths(args.paths)
     if not files:
-        print("error: no HTTP handler files matched", file=sys.stderr)
-        return 1
+        return _cli.die("no HTTP handler files matched")
 
     by_file: dict[str, list[tuple[int, str, str, str]]] = {}
     for path in files:
-        findings = filter_severity(check_file(path), args.severity)
+        findings = _findings.filter_by_severity(check_file(path), args.severity)
         if findings:
             by_file[str(path)] = findings
 
     if args.json:
-        payload = {
-            str(path): [
-                {"line": line, "severity": sev, "rule_id": rule, "message": msg}
-                for (line, sev, rule, msg) in findings
-            ]
-            for path, findings in by_file.items()
-        }
-        print(json.dumps(payload, indent=2))
+        print(_findings.format_json(by_file))
         return 0
 
     total = sum(len(v) for v in by_file.values())
@@ -233,16 +203,7 @@ def main() -> int:
         print("_No mechanical REST violations detected. The /rest-review skill will still delegate to the rest-reviewer agent for cross-cutting concerns._")
         return 0
 
-    for path, findings in sorted(by_file.items()):
-        print(f"## `{path}`\n")
-        for sev in (MUST, SHOULD, CONSIDER):
-            tier = [f for f in findings if f[1] == sev]
-            if not tier:
-                continue
-            print(f"### {sev}")
-            for line, _, rule, msg in tier:
-                print(f"- `{rule}` (line {line}) — {msg}")
-            print()
+    _findings.print_markdown(by_file, line_label=lambda n: f"line {n}")
     return 0
 
 
