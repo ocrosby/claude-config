@@ -8,17 +8,16 @@ Each skill lives in its own subdirectory and is always named `SKILL.md`:
 
 ```
 skills/
-  ship/
+  git/
     SKILL.md
-  code-review/
+  code/
     SKILL.md
 ```
 
 ```markdown
 ---
 description: One-line summary of what this skill does.
-triggers:
-  - /skill-name
+aliases: prior-name
 paths:
   - "**/*.go"
 ---
@@ -32,122 +31,111 @@ Prose and workflow steps here.
 
 | Field | Required | Description |
 |---|---|---|
-| `description` | Yes | Shown in skill listings; used by Claude to decide which skill fits a task |
-| `triggers` | Conditional | Slash commands that invoke this skill (e.g. `/git-ship`) |
-| `paths` | Conditional | Glob patterns — skill fires automatically when matching files are in context |
+| `description` | Recommended | Shown in skill listings; used by Claude to decide which skill fits a task |
+| `paths` | Optional | Glob patterns — skill fires automatically when matching files are in context |
+| `aliases` | Optional | Prior names this skill was renamed from — used by `/skill usage` for historical invocation attribution |
+| `disable-model-invocation` | Optional | `true` blocks Claude from auto-invoking; user can still type the slash command |
+| `user-invocable` | Optional | `false` hides from the `/` menu while still allowing programmatic invocation |
+| `argument-hint` | Optional | Autocomplete hint shown after the slash command |
+| `allowed-tools` | Optional | Pre-approves listed tools while the skill is active |
 
-At least one of `triggers` or `paths` must be present. A skill with neither is unreachable.
+The directory name **is** the slash command — `skills/git/` automatically registers as `/git`. There is no `triggers:` field; do not add one.
 
-## When to use a skill vs. a rule vs. a hook
+The full field reference and the `disable-model-invocation` vs `user-invocable` decision matrix live in `skills/CLAUDE.md`.
 
-| Mechanism | Best for |
-|---|---|
-| **Skill** | Multi-step workflows invoked on demand (`/git-ship`, `/code-review`, `/refactor`) |
-| **Rule** | Always-on behavioral constraints that apply every session without being called |
-| **Hook** | Guaranteed enforcement at specific tool lifecycle events (before/after edit, commit, push) |
+## Skills vs. rules vs. commands
 
-Skills are appropriate when a workflow has distinct steps that benefit from being made explicit, when the steps vary by context (language, flags), or when you want a named command users can invoke intentionally. They remind and guide — they do not block like hooks, and they are not always-on like rules.
+- **Rule** (`rules/*.md`) — Always-on behavioral constraint. Loads automatically when matching files are in context; no invocation needed.
+- **Skill** (`skills/*/SKILL.md`) — Multi-step workflow invoked on demand (`/git`, `/code`, `/feature`).
+- **Command** (`commands/*.md`) — Single focused action, usually a building block that skills invoke.
 
-## Writing a skill
+Use a rule when behavior should be enforced automatically. Use a skill when the user opts in to a workflow. Use a command when 2+ skills share the same atomic mechanic.
 
-Use `/skill-author` to create a new skill interactively — it walks through purpose definition, frontmatter, workflow authoring, and consistency checks.
+## Authoring a new skill
 
-### Language that holds
+Use `/skill author` to create a new skill interactively — it walks through purpose definition, frontmatter, workflow authoring, and consistency checks. See `skills/CLAUDE.md` for the full conventions.
 
-Use mandatory language in every workflow step. Advisory language drifts across sessions.
+## Reusable scripts over inline logic
 
-| Avoid | Use instead |
-|---|---|
-| "consider running tests" | "run the test suite" |
-| "you may want to lint" | "run the linter — if it fails, stop and do not proceed" |
-| "should be a conventional commit" | "commit message must follow Conventional Commits format" |
+Workflow steps that do parsing, scanning, validating, or transforming data must be extracted into a script under `~/.claude/scripts/`. Inline code is only allowed when the logic is under 20 lines AND will not be regenerated across invocations.
 
-### Structure that works
+See `skills/CLAUDE.md` for the recognition signals and the full token-economics rationale. The canonical exemplar is `scripts/tally_invocations.py` — standard library only, argparse CLI, structured stdout. `/skill author` walks through this decision when authoring new skills.
 
-- Number every step — order matters
-- Each step is a concrete action, not a principle
-- Include a verification step near the end
-- Define hard-stop conditions explicitly: "if tests fail, stop and report — do not proceed"
-- Define exceptions with literal examples, not vague category names
+---
 
-### Prefer extracted scripts over inline logic
+## The 10 user-facing skills
 
-Whenever a workflow step does parsing, scanning, validating, or transforming data, extract it into a `verb_noun.py` (or `.sh`) script alongside `SKILL.md`. Inline code is allowed only when it is **under 20 lines AND** will not be regenerated on the next invocation. Inlining wastes tokens on every invocation; a bundled script is a Level 3 resource that costs zero tokens until Claude runs it.
+Each top-level skill is a dispatcher: the first word of `$ARGUMENTS` selects a subcommand or the dispatcher auto-detects the language from the working directory. The full list of subcommands lives in each `SKILL.md`.
 
-See `skills/CLAUDE.md` for the recognition signals and the full token-economics rationale. The canonical exemplar is `skills/skill-usage/tally_invocations.py` — standard library only, argparse CLI, structured stdout. `/skill-author` walks through this decision when authoring new skills.
+### Git workflow
 
-## Existing skills
-
-### Development workflow
-
-| Command | Skill | Description |
+| Skill | Subcommands | Description |
 |---|---|---|
-| `/git-ship` | `git-ship` | Creates a branch, commits, pushes, and opens a PR. Supports `-m` (direct to main) and `-p` (patch release) |
-| `/git-sync` | `git-sync` | Rebases the current feature branch onto the latest main |
-| `/git-main` | `git-main` | Checks out main and pulls the latest from remote |
-| `/git-cpr` | `git-cpr` | Commits, pushes, and opens a PR (or splits a multi-group diff into per-group PRs) |
-| `/release-notes` | `release-notes` | Generates a changelog from conventional commits since the last tag |
+| `/git` | `ship`, `cpr`, `sync`, `main`, `worktree`, `release-notes` | Branch / commit / push / PR / rebase / merge cleanup / parallel worktrees / changelog generation. `ship`, `cpr`, and `worktree` push to remote or mutate parallel checkouts. |
 
-### Code quality
+### Code quality and transformation
 
-| Command | Skill | Description |
+| Skill | Subcommands | Description |
 |---|---|---|
-| `/code-review` | `code-review` | Structured review delegating to language-specialist agents. Supports `-f` (fix) and `-fc` (fix + loop until clean) |
-| `/refactor` | `refactor` | Structural refactoring of Go, Python, or Neovim code without changing behavior |
-| `/debug` | `debug` | Systematic bug triage — emits a minimal-repro artifact, then delegates root-cause analysis to the language debugger agent |
-| `/migrate` | `migrate` | Identifies and replaces deprecated patterns across supported languages |
-| `/patterns` | `patterns` | Recommends applicable GoF design patterns with implementation sketches |
+| `/code` | `review` (`--rest` / `-f` / `-fc`), `grill`, `refactor`, `migrate`, `techdebt`, `simplify` | Structured review (delegates to language-reviewer agents), adversarial verdict (`grill`), structural refactor (Go/Python/Neovim), deprecated-pattern migration, dead-code sweep (`techdebt`), `simplify` delegates to the external `/simplify` skill. |
 
-### Architecture & design
+### Feature development
 
-| Command | Skill | Description |
+| Skill | Routes by | Description |
 |---|---|---|
-| `/architect` | `architect` | Delegates to the appropriate language-specialist architect agent |
-| `/rest-review` | `rest-review` | Reviews HTTP handlers for REST convention compliance |
-
-### Language-specific features
-
-Feature skills own language-specific design decisions. TDD enforcement is always-on via `rules/tdd.md`; the final review pass delegates to `/code-review -fc` rather than re-implementing it inline.
-
-| Command | Skill | Description |
-|---|---|---|
-| `/go-feat` | `go-feat` | Guides new Go feature development; delegates TDD and review |
-| `/py-feat` | `py-feat` | Guides new Python feature development; delegates TDD and review |
-| `/nvim-feat` | `nvim-feat` | Guides new Neovim plugin feature development; delegates review |
-| `/rest-spec` | `rest-spec` | Writes/updates the OpenAPI entry for a new or changed REST endpoint (design-first; output: validated spec entry) |
-| `/rest-implement` | `rest-implement` | Implements a handler against an existing OpenAPI entry; delegates review |
-| `/gherkin-feat` | `gherkin-feat` | Guides writing new Gherkin feature files; delegates review |
+| `/feature` | language auto-detect (or `/feature go / py / nvim / gherkin / rest <op>`) | Layered feature dev with TDD per language. For `rest`, implements a handler against an existing OpenAPI spec. |
 
 ### Documentation
 
-| Command | Skill | Description |
+| Skill | Subcommands | Description |
 |---|---|---|
-| `/go-docs` | `go-docs` | Generates and audits Go package documentation following godoc conventions |
-| `/py-docs` | `py-docs` | Generates and audits Python documentation following Google-style docstring conventions |
-| `/nvim-docs` | `nvim-docs` | Generates Neovim plugin documentation in vimdoc format |
-| `/gherkin-docs` | `gherkin-docs` | Generates living documentation from Gherkin feature files |
-| `/doc-review` | `doc-review` | Reviews documentation against Write the Docs principles |
+| `/docs` | `write` (lang auto-detect), `review` (`-f`/`-fc`), `research <topic>` | Generate per-language API docs (godoc, Google-style docstrings, vimdoc, Gherkin living-docs), audit any documentation against Write-the-Docs principles, or research a topic and publish to here.now. |
 
 ### Benchmarking
 
-| Command | Skill | Description |
+| Skill | Routes by | Description |
 |---|---|---|
-| `/go-bench` | `go-bench` | Writes, runs, and analyzes Go benchmarks |
-| `/py-bench` | `py-bench` | Writes, runs, and analyzes Python benchmarks |
-| `/nvim-bench` | `nvim-bench` | Writes, runs, and analyzes Neovim plugin benchmarks |
+| `/bench` | language auto-detect (or `/bench go / py / nvim`) | Write, run, and analyze benchmarks. Go: `testing.B` + `benchstat` + `pprof`. Python: `pytest-benchmark` + `cProfile` + `py-spy`. Neovim: `vim.loop.hrtime` + `--startuptime`. |
 
-### Claude configuration
+### Architecture / design
 
-| Command | Skill | Description |
+| Skill | Subcommands | Description |
 |---|---|---|
-| `/audit` | `audit` | Audits the Claude workflow system and reports issues by category and impact |
-| `/skill-author` | `skill-author` | Guides creation of a new skill from scratch |
-| `/skill-audit` | `skill-audit` | Audits all skill files for quality, durability, and consistency |
-| `/skill-gaps` | `skill-gaps` | Analyzes session history to find repeating tasks with no skill coverage |
-| `/skill-usage` | `skill-usage` | Counts explicit `/command` invocations per skill from session history and recommends which to retire |
+| `/architect` | `design` (lang auto-detect), `patterns`, `spec`, `catalog` | Language-architect agents for design proposals, GoF pattern recognition, OpenAPI design-first authoring, and first-time Backstage catalog registration. |
 
-### Utilities
+### Debugging
 
-| Command | Skill | Description |
+| Skill | Routes by | Description |
 |---|---|---|
-| `/here-now` | `here-now` | Researches a topic using live sources and publishes a structured report |
+| `/debug` | language auto-detect (or `/debug go / py / nvim / gherkin`) | Reproduce → isolate → emit a minimal-repro artifact → escalate to the matching language debugger agent → verify the fix. |
+
+### Skill-system maintenance
+
+| Skill | Subcommands | Description |
+|---|---|---|
+| `/skill` | `author`, `audit`, `gaps`, `usage` | Interactive new-skill workflow, per-SKILL.md health check via `skill-reviewer`, gaps (repeating tasks lacking skills) from session history, invocation counts with retirement recommendations. |
+
+### System audit
+
+| Skill | Description |
+|---|---|
+| `/audit` | Reads every component (rules, agents, hooks, skills, commands, settings) and reports inter-component findings — correctness, redundancy, missing connections, coverage gaps, discoverability. For per-skill structural quality only, use `/skill audit`. |
+
+### Work journal
+
+| Skill | Subcommands | Description |
+|---|---|---|
+| `/work` | `add`, `list`, `done`, `update`, `note` | Date-structured daily log of engineering activity at `~/work/{YYYY}/{M}/{D}.md`. Already used subcommand dispatch internally; the model for the other 9. |
+
+---
+
+## Building-block commands
+
+These live in `commands/` rather than `skills/` because they are single focused actions reused by the dispatchers above. They are hidden from the `/` menu (`user-invocable: false`) but the user can still type them. See `commands/README.md`.
+
+| Command | Used by |
+|---|---|
+| `/branch-from-main` | `/git ship`, `/git cpr`, `/git sync`, `/git worktree` |
+| `/conventional-commit-msg` | `/git ship`, `/git cpr` |
+| `/open-pr` | `/git ship`, `/git cpr` |
+| `/test-and-fix` | `/feature`, `/code`, `/debug` |

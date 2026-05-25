@@ -1,5 +1,6 @@
 ---
-description: Audits the Claude workflow system — reads every component and reports what's suboptimal with specific fixes, grouped by category and ordered by impact.
+description: Audits the Claude workflow system — reads every component (rules, agents, hooks, skills, commands, settings) and reports what's suboptimal with specific fixes, grouped by category and ordered by impact. For per-skill structural quality only, use /skill audit instead.
+aliases: workflow-audit
 ---
 
 # Workflow Audit
@@ -87,4 +88,4 @@ Do not make any changes until the user confirms.
 
 ## Related
 
-For auditing individual `SKILL.md` files against structural conventions, use `/skill-audit` instead — it runs `skill-reviewer` on each skill file and is scoped to skill quality, not system-wide integration.
+For auditing individual `SKILL.md` files against structural conventions, use `/skill audit` instead — it runs `skill-reviewer` on each skill file and is scoped to skill quality, not system-wide integration.

@@ -65,7 +65,7 @@ These principles are sourced from writethedocs.org/guide/. Full detail is in mem
 
 **When editing code that has adjacent documentation**: update the docs in the same change. Do not leave documentation that describes behavior the code no longer has.
 
-**When reviewing documentation** (the user explicitly requests a review, uses `/doc-review`, or asks for feedback on a document without requesting direct edits): apply the three-severity findings format:
+**When reviewing documentation** (the user explicitly requests a review, uses `/docs review`, or asks for feedback on a document without requesting direct edits): apply the three-severity findings format:
 - **Must Fix** — incorrect content (worse than missing), broken links, missing examples in a tutorial, "click here" links
 - **Should Fix** — non-skimmable structure, inconsistent terminology, FAQs, docs stored far from code
 - **Consider** — optional improvements: more examples, cross-references, better heading wording

@@ -49,15 +49,15 @@ When a task feels urgent or a user asks to "just implement it quickly," do not s
 
 ## Exceptions — narrow and explicit
 
-### `/migrate` — the only true exception
+### `/code migrate` — the only true exception
 
 Replacing a deprecated API with its modern equivalent is the only situation where no new test is required. The behavior is identical; only the syntax changes. Run the existing test suite after to verify nothing broke.
 
-### `/refactor` — NOT an exception; a different test-first process
+### `/code refactor` — NOT an exception; a different test-first process
 
 Refactoring does not use the red-green-refactor cycle (no new failing test is written), but it **does** require tests written first. Before touching any code, write characterization tests that document current behavior. These are not new tests for new behavior — they are a safety net that proves the refactor didn't break anything.
 
-The `/refactor` skill handles this automatically. Do not start a refactor without characterization test coverage in place.
+The `/code refactor` subcommand handles this automatically. Do not start a refactor without characterization test coverage in place.
 
 ### Purely mechanical changes — no logic change whatsoever
 

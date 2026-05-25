@@ -16,9 +16,9 @@ After completing work in a code file, recommend the appropriate skill at the end
 - The file is a test file (`_test.go`, `test_*.py`, `*_spec.lua`)
 - Only documentation, config, or non-code files were changed
 
-## After implementation → `/code-review`
+## After implementation → `/code review`
 
-Recommend `/code-review` before shipping when:
+Recommend `/code review` before shipping when:
 
 - A new function, class, module, or package has been written
 - A bug fix touches more than one file
@@ -26,26 +26,26 @@ Recommend `/code-review` before shipping when:
 
 Do not recommend for single-line fixes (typo, comment, minor rename).
 
-> Run `/code-review` before shipping to catch any issues.
+> Run `/code review` before shipping to catch any issues.
 
-## Public API added or changed → language-specific `/docs` skill
+## Public API added or changed → `/docs write`
 
-Recommend the docs skill when an exported/public symbol is added or modified without a doc comment or docstring. Undocumented public APIs are a maintenance liability.
+Recommend `/docs write` when an exported/public symbol is added or modified without a doc comment or docstring. Undocumented public APIs are a maintenance liability. The dispatcher auto-detects the language from cwd.
 
-| Language | Recommend | Condition |
+| Language | Recommended invocation | Condition |
 |---|---|---|
-| Go | `/go-docs` | Exported symbol (`PascalCase`) added or changed without a preceding `//` comment |
-| Python | `/py-docs` | Public function or class (no `_` prefix) added or changed without a docstring |
-| Neovim/Lua | `/nvim-docs` | Public module function in `lua/*/init.lua` added or changed without a comment block |
-| Gherkin | `/gherkin-docs` | A new `.feature` file is added to the suite |
+| Go | `/docs write go` | Exported symbol (`PascalCase`) added or changed without a preceding `//` comment |
+| Python | `/docs write py` | Public function or class (no `_` prefix) added or changed without a docstring |
+| Neovim/Lua | `/docs write nvim` | Public module function in `lua/*/init.lua` added or changed without a comment block |
+| Gherkin | `/docs write gherkin` | A new `.feature` file is added to the suite |
 
 Do not recommend when the symbol already has a doc comment / docstring, or the change is private/unexported/internal only.
 
-> Run `/go-docs` to document the new exported symbols.
+> Run `/docs write` to document the new exported symbols.
 
-## Deprecated patterns detected → `/migrate`
+## Deprecated patterns detected → `/code migrate`
 
-Recommend `/migrate` (file-level mode — targets the current file) when reading or writing code that contains deprecated or outdated patterns. The user can expand scope by running `/migrate` standalone.
+Recommend `/code migrate` (file-level mode — targets the current file) when reading or writing code that contains deprecated or outdated patterns. The user can expand scope by running `/code migrate` standalone.
 
 **Go** triggers:
 - `ioutil.` (any function — deprecated since Go 1.16)
@@ -76,4 +76,4 @@ Recommend `/migrate` (file-level mode — targets the current file) when reading
 
 Do not recommend when the file is already being migrated in the current session.
 
-> This file contains deprecated patterns — run `/migrate` to modernize them.
+> This file contains deprecated patterns — run `/code migrate` to modernize them.

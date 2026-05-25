@@ -1,12 +1,13 @@
 ---
-description: "Push the current branch and open a PR with a structured body, or update the existing PR. Building block for /git-ship and /git-cpr."
+description: "Push the current branch and open a PR with a structured body, or update the existing PR. Building block for /git ship and /git cpr."
+user-invocable: false
 ---
 
 # Open PR
 
 Use this command to push the current branch upstream and open a pull request against `main` (or update the existing PR if one already exists for the branch). Composes a structured body from the most recent commit(s) on the branch.
 
-**If the current branch is `main` or `master`: stop and tell the caller to use `/git-ship -m` for direct-to-main commits.**
+**If the current branch is `main` or `master`: stop and tell the caller to use `/git ship -m` for direct-to-main commits.**
 
 ## Steps
 
@@ -24,7 +25,7 @@ Use this command to push the current branch upstream and open a pull request aga
    git push -u origin "$BRANCH"
    ```
 
-   Never `--force` or `--force-with-lease`. If the push is rejected because the remote is ahead, stop and tell the caller to rebase via `/git-sync`.
+   Never `--force` or `--force-with-lease`. If the push is rejected because the remote is ahead, stop and tell the caller to rebase via `/git sync`.
 
 3. Check whether a PR already exists for this branch:
 

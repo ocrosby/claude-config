@@ -1,6 +1,7 @@
 ---
-description: "Create a new branch from a freshly pulled main. Building block for /git-ship, /git-cpr, /git-sync, /worktree."
+description: "Create a new branch from a freshly pulled main. Building block for /git ship, /git cpr, /git sync, /git worktree."
 argument-hint: "<branch-name>"
+user-invocable: false
 ---
 
 # Branch From Main

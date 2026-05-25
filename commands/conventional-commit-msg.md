@@ -1,10 +1,11 @@
 ---
-description: "Compose a Conventional Commits message from staged changes and commit. Building block for /git-ship and /git-cpr; also usable standalone."
+description: "Compose a Conventional Commits message from staged changes and commit. Building block for /git ship and /git cpr."
+user-invocable: false
 ---
 
 # Conventional Commit Message
 
-Use this command to commit already-staged changes with a Conventional Commits message. This is the atomic commit step extracted from `/git-ship` and `/git-cpr` — it does **not** stage files, push, or create a branch.
+Use this command to commit already-staged changes with a Conventional Commits message. This is the atomic commit step extracted from `/git ship` and `/git cpr` — it does **not** stage files, push, or create a branch.
 
 **If nothing is staged: stop and tell the user to stage files first.**
 
@@ -41,4 +42,4 @@ Use this command to commit already-staged changes with a Conventional Commits me
 - Never push.
 - Never amend.
 - Never bypass hooks.
-- If the working tree is on `main` or `master` without an explicit override from the caller, stop and tell the user to use `/git-ship -m` for direct-to-main commits.
+- If the working tree is on `main` or `master` without an explicit override from the caller, stop and tell the user to use `/git ship -m` for direct-to-main commits.

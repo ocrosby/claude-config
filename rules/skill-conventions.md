@@ -20,7 +20,7 @@ Every field is optional. Only `description` is recommended so Claude knows when 
 - `user-invocable: false` — hide from the `/` menu so the user does not invoke manually; Claude can still invoke programmatically
 - `allowed-tools` — pre-approve tools while the skill is active
 
-**The directory name provides the slash command.** `skills/git-ship/` automatically registers as `/git-ship`. **Never** add a `triggers:` field — it is not a real frontmatter field and will be silently ignored.
+**The directory name provides the slash command.** `skills/git/` automatically registers as `/git`. **Never** add a `triggers:` field — it is not a real frontmatter field and will be silently ignored.
 
 The full field reference and `disable-model-invocation` vs `user-invocable` decision matrix live in `skills/CLAUDE.md` — read it before adding a new field.
 
@@ -70,7 +70,7 @@ A skill orchestrates a workflow. A command performs one focused action. When the
 | Prompted reasoning — Claude composes text, decides a name, drafts a message, picks an approach | **Command** (`commands/*.md`) | Compose a Conventional Commits message from staged diff; write a PR body; decide a branch name from the change type |
 | Deterministic logic — parsing, scanning, classification, file inspection that always returns the same answer for the same input | **Script** (`scripts/*.py`) | Group mixed-concern changes into per-type buckets; parse `CODEOWNERS` and `pyproject.toml`; tally invocations from session history |
 
-Existing examples to follow: `scripts/migrate_scan.py` (called by `skills/migrate`), `scripts/analyze_history.py` (called by `skills/skill-gaps`), `scripts/tally_invocations.py` (called by `skills/skill-usage`). Skill orchestrates → script returns structured data → skill acts on the result.
+Existing examples to follow: `scripts/migrate_scan.py` (called by `/code migrate`), `scripts/analyze_history.py` (called by `/skill gaps`), `scripts/tally_invocations.py` (called by `/skill usage`). Skill orchestrates → script returns structured data → skill acts on the result.
 
 ### When extraction is NOT required
 

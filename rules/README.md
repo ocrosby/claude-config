@@ -47,7 +47,7 @@ Skills and commands are both user-invocable. The difference is shape and role.
 | The work is a multi-step workflow with decision logic | The work is a single focused action |
 | It needs supporting files (scripts, templates, references) | A single markdown prompt is sufficient |
 | Two or more commands or skills will share its mechanics | It is the atomic mechanic being shared |
-| The orchestration owns the user-visible name (e.g. `/git-ship`) | It is a building block (e.g. `/conventional-commit-msg`) |
+| The orchestration owns the user-visible name (e.g. `/git`) | It is a building block (e.g. `/conventional-commit-msg`) |
 
 When a skill needs to repeat a concrete mechanic that already lives in another skill, **extract the shared mechanic into a command (for prompted reasoning) or a script (for deterministic logic)**. The skill then invokes the command/script as a numbered step. See `skill-conventions.md` → "Skills as orchestrators, commands as building blocks" for the full rule.
 
@@ -90,7 +90,7 @@ If there is any change to logic, control flow, or observable behavior, it is not
 |---|---|
 | `tdd.md` | Enforces test-driven development — red step required before implementation on `.go`, `.py`, `.lua` files |
 | `feature-skeptic.md` | Pushback protocol for feature-add requests — forces ICP fit, displacement, and smallest-version questions before the first edit |
-| `skill-suggest.md` | Unified end-of-response skill recommendations — `/code-review` after implementation, `/migrate` for deprecated patterns, language `/docs` for new public APIs |
+| `skill-suggest.md` | Unified end-of-response skill recommendations — `/code review` after implementation, `/code migrate` for deprecated patterns, `/docs write` for new public APIs |
 
 ### Security
 
@@ -147,7 +147,7 @@ If there is any change to logic, control flow, or observable behavior, it is not
 
 | File | Description |
 |---|---|
-| `design-patterns-application.md` | Pattern recognition signals and mandatory behaviors — when to apply each pattern in Go, Python, and Lua. Catalog (`skills/patterns/design-patterns.md`) loads on demand via `/patterns`, not always-on |
+| `design-patterns-application.md` | Pattern recognition signals and mandatory behaviors — when to apply each pattern in Go, Python, and Lua. Catalog (`skills/architect/design-patterns.md`) loads on demand via `/architect patterns`, not always-on |
 | `rest-api-conventions.md` | REST API conventions — resource naming, HTTP methods, status codes, statelessness, versioning |
 | `sql-normalization.md` | Database normalization — normal forms, when to denormalize, indexing considerations |
 

@@ -1,5 +1,6 @@
 ---
-description: "Run tests and fix any failures"
+description: "Run tests and fix any failures. Building block for /feature, /code, and /debug workflows."
+user-invocable: false
 ---
 
 1. Run the test suite: `npm test` (or appropriate test command for the project)

@@ -1,6 +1,6 @@
 # Skill Authoring Conventions
 
-This directory holds Claude skills. Each skill lives in its own folder as `<skill-name>/SKILL.md`. When creating or editing a skill, the full conventions live in `rules/skill-conventions.md` and the guided workflow lives in the `/skill-author` skill — use those as the source of truth. The summary below is a fast reference.
+This directory holds Claude skills. Each skill lives in its own folder as `<skill-name>/SKILL.md`. When creating or editing a skill, the full conventions live in `rules/skill-conventions.md` and the guided workflow lives in the `/skill author` subcommand — use those as the source of truth. The summary below is a fast reference.
 
 ## Design preferences
 
@@ -16,7 +16,7 @@ This is also enforced under "Design qualities → Composable" further down; it l
 
 Whenever a workflow step does parsing, scanning, validating, or transforming data, extract it into a script alongside `SKILL.md`. Inline code is allowed only when the logic is **under 20 lines** AND will not be regenerated across invocations.
 
-The canonical exemplar is `skills/skill-usage/tally_invocations.py` — copy its shape (standard library only, argparse CLI, Markdown or JSON to stdout, exit 0/1). The detailed economics live under "Reusable scripts beat regenerated code" below.
+The canonical exemplar is `scripts/tally_invocations.py` — copy its shape (standard library only, argparse CLI, Markdown or JSON to stdout, exit 0/1). The detailed economics live under "Reusable scripts beat regenerated code" below.
 
 ---
 
@@ -73,14 +73,14 @@ If a workflow needs the same Python (or shell, or other) logic on every invocati
 - **Naming:** scripts describe the action they perform (`validate_links.sh`, `extract_frontmatter.py`), not the skill they belong to
 - **Inline allowed only when:** the logic is a single bash call (`git status`, `find . -name "*.go"`), a 3-line range derivation, or another genuinely one-off transformation that will not be regenerated on the next invocation. "Small enough to ignore" is not an exception — measure against the recognition signals above.
 
-**Exemplar:** `skills/skill-usage/tally_invocations.py` — standard library only, argparse CLI, Markdown to stdout, exits 0/1. Copy its shape for new scripts.
+**Exemplar:** `scripts/tally_invocations.py` — standard library only, argparse CLI, Markdown to stdout, exits 0/1. Copy its shape for new scripts.
 
 When authoring a skill, before writing inline code in a workflow step, ask: "Would I regenerate this on the next invocation?" If yes, save it as a script.
 
 ## Layout
 
 - One folder per skill: `skills/<skill-name>/SKILL.md`
-- The directory name **is** the invocation command — `skills/git-ship/` automatically provides `/git-ship`. There is no separate `triggers` field
+- The directory name **is** the invocation command — `skills/git/` automatically provides `/git`. There is no separate `triggers` field
 - Supporting files (templates, scripts, reference docs) live alongside `SKILL.md` in the same folder
 
 ## Frontmatter
@@ -110,7 +110,7 @@ Notable fields beyond identity:
 
 - **`allowed-tools`** — pre-approves the listed tools while the skill is active, suppressing per-use permission prompts. Does **not** restrict other tools; permission settings still apply. Use to make a skill feel native (e.g. a commit skill pre-approving `Bash(git add *)`, `Bash(git commit *)`)
 - **`paths`** — glob patterns that limit when Claude auto-loads the skill. The skill remains user-invocable even if no paths match
-- **`aliases`** — prior name(s) this skill was renamed from. Used by `/skill-usage` to attribute historical invocations to the current canonical name. Single value or comma-separated. Example: `aliases: ship` on the renamed `git-ship` skill means past `/ship` invocations count toward `/git-ship` in usage reports
+- **`aliases`** — prior name(s) this skill was renamed from. Used by `/skill usage` to attribute historical invocations to the current canonical name. Single value or comma-separated. Example: `aliases: git-ship, ship` on the consolidated `git` skill means past `/git-ship` and `/ship` invocations count toward `/git` in usage reports
 - **`context: fork`** + **`agent`** — runs the skill body as a prompt to a subagent (e.g. `Explore`, `Plan`, a custom agent). Use for read-heavy or context-isolated work that should not pollute the main session
 
 ## Invocation control
@@ -155,7 +155,7 @@ Every skill must be composable, portable, efficient, and powerful. Apply these c
 ### Composable — does one thing, works with others
 
 - Single, nameable purpose. If the description needs "and", split into two skills.
-- Delegates to existing skills and agents instead of reimplementing their behavior — name them explicitly (e.g. `Use the skill-reviewer agent`, `Invoke /code-review`).
+- Delegates to existing skills and agents instead of reimplementing their behavior — name them explicitly (e.g. `Use the skill-reviewer agent`, `Invoke /code review`).
 - Outputs are usable by another skill or by the user without post-processing — structured findings, predictable file paths, predictable exit conditions.
 - No silent overlap with another skill. If two skills cover the same trigger, one must be removed or refactored.
 
