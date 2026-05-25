@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 """Classify the working tree's changed files into conceptual commit groups.
 
-Shared by both /git-cpr and /git-ship. Lives in `scripts/` (not under either
-skill) because both consume it equally. Emits JSON so Claude can consume the
-suggestions and make the final call on splits, branch names, and commit text.
+Consumed by /git ship for split-into-conceptual-groups detection. Lives in
+`scripts/` because the multi-group logic is shared between the standard ship
+flow and the (now-deprecated) /git cpr alias. Emits JSON so Claude can consume
+the suggestions and make the final call on splits, branch names, and commit
+text.
 
 A 'group' is a set of files that share a single conventional-commit (type,
 scope) pair. The script heuristically assigns each file to one group; Claude

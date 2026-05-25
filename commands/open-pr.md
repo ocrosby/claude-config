@@ -1,5 +1,5 @@
 ---
-description: "Push the current branch and open a PR with a structured body, or update the existing PR. Building block for /git ship and /git cpr."
+description: "Push the current branch and open a PR with a structured body, or update the existing PR. Building block for /git ship."
 user-invocable: false
 ---
 

@@ -1,11 +1,11 @@
 ---
-description: "Compose a Conventional Commits message from staged changes and commit. Building block for /git ship and /git cpr."
+description: "Compose a Conventional Commits message from staged changes and commit. Building block for /git ship."
 user-invocable: false
 ---
 
 # Conventional Commit Message
 
-Use this command to commit already-staged changes with a Conventional Commits message. This is the atomic commit step extracted from `/git ship` and `/git cpr` — it does **not** stage files, push, or create a branch.
+Use this command to commit already-staged changes with a Conventional Commits message. This is the atomic commit step extracted from `/git ship` — it does **not** stage files, push, or create a branch.
 
 **If nothing is staged: stop and tell the user to stage files first.**
 

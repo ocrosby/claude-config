@@ -16,10 +16,9 @@ Run `/skill-gaps` periodically to analyze session history and surface new skill 
 
 | Skill | What it does |
 |---|---|
-| `/git-ship` ★ | Branch → commit → push → PR. Use `-m` to commit directly to main, `-p` for a patch release to main. |
+| `/git-ship` ★ | Branch → commit → push → PR (multi-group → split into per-group PRs). Use `-m` to commit directly to main, `-p` for a patch release, `--quick` to skip pre-flight on daily-iteration pushes. |
 | `/git-main` ★ | Checkout main, pull latest, delete merged branches. |
 | `/git-sync` | Rebase current feature branch onto latest main. |
-| `/git-cpr` | Commit, push, and open a PR (multi-group → split into per-group PRs). |
 | `/commit` | Create a well-formatted conventional commit for staged changes. |
 | `/fix` | Run code review and apply all findings (Must Fix + Should Fix + Consider), looping until clean. Shorthand for `/code-review -fc`. |
 
