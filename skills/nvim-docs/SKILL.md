@@ -1,18 +1,61 @@
 ---
 description: Generates Neovim plugin documentation in vimdoc format.
-paths:
-  - "**/*.lua"
 ---
 
 # Neovim Documentation Writer
 
-## Vimdoc Format
+Use this skill when you want to generate or audit `doc/<plugin>.txt` for a Neovim plugin in vimdoc format. Format conventions live in `rules/nvim-docs.md` — this skill orchestrates and produces the file.
 
-All Neovim plugin documentation uses vimdoc format (`:help writing-help`). Documentation lives in `doc/plugin-name.txt` and is indexed by `:helptags`.
+## Usage
 
-## Structure
+```
+/nvim-docs                          # generate or audit doc for the current plugin
+/nvim-docs <plugin-name>            # explicit plugin name
+```
 
-Every help file follows this skeleton:
+## When NOT to use
+
+- The plugin is a personal Neovim config (`~/.config/nvim/`), not a distributable plugin — vimdoc is overkill
+- The doc already exists and is current; use `/migrate` to update deprecated patterns instead
+
+## Workflow
+
+### 1. Discover the plugin surface
+
+Read the plugin's public API, user commands, keymaps, and config options. Run:
+
+```bash
+ls lua/ doc/
+test -f doc/*.txt && echo "EXISTS" || echo "MISSING"
+```
+
+**If `doc/<plugin>.txt` already exists and the user did not pass an explicit override: stop and ask whether to audit, regenerate, or extend.**
+
+### 2. Generate the help file
+
+Generate `doc/<plugin>.txt` following the [Vimdoc Skeleton](#vimdoc-skeleton) below. Apply the format rules in `rules/nvim-docs.md` (tags, references, separator lines, 78-col line width, modeline). Include only sections that apply to this plugin — omit empty ones rather than including them as placeholders.
+
+### 3. Regenerate help tags
+
+```bash
+nvim --headless -c "helptags doc/" -c "q"
+```
+
+**If `helptags` reports errors: stop and fix the offending tag before continuing.**
+
+### 4. Verify
+
+For every section, command, function, and option documented, confirm the tag resolves:
+
+```bash
+nvim --headless -c "help <plugin-name>" -c "q"
+```
+
+**If any tag is broken or unreachable: stop and do not proceed.**
+
+---
+
+## Vimdoc Skeleton
 
 ```vimdoc
 *plugin-name.txt*  Short one-line description
@@ -48,36 +91,4 @@ SETUP                                                    *plugin-name-setup*
  vim:tw=78:ts=8:ft=help:norl:
 ```
 
-## Rules
-
-### Tags and references
-
-- **Tags**: `*tag-name*` — defines a jump target (right-aligned or inline)
-- **References**: `|tag-name|` — creates a clickable link to a tag
-- Every section, command, function, and option must have a tag
-- Tag naming: `plugin-name-section` (lowercase, hyphenated)
-
-### Formatting
-
-- Section headers: ALL CAPS, preceded by a separator line of `=` (78 chars)
-- Subsection headers: Title Case, preceded by a separator line of `-` (78 chars)
-- Code blocks: indent with `>lua` / `>vim` and close with `<` on its own line
-- Column alignment: tags right-aligned to column 78
-- Line width: 78 characters max
-- Last line: ` vim:tw=78:ts=8:ft=help:norl:` (modeline)
-
-### Content guidelines
-
-- Document every public function with signature, parameters, return type, and example
-- Document every user command with syntax, arguments, and behavior
-- Document every configuration option with type, default value, and description
-- Show a complete `setup()` call with all defaults so users can copy-paste and modify
-- Include a highlights section if the plugin defines highlight groups
-
-## Workflow
-
-1. Read the plugin's public API, commands, keymaps, and config options
-2. Generate the help file following the skeleton above
-3. Include only sections that apply — omit empty sections
-4. Run `:helptags doc/` to regenerate tags after writing
-5. Verify all tags resolve: `:h plugin-name` should jump correctly
+Tag, reference, formatting, and content conventions live in `rules/nvim-docs.md` — do not duplicate them here. If a convention is unclear, consult the rule, not this skeleton.
