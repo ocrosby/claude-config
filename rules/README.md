@@ -98,7 +98,6 @@ If there is any change to logic, control flow, or observable behavior, it is not
 |---|---|
 | `owasp-top-10.md` | OWASP Top 10 recognition signals and mandatory behaviors — path-scoped to code, shell, SQL, Dockerfiles, Terraform, and CI workflows |
 | `go-security.md` | Go-specific security idioms — stdlib functions and patterns (parameterized SQL, `exec.Command`, `crypto/rand`, `hmac.Equal`, TLS config); refers to `owasp-top-10.md` for the general signal table |
-| `py-security.md` | Python-specific security idioms — Pydantic `Settings`/`SecretStr`, `subprocess` arg-list form, `hmac.compare_digest`, JWT verification; refers to `owasp-top-10.md` for the general signal table |
 | `nvim-security.md` | Neovim plugin security — `vim.system()` vs shell, dynamic code execution risks, path confinement, module-local secrets vs `vim.g.*`; refers to `owasp-top-10.md` for the general signal table |
 
 ### Go
@@ -117,7 +116,7 @@ If there is any change to logic, control flow, or observable behavior, it is not
 
 | File | Description |
 |---|---|
-| `py-conventions.md` | Idiomatic Python — naming, type hints, error handling, dataclasses, module structure |
+| `py-conventions.md` | Idiomatic Python — naming, type hints, error handling, dataclasses, module structure, and Python-specific security idioms |
 | `py-project-architecture.md` | Python project layout following hexagonal architecture — ports, adapters, domain boundaries |
 | `py-testing.md` | Python testing conventions — pytest patterns, fixtures, parametrize, coverage |
 | `py-docs.md` | Python documentation — Google-style docstrings, module docstrings, type annotations |
