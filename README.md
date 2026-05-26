@@ -150,6 +150,87 @@ Use an output style when you want to **change how Claude responds** across an en
 | Run a simple prompt when I ask | Command |
 | Change its response style globally | Output Style |
 
+## Authoring rules
+
+Rules are always-on behavioral constraints loaded into every Claude Code session. Unlike skills (invoked on demand) or hooks (triggered by tool events), rules apply continuously — they shape how Claude reasons and responds without being called explicitly.
+
+### File format
+
+Rules are plain Markdown files in `rules/`. Frontmatter is optional but enables path-scoped activation:
+
+```markdown
+---
+description: One-line summary of what this rule enforces.
+paths:
+  - "**/*.go"
+  - "**/go.mod"
+---
+
+# Rule Title
+
+Rule content here — signal tables, mandatory behaviors, examples.
+```
+
+#### Frontmatter fields
+
+| Field | Required | Description |
+|---|---|---|
+| `description` | No | Shown in rule listings; helps identify what the rule covers |
+| `paths` | No | Glob patterns — rule activates lazily when the Read tool opens a matching file. Omit to apply in every session |
+
+A rule with no `paths` (or no frontmatter at all) is always active and loads at session start. A rule with `paths` only activates the first time the Read tool opens a matching file during the session; once activated, it stays loaded for the rest of the session.
+
+### When to write a rule
+
+Rules are appropriate when a behavior should apply **automatically and consistently** — not just when a user remembers to invoke a command.
+
+| Write a rule when... | Write a skill instead when... |
+|---|---|
+| The behavior should apply every session without being triggered | The behavior is a multi-step workflow invoked on demand |
+| You want Claude to recognize a pattern and respond to it | The workflow involves flags, arguments, or user choices |
+| A constraint should never be bypassed by forgetting to ask | The user needs to opt in explicitly |
+
+### Writing rules that hold
+
+Rules written with advisory language drift across sessions — Claude interprets "consider" and "should" as optional. Use mandatory language.
+
+| Drifts | Holds |
+|---|---|
+| "Consider running tests before shipping" | "Always run the test suite before committing. Do not proceed if tests fail." |
+| "You should use parameterized queries" | "Never build SQL queries by string interpolation. Always use parameterized queries." |
+| "Prefer dependency injection" | "Pass dependencies via constructor — never use globals. **This is an intentional design decision — do not simplify it away.**" |
+
+Add a "don't revert" anchor with the reasoning for non-obvious constraints. Without a *why*, Claude will optimize the constraint away when it encounters complexity.
+
+#### Define exceptions with literal examples
+
+Vague exception categories like "purely mechanical changes" are interpreted too broadly. Name the exact cases:
+
+```
+# Too broad — overused:
+Exceptions: mechanical changes.
+
+# Scoped correctly — stable:
+Exceptions: renaming an identifier, moving a file to a different package, updating an import path.
+If there is any change to logic, control flow, or observable behavior, it is not mechanical.
+```
+
+### Discovering existing rules
+
+To list available rules and what each enforces:
+
+```bash
+ls ~/.claude/rules/*.md
+
+# To see each rule's description:
+for f in ~/.claude/rules/*.md; do
+  echo "=== $(basename "$f") ==="
+  awk '/^description:/' "$f"
+done
+```
+
+Each rule's `description:` frontmatter explains what it enforces.
+
 ## Tips from the Claude Code Team
 
 > Sourced from [Boris Cherny's thread (Jan 2026)](https://x.com/bcherny/status/2017742741636321619), where the Claude Code team shared their own workflow tips. Boris created Claude Code at Anthropic.
@@ -256,7 +337,7 @@ Use an output style when you want to **change how Claude responds** across an en
 - `CLAUDE.md` — global instructions loaded into every Claude Code session
 - `LEARNINGS.md` — accumulating notes on what makes Claude rules, skills, hooks, and agents work reliably
 - `SKILLS.md` — catalog of the skills bundled in `skills/`
-- Per-directory `README.md` files inside `rules/`, `skills/`, `agents/`, `commands/`, `hooks/`, `output-styles/`
+- Per-directory `README.md` files inside `skills/`, `agents/`, `commands/`, `hooks/`, `output-styles/`
 
 ## References
 
