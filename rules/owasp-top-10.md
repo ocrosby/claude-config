@@ -32,7 +32,7 @@ paths:
 
 Sources: https://owasp.org/Top10/2025/ and https://owasp.org/Top10/2021/. Categories below follow the 2025 list; both 2025 and 2021 IDs are noted for searchability. The 2025 list may still receive editorial updates — verify the official page if a category name appears to differ.
 
-The OWASP Top 10 is a **recognition list**, not an implementation guide. This rule names the risks and the code-level signals that should trigger you to apply mitigations. For language-specific tactics see the Go, Python, and Neovim/Lua security rules in this same `rules/` directory (`go-security.md`, `py-security.md`, `nvim-security.md`).
+The OWASP Top 10 is a **recognition list**, not an implementation guide. This rule names the risks and the code-level signals that should trigger you to apply mitigations. For language-specific tactics see the Security section of `go-conventions.md`, the Security section of `py-conventions.md`, and the Security section of `nvim-lua.md`.
 
 When generating or reviewing code, scan it against the signal tables below before declaring it complete. If a signal fires, apply the mandatory behavior for that category.
 
