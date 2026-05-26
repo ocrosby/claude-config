@@ -7,7 +7,7 @@ paths:
 
 # Go Conventions
 
-> Error handling lives in `go-errors.md`. Concurrency patterns live in `go-concurrency.md`. Both load alongside this file when editing `.go` sources.
+> Concurrency patterns live in `go-concurrency.md`. It loads alongside this file when editing `.go` sources.
 
 ## Principles
 
@@ -68,6 +68,48 @@ paths:
 - No automatic fall-through in `switch` — use comma-separated cases: `case ' ', '?', '&':`
 - Use `defer` for cleanup (close files, unlock mutexes) — place it right after the resource is acquired
 - Deferred calls execute LIFO; arguments are evaluated at the `defer` statement, not at execution
+
+## Error Handling
+
+- Always check returned errors — never `_ = doSomething()`
+- Wrap errors with context: `fmt.Errorf("creating user: %w", err)`
+- Use sentinel errors (`var ErrNotFound = errors.New(...)`) for expected conditions
+- Use custom error types when the caller needs to inspect error details
+- Return early on error — avoid deep nesting
+- Annotate and return in one expression: `return fmt.Errorf("opening config: %w", err)` — reduces the chance of logging and then forgetting to return
+- Log OR return an error — never both; logging and returning creates duplicate messages and obscures origin
+- Error strings should identify their origin with a prefix: `"image: unknown format"`
+- Use `errors.As` / type assertions to inspect error details for recoverable failures
+- `panic` only for truly unrecoverable situations (e.g., failed critical initialization)
+- Real library functions should avoid `panic` — if it can be worked around, return an error
+- Use `recover` only inside deferred functions to convert panics to errors at package boundaries
+
+### Typed-nil interface hazard
+
+A typed nil (`(*T)(nil)`) assigned to an interface variable produces a **non-nil interface**. Any function that accepts an `error` (or other interface) and stores it may silently preserve this hazard, causing unexpected non-nil checks and broken `Error()` output downstream.
+
+**Rule**: functions that accept an `error` parameter and store it must guard against typed nils at the point of storage — do not leave the detection to callers or documentation.
+
+```go
+// Bad — silently stores a typed nil; downstream error checks behave unexpectedly
+func Wrap(code ErrorCode, msg string, cause error) *AppError {
+    return &AppError{code: code, message: msg, err: cause}
+}
+
+// Good — normalise typed nils to untyped nil at the boundary
+func Wrap(code ErrorCode, msg string, cause error) *AppError {
+    if cause != nil && reflect.ValueOf(cause).IsNil() {
+        cause = nil
+    }
+    return &AppError{code: code, message: msg, err: cause}
+}
+```
+
+The guard applies whenever:
+- A function accepts an `error` parameter and stores it in a struct field, slice, or map
+- The function is part of a library or shared package where callers are not fully controlled
+
+A doc comment saying "don't pass a typed nil" is **not** a substitute for the guard — documentation is ignored; runtime guards are not.
 
 ## API Design
 
@@ -136,6 +178,72 @@ type Cache struct {
     items map[string]Item  // protected by mu
 }
 ```
+
+## Security
+
+> See `owasp-top-10.md` for the general signal table and mandatory behaviors. This section lists the Go-specific *how*.
+
+### SQL — parameterized queries
+
+Use the driver's placeholder (`$1` for pgx/lib-pq, `?` for mysql/sqlite). Never `fmt.Sprintf` or `+` to build SQL.
+
+```go
+row := db.QueryRowContext(ctx, "SELECT * FROM users WHERE email = $1", email)
+```
+
+### Subprocess — argument list, never `sh -c`
+
+```go
+exec.Command("grep", "--", userInput, filename)   // no shell
+```
+
+Use `--` to terminate flag parsing before any user-supplied positional argument.
+
+### Path traversal — confine to base
+
+```go
+clean := filepath.Clean(filepath.Join(baseDir, userPath))
+if !strings.HasPrefix(clean, baseDir+string(os.PathSeparator)) {
+    return errors.New("path traversal")
+}
+```
+
+### CSPRNG — `crypto/rand`, never `math/rand`
+
+```go
+b := make([]byte, 32)
+_, err := cryptorand.Read(b)
+```
+
+For tokens, take bytes from `crypto/rand` and base64-encode.
+
+### Constant-time comparison — `hmac.Equal`
+
+Never `==` or `bytes.Equal` on secrets, signatures, or HMACs.
+
+### TLS — `MinVersion: tls.VersionTLS12`, verification on
+
+Never `InsecureSkipVerify: true` outside explicit local test fixtures. If a cert chain fails, fix the chain.
+
+### Outbound HTTP — block redirect chains when not needed
+
+```go
+&http.Client{CheckRedirect: func(*http.Request, []*http.Request) error {
+    return http.ErrUseLastResponse
+}}
+```
+
+Prevents the redirect-after-allowlist pivot to internal hosts.
+
+### Request body bounds — `http.MaxBytesReader`
+
+```go
+r.Body = http.MaxBytesReader(w, r.Body, 1<<20) // 1 MiB cap
+```
+
+### Password hashing — `golang.org/x/crypto/bcrypt`
+
+`bcrypt.GenerateFromPassword` / `bcrypt.CompareHashAndPassword`. Never `crypto/sha256` for passwords.
 
 ## Code Quality
 
