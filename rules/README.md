@@ -99,7 +99,6 @@ If there is any change to logic, control flow, or observable behavior, it is not
 | `owasp-top-10.md` | OWASP Top 10 recognition signals and mandatory behaviors — path-scoped to code, shell, SQL, Dockerfiles, Terraform, and CI workflows |
 | `go-security.md` | Go-specific security idioms — stdlib functions and patterns (parameterized SQL, `exec.Command`, `crypto/rand`, `hmac.Equal`, TLS config); refers to `owasp-top-10.md` for the general signal table |
 | `py-security.md` | Python-specific security idioms — Pydantic `Settings`/`SecretStr`, `subprocess` arg-list form, `hmac.compare_digest`, JWT verification; refers to `owasp-top-10.md` for the general signal table |
-| `nvim-security.md` | Neovim plugin security — `vim.system()` vs shell, dynamic code execution risks, path confinement, module-local secrets vs `vim.g.*`; refers to `owasp-top-10.md` for the general signal table |
 
 ### Go
 
@@ -126,8 +125,7 @@ If there is any change to logic, control flow, or observable behavior, it is not
 
 | File | Description |
 |---|---|
-| `nvim-lua.md` | Lua and Neovim API conventions — module structure, error handling, `vim.api` usage |
-| `nvim-plugin-architecture.md` | Neovim plugin architecture — setup/config separation, lazy initialization, public API surface |
+| `nvim-lua.md` | Lua and Neovim API conventions, plugin architecture, and Neovim-specific security idioms — module structure, error handling, `vim.api` usage, plugin layout, `vim.system()` over shell, etc. |
 | `nvim-config.md` | Personal Neovim config structure — organizing `init.lua`, options, keymaps, and autocmds |
 | `nvim-lazy.md` | lazy.nvim plugin manager conventions — spec format, lazy loading, dependency declaration |
 | `nvim-lsp.md` | Neovim LSP configuration — `nvim-lspconfig` patterns, on_attach, capabilities |
