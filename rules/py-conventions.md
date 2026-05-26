@@ -112,6 +112,20 @@ In semantic-release `build_command`, `uv lock` must run *before* any `uv run` st
 - Add `slots=True` to `@dataclass` for memory-critical domain entities (3.10+)
 - Use `itertools.batched(iterable, n)` to chunk a sequence into fixed-size groups (3.12+)
 
+## Security
+
+See `owasp-top-10.md` for the general signal table and mandatory behaviors. This section lists the Python-specific *how*.
+
+- **Secrets**: `pydantic_settings.BaseSettings` + `SecretStr`. `get_secret_value()` is the only extraction path; `str()`/`repr()` return `'**********'`.
+- **Subprocess**: `subprocess.run(["cmd", "--", user_input], check=True)`. Never `shell=True` with dynamic input.
+- **Deserialization**: never `pickle.loads` on untrusted input. `yaml.load` → `yaml.safe_load`. Prefer JSON + Pydantic.
+- **Input validation**: Pydantic at every boundary; set `model_config = ConfigDict(extra="forbid")` where strictness matters. Never pass raw dicts into domain logic.
+- **Path traversal**: `(base / user_path).resolve()` then check `base == target or base in target.parents`.
+- **Constant-time compare**: `hmac.compare_digest`. Never `==` on secrets, signatures, or HMACs.
+- **JWT**: `jwt.decode(token, key, algorithms=["RS256"])`. Pin `algorithms` (blocks `alg: none` and key confusion); never `verify_signature=False` in production.
+- **Password hashing**: `passlib.context.CryptContext(schemes=["argon2"])` or `argon2.PasswordHasher()`. Never `hashlib.sha256`.
+- **Dependency auditing**: run `pip-audit` in CI as a build gate. (`uv lock` discipline lives under Package Management above.)
+
 ## Code Quality
 
 - ruff for linting, import sorting, and formatting (`ruff check` + `ruff format`) — replaces black
