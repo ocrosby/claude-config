@@ -453,7 +453,7 @@ Each dispatch above ends with its own verification gate (regenerated tags, outpu
 ## Rules (apply across all subcommands)
 
 - `rules/docs-principles.md` is authoritative for Write-the-Docs conventions. Do not duplicate its content.
-- For language-specific format conventions: `rules/go-docs.md`, `rules/py-docs.md`, `rules/nvim-docs.md`. Skill orchestrates, rule defines.
+- For language-specific format conventions: the Documentation section of `rules/go-conventions.md`, `rules/py-docs.md`, `rules/nvim-docs.md`. Skill orchestrates, rule defines.
 - `write` never modifies source code other than the documentation strings/files it generates.
 - `review` is non-destructive without `-f`/`-fc`.
 - `research` always publishes externally — treat as human-gated for content sensitivity.
