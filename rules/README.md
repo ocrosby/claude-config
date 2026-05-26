@@ -117,8 +117,7 @@ If there is any change to logic, control flow, or observable behavior, it is not
 
 | File | Description |
 |---|---|
-| `py-conventions.md` | Idiomatic Python — naming, type hints, error handling, dataclasses, module structure |
-| `py-project-architecture.md` | Python project layout following hexagonal architecture — ports, adapters, domain boundaries |
+| `py-conventions.md` | Idiomatic Python — naming, type hints, error handling, dataclasses, module structure, hexagonal architecture, project layout (server + CLI) |
 | `py-testing.md` | Python testing conventions — pytest patterns, fixtures, parametrize, coverage |
 | `py-docs.md` | Python documentation — Google-style docstrings, module docstrings, type annotations |
 
