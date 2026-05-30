@@ -62,10 +62,10 @@ MODULE_ROOT=$(dirname <file>); while [ ! -f "$MODULE_ROOT/go.mod" ] && [ "$MODUL
 
 | Extension | Linter command (run from module/project root) |
 |---|---|
-| `.lua` | `stylua --check <file>` (if available); `luacheck --quiet <file>` (if available) |
+| `.lua` | Run `stylua --check <file>` — if the binary is absent, skip and note the gap in the Lint section. Then run `luacheck --quiet <file>` — if `.luacheckrc` is absent, skip and note. |
 | `.py` | `ruff check --quiet <file> && ruff format --check --quiet <file>` |
 | `.go` | `cd <module-root> && golangci-lint run ./... && go test -race ./...` |
-| `.feature` | `gherkin-lint <file>` (if available) |
+| `.feature` | Run `gherkin-lint <file>` — if the binary is absent, skip and note the gap in the Lint section. |
 
 If `golangci-lint` is unavailable, fall back to `go vet ./...` but note the gap. Report lint failures under a **Lint** section before the semantic review. Do not proceed to semantic review until lint failures are resolved.
 
@@ -198,7 +198,8 @@ Replicates the prior `/refactor` skill. Structural improvement without behavior 
    go test ./... -race && go vet ./... && golangci-lint run
 
    # Python
-   pytest && ruff check . && ruff format --check . && mypy .   # mypy if in use
+   pytest && ruff check . && ruff format --check .
+   # Run `mypy .` only if mypy is configured (mypy.ini, [tool.mypy] in pyproject.toml, or .mypy.ini present)
 
    # Neovim/Lua
    nvim --headless -u tests/minimal_init.lua \
@@ -260,7 +261,7 @@ Replicates the prior `/techdebt` skill. End-of-session sweep for duplicated and 
 
 3. **Ask before fixing.** Do not begin removing code without explicit user approval per item or per batch.
 
-4. **Apply approved fixes one at a time.** For each: make the change, run the project's test suite (`go test ./...`, `pytest`, `make test`, etc.). **If tests fail: stop and report the regression. Do not proceed.**
+4. **Apply approved fixes one at a time.** For each: make the change, then run the project's test suite — `go test ./...` for Go, `pytest` for Python, `make test` if a Makefile defines a `test` target. **If none of those apply: stop and ask the user which command to run before continuing.** **If tests fail: stop and report the regression. Do not proceed.**
 
 5. **Commit** via `/conventional-commit-msg`. Use `chore` or `refactor` — never `feat`.
 
