@@ -2,6 +2,8 @@
 description: Work journal manager — date-structured daily log of engineering activity. Dispatches on the first word of $ARGUMENTS as a subcommand.
 argument-hint: "<subcommand> [arguments]"
 aliases: work
+# Mutates ~/work journal files (add, done, update, note). Block model auto-invocation to prevent phantom journal entries; users invoke /work explicitly.
+disable-model-invocation: true
 ---
 
 # Work: Daily Engineering Journal
@@ -42,7 +44,7 @@ Interpret the output:
 
 ### 2. Parse the subcommand
 
-Split `$ARGUMENTS` on the first space. The first word is the subcommand; everything after is the subcommand's argument. Dispatch to the matching step below.
+Always split `$ARGUMENTS` on the first space. The first word is the subcommand; everything after is the subcommand's argument. Dispatch to the matching step below.
 
 ### 3. Dispatch — `add <task text>`
 
@@ -58,21 +60,21 @@ Period is one of: today (default), yesterday, this-week, last-week.
    - yesterday: yesterday only
    - this-week: Monday through today of the current week
    - last-week: Monday through Sunday of the previous calendar week
-2. For each date in the range, compute the file path and read it if it exists. Skip missing dates silently.
+2. For each date in the range, compute the file path and read it if it exists. Always skip missing dates silently — never warn about a missing daily file.
 3. Display results grouped by date with a heading per day. Show all tasks with checkbox state. Show Notes only if non-empty.
 4. End with a one-line summary: e.g. "3 of 7 tasks complete across 2 days."
 5. If no files exist for the range, say so clearly.
 
 ### 5. Dispatch — `done [task text]`
 
-1. Determine today's file path and read it. If no file exists, say so and stop.
+1. Determine today's file path and read it. **If no file exists for today: stop and do not proceed.** Tell the user no journal exists for today.
 2. If task text was provided: find the open task (`- [ ]`) whose text best matches, change it to `- [x]`, confirm the change.
 3. If no task text: list all open tasks numbered and ask which to mark complete, then apply the change.
 4. Show the updated task list for today.
 
 ### 6. Dispatch — `update`
 
-1. Determine today's file path and read it. If no file exists, say so and stop.
+1. Determine today's file path and read it. **If no file exists for today: stop and do not proceed.** Tell the user no journal exists for today.
 2. List all tasks (both open and complete) numbered, preserving their checkbox state. Example:
    ```
    1. [ ] Review Jenkins Jobs
