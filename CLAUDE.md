@@ -18,6 +18,10 @@ Apply this principle consistently in every session:
 
 Code that loses its reasoning becomes legacy code. Every interaction should add clarity about *why*, not just *what*.
 
+# Algorithmic Complexity
+
+Favor the lowest time and space complexity that solves the problem, in every language. Recognize the signals in `rules/algorithmic-complexity.md` (nested loops over the same collection, `in list` checks inside a loop, recomputed subproblems, intermediate lists for single aggregates, wrong-container choices) and apply the lower-complexity alternative as the default form — not as a follow-up "optimization." When the higher-complexity form is intentional (small bounded N, one-shot script, dramatically clearer at a single-use call site), say so explicitly.
+
 # Task Tracking
 
 When working on complex tasks (multi-step implementations, multi-file changes, bug hunts, refactors — anything where tracking progress adds value), create a `TODO.md` file at the root of the current git repo with a checklist of planned steps. Check off items as they are completed.
