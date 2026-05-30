@@ -2,11 +2,6 @@
 description: Systematically triages and diagnoses bugs across Go, Python, Neovim, and Gherkin. Detects language from cwd, emits a minimal-repro artifact, delegates to a language debugger agent. Override with /debug <language>.
 argument-hint: "[language] [description]"
 aliases: bug-triage
-paths:
-  - "**/*.go"
-  - "**/*.py"
-  - "**/*.lua"
-  - "**/*.feature"
 ---
 
 # Debug: Language-Aware Bug Triage
@@ -59,7 +54,7 @@ Strip away unrelated code until the failure isolates to a single function, modul
 
 - Fail when run on the current code
 - Fail for the bug's reason, not a setup error
-- Run in under 10 seconds (when possible)
+- Run in under 10 seconds, unless the bug itself is in I/O or latency behavior
 - Have no dependency on external services unless the bug is in the integration itself
 
 **Neovim minimal repro template** (used at `minimal_repro.lua`):
@@ -89,7 +84,7 @@ Invoke the matching debugger agent. Pass it the artifact path and the captured f
 
 The agent identifies root cause, gathers evidence, and proposes a fix.
 
-**Quick reference — orient before invoking the agent.**
+**Quick-reference symptom tables.** Read the matching table for the detected language and include the matching likely cause in the agent's input. These tables are reference material — when extracted to a Level 3 file in a follow-up, this section will become a one-line `Read` directive.
 
 *Go:*
 
