@@ -73,18 +73,22 @@ If no issues are found in a category, omit it from the report.
 
 ### 4. Confirm Before Implementing
 
-After presenting all findings, ask:
+**After presenting all findings: stop and do not proceed with any changes.** Ask the user:
 
 > Which of these should I implement? (say "all" or list specific items)
 
-Do not make any changes until the user confirms.
+**Do not make any changes until the user explicitly confirms.**
 
-## Rules
+### 5. Verify Coverage
 
-- Read every file before reporting — partial coverage produces false confidence
-- Do not report issues that were already fixed in the current session
-- Distinguish clearly between "this is broken" (correctness) and "this could be better" (polish)
-- If the system looks genuinely well-optimized, say so — do not manufacture findings
+Before exiting, confirm every file path discovered in Batch 1 of step 1 was actually read in Batch 2. **If any file was skipped: read it now and re-run analysis before delivering the final report.** Never report findings with partial coverage.
+
+Apply these constraints to every audit pass:
+
+- Read every file before reporting — partial coverage produces false confidence.
+- Never report issues that were already fixed in the current session.
+- Always distinguish "this is broken" (correctness) from "this could be better" (polish).
+- If the system looks genuinely well-optimized, say so — never manufacture findings.
 
 ## Related
 
