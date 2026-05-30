@@ -2,7 +2,7 @@
 
 Code that works on small input often fails on real input. Time and space complexity are properties of the *algorithm*, not the language — a quadratic Python loop and a quadratic Go loop both melt at the same N. Default to the lowest time and space complexity that solves the problem at hand, regardless of language.
 
-**This is an intentional design decision — do not simplify it away.** When a clearer-looking O(n²) approach is "obviously fine," the correct response is to keep the lower-complexity form and add a one-line comment explaining the choice, not to revert to the quadratic version because it reads more naturally. Performance regressions caused by complexity choices are usually invisible in code review and only surface in production.
+**This is an intentional design decision — do not simplify it away.** When a clearer-looking O(n²) approach is "obviously fine," the correct response is to keep the lower-complexity form and add a one-line comment explaining the choice, not to revert to the quadratic version because it reads more naturally. The complexity comment is the anti-regression anchor — do not remove it as style noise. Performance regressions caused by complexity choices are usually invisible in code review and only surface in production.
 
 ## Recognition Signals
 
@@ -34,7 +34,7 @@ Code that works on small input often fails on real input. Time and space complex
 
 ### Data structure choice — when the wrong container is the problem
 
-| Workload | Right structure |
+| Workload | Preferred structure |
 |---|---|
 | Membership tests | Set / hash set — not list |
 | Key → value lookup | Hash map / dict — not parallel arrays or list-of-pairs |
@@ -48,7 +48,7 @@ Code that works on small input often fails on real input. Time and space complex
 
 **When writing new code**: pick the data structure and algorithm that match the workload. If a signal from the tables above is present, apply the alternative — do not write the higher-complexity form first and "optimize later."
 
-**When editing existing code**: if the change touches a hot path or grows the working set, state the time/space complexity of the new code in your turn summary (e.g., "this remains O(n log n) time, O(n) space"). Do not silently regress complexity.
+**When editing existing code**: if the change touches a hot path or grows the working set, state the time/space complexity of the new code in your turn summary (e.g., "this remains O(n log n) time, O(n) space"). Do not silently regress complexity. If the change introduces a regression (higher time or space complexity on a hot path or unbounded input), stop and surface it as a Must Fix before proceeding — do not commit the regression and note it in the summary.
 
 **When reviewing code**: flag complexity regressions as findings:
 - **Must Fix**: a signal exists and the input is user-controlled or unbounded (the higher-complexity form will eventually hit production data that breaks it)
@@ -74,13 +74,13 @@ Do not apply this rule when:
 - **The input is provably bounded and small.** A 7-element config list does not need a set conversion. "Bounded and small" means a literal cap in code or a hard constraint in the spec, not a vibe.
 - **The expensive form is dramatically clearer and the call site runs once per process lifetime.** Startup-time config parsing, one-shot scripts, CLI argument validation.
 - **A library call already encapsulates the work** and replacing it would mean reimplementing standard-library functionality (e.g., don't replace `sorted()` with a hand-rolled merge sort).
-- **The user explicitly asked for the simpler form.** Their context wins.
+- **The user explicitly asked for the simpler form.** Do not apply this rule — implement the simpler form the user requested.
 
 Exceptions are the listed cases above. They are not "anything that feels small," "tests," or "internal tooling" — those have all hit production scale at some point. If you are not sure whether the input is bounded, assume it is not.
 
 ## Anti-Patterns to Avoid
 
-- **Premature micro-optimization**: rewriting in a lower-level construct, unrolling loops, replacing readable map/filter with imperative loops *without a measured benefit*. This rule is about asymptotic complexity, not constant factors.
-- **Speculative caching**: adding an unbounded cache "in case it gets called a lot." Caches are a space-for-time trade — only add when the lookup cost is measured and the cache size is bounded.
-- **Algorithm tourism**: reaching for trie / segment tree / Bloom filter when a hash map suffices. Use the simplest data structure that has the right complexity, not the cleverest.
-- **Big-O theater**: claiming O(n) in a comment while the implementation calls a hidden O(n) routine inside the loop, making it O(n²). The complexity claim must match the actual call graph.
+- **Premature micro-optimization.** Do not rewrite in a lower-level construct, unroll loops, or replace readable map/filter with imperative loops *without a measured benefit*. This rule is about asymptotic complexity, not constant factors.
+- **Speculative caching.** Never add an unbounded cache "in case it gets called a lot." Caches are a space-for-time trade — only add one when the lookup cost is measured and the cache size is bounded.
+- **Algorithm tourism.** Do not reach for trie / segment tree / Bloom filter when a hash map suffices. Use the simplest data structure that has the right complexity, not the cleverest.
+- **Big-O theater.** Do not claim O(n) in a comment when the implementation calls a hidden O(n) routine inside the loop, making it O(n²). The complexity claim must match the actual call graph.
