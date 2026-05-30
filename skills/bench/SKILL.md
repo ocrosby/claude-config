@@ -3,10 +3,6 @@ description: Benchmarking dispatcher — auto-detects language (go, py, nvim) fr
 argument-hint: "[language] [description]"
 aliases: go-bench, py-bench, nvim-bench
 allowed-tools: Read, Grep, Glob, Edit, Write, Bash(go test *), Bash(go tool *), Bash(benchstat *), Bash(pytest *), Bash(python *), Bash(py-spy *), Bash(nvim *), Bash(uv *)
-paths:
-  - "**/*.go"
-  - "**/*.py"
-  - "**/*.lua"
 ---
 
 # Bench: Language-Aware Benchmarking
@@ -85,7 +81,7 @@ go test -bench=BenchmarkName -benchmem -run=^$ -count=N ./pkg > new.txt
 benchstat old.txt new.txt
 ```
 
-Focus on **time/op** change with p-value, **allocs/op**, **B/op**, regressions even if small.
+Always report **time/op** change with p-value, **allocs/op**, and **B/op**. Never omit a regression because it is small — regardless of magnitude, a regression is a regression.
 
 **Profiling.**
 
@@ -143,7 +139,7 @@ Replicates the prior `/py-bench` skill.
    Install if needed: `uv add --dev pytest-benchmark`.
 4. **Profile for root cause.** `cProfile` for function-level call counts and times: `python -m cProfile -s cumtime -m pytest tests/test_foo.py::test_foo_benchmark`. `py-spy` for sampling without code changes: `py-spy top --pid <PID>` or `py-spy record -o profile.svg -- python -m pytest tests/test_foo.py` (install with `uv tool install py-spy`).
 5. **Interpret pytest-benchmark output.** `Min` (best-case, most representative for CPU-bound), `Mean` (watch StdDev/Mean > 10% for noise), `Rounds` (how many iterations). Red flags: high StdDev relative to Mean → move I/O and allocation out of the measured call; linear growth in time as input grows when O(1)/O(log n) expected; unexpected regressions in `--benchmark-compare`.
-6. **Apply optimizations.** List comprehensions over manual `append`. Local variable binding before tight loops to avoid repeated attribute lookup. `__slots__` for many small objects. `functools.lru_cache` / `cache` for pure functions with repeated identical inputs. NumPy vectorization for numeric loops. `io.BytesIO`/`io.StringIO` instead of repeated string concatenation. Bind `len()` to a local if called in a loop.
+6. **Apply optimizations.** Apply each directive when profiling identifies the matching pattern; do not apply blindly. Always use list comprehensions over manual `append` in measured hot paths. Always bind looked-up attributes to local variables before tight loops. Always use `__slots__` for classes with many small instances. Always use `functools.lru_cache`/`cache` for pure functions with repeated identical inputs. Always vectorize numeric loops with NumPy when the operation is element-wise. Never concatenate strings in a loop — use `io.BytesIO`/`io.StringIO` or `"".join()`. Always bind `len()` to a local if called in a tight loop.
 7. **Verify.** Re-run the benchmark. Confirm the change is measurable and not within noise.
 
 **Rules for `py`.** Never optimize without a benchmark showing the problem — measure first. A benchmark that passes instantly may be testing nothing; verify with `--benchmark-verbose`. Do not commit benchmarks requiring network or large fixtures without a `pytest.mark.slow` guard. Always assert a result in pytest-benchmark tests.
@@ -216,7 +212,7 @@ Replicates the prior `/nvim-bench` skill.
 
    Red flags: `require()` inside the timed loop (cached after first call → misleading sub-µs results); repeated `vim.api.*` calls that can be batched with `nvim_buf_call` or `vim.schedule`; table construction inside tight loops (GC pressure); inconsistent runs caused by background plugin state — re-run in `nvim --clean --noplugin`.
 
-6. **Apply optimizations.** Cache `require()` results at the top of the file, not inside callbacks. `vim.schedule` for deferred non-urgent work. Batch API calls (one `nvim_buf_set_lines` for the whole range). Pre-allocate option tables used in tight loops. Lazy-load plugin submodules with `__index`. Avoid `vim.tbl_deep_extend` on large tables in hot paths.
+6. **Apply optimizations.** Apply each directive when profiling identifies the matching pattern. Always cache `require()` results at the top of the file — never inside callbacks. Always use `vim.schedule` for deferred non-urgent work. Always batch API calls (one `nvim_buf_set_lines` for the whole range, not one per line). Always pre-allocate option tables used in tight loops. Always lazy-load plugin submodules with `__index`. Never call `vim.tbl_deep_extend` on large tables in hot paths.
 7. **Verify.** Re-run with a fresh `nvim`. Confirm the change is measurable per `vim.loop.hrtime()` and not within noise. **If within noise or regresses: revert and report.**
 
 **Rules for `nvim`.** Never optimize without a measurement. Exclude `require()` from the timed loop unless module load time is the target. For startup benchmarks, always use a fresh process. **Never `:source` a benchmark in a running session** — the Lua module cache persists across `:source` and gives misleading sub-µs results. Always `package.loaded["my_module"] = nil` before re-requiring in function-level benchmarks. Do not commit benchmark scripts to `lua/` — place them in `bench/` and `.gitignore` the directory.
