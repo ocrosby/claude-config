@@ -56,7 +56,11 @@ Do not read files one at a time. Issue all Read calls together so they execute c
 - Skills or agents that solve the same problem without knowing about each other
 - The `commands/` directory underused when key workflows aren't reachable via `/`
 
-### 3. Report Findings
+### 3. Verify Coverage
+
+Before assembling the report, confirm every file path discovered in Batch 1 of step 1 was actually read in Batch 2. **If any file was skipped: read it now and re-run the analysis in step 2. Do not proceed to step 4 until coverage is complete.** A report built on partial coverage is worse than no report — it gives false confidence that the system is sound.
+
+### 4. Report Findings
 
 For each finding:
 
@@ -71,24 +75,19 @@ Group by category. Within each group, order by impact — correctness and safety
 
 If no issues are found in a category, omit it from the report.
 
-### 4. Confirm Before Implementing
+Apply these constraints to every report:
+
+- Never report issues that were already fixed in the current session.
+- Always distinguish "this is broken" (correctness) from "this could be better" (polish).
+- If the system looks genuinely well-optimized, say so — never manufacture findings.
+
+### 5. Confirm Before Implementing
 
 **After presenting all findings: stop and do not proceed with any changes.** Ask the user:
 
 > Which of these should I implement? (say "all" or list specific items)
 
 **Do not make any changes until the user explicitly confirms.**
-
-### 5. Verify Coverage
-
-Before exiting, confirm every file path discovered in Batch 1 of step 1 was actually read in Batch 2. **If any file was skipped: read it now and re-run analysis before delivering the final report.** Never report findings with partial coverage.
-
-Apply these constraints to every audit pass:
-
-- Read every file before reporting — partial coverage produces false confidence.
-- Never report issues that were already fixed in the current session.
-- Always distinguish "this is broken" (correctness) from "this could be better" (polish).
-- If the system looks genuinely well-optimized, say so — never manufacture findings.
 
 ## Related
 
