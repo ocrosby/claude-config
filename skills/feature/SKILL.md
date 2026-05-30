@@ -2,11 +2,6 @@
 description: Feature development dispatcher — auto-detects language (go, py, nvim, gherkin, rest) from cwd and routes to the matching layered/TDD-driven workflow. Override with /feature <language> [...].
 argument-hint: "[language] [feature description]"
 aliases: go-feat, py-feat, nvim-feat, gherkin-feat, rest-implement, go-feature, py-feature, nvim-feature, gherkin-feature
-paths:
-  - "**/*.go"
-  - "**/*.py"
-  - "**/*.lua"
-  - "**/*.feature"
 ---
 
 # Feature: Language-Aware Feature Development
@@ -102,7 +97,7 @@ Replicates the prior `/nvim-feat` skill.
 
 3. **Implement with tests first.** For any feature with observable behavior, `rules/tdd.md` requires a failing test first. Use `plenary.busted` or `mini.test` per `rules/nvim-testing.md`.
 
-   For purely declarative features (a new keymap binding, a new autocommand group with no logic), TDD is not required — note the exception in the commit message.
+   The TDD requirement applies to any feature with observable behavior. The only exceptions are: a single `vim.keymap.set` call with no surrounding logic, a single `vim.api.nvim_create_autocmd` registration with no callback body beyond a one-line API call, and a `vim.api.nvim_set_hl` highlight definition. **If the feature does not match one of those exact shapes: TDD applies — do not skip.** When the exception applies, name the exception explicitly in the commit body (`exception: keymap-only, no logic`).
 
 4. **Apply Neovim API conventions.** Use `vim.api.nvim_*` over Vimscript. `vim.keymap.set` over `vim.api.nvim_set_keymap`. `vim.api.nvim_create_autocmd` and `vim.api.nvim_create_augroup` for autocommands. `vim.api.nvim_create_user_command` for user commands. `vim.notify` for user-facing messages. Namespace all autocommand groups. Make `setup()` idempotent — guard against re-sourcing.
 
