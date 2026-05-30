@@ -1,7 +1,7 @@
 ---
 description: Design-phase dispatcher — design (language auto-detect), patterns (GoF advisor), spec (OpenAPI design-first), catalog (Backstage init). The first word of $ARGUMENTS selects the subcommand; catalog commits and pushes.
 argument-hint: "<subcommand> [arguments]"
-aliases: architect, patterns, rest-spec, backstage-catalog-init, backstage-init
+aliases: patterns, rest-spec, backstage-catalog-init, backstage-init
 allowed-tools: Read, Grep, Glob, Write, Edit, Bash
 ---
 
@@ -43,7 +43,7 @@ Replicates the prior `/architect` skill.
    ```
    The second token of `$ARGUMENTS` (after `design`) is an explicit override. Returns `go`, `py`, `nvim`, `gherkin`, `rest`, or `unknown`. `rest` is not supported by `design` — recommend `/architect spec` instead. `unknown` → stop and ask.
 
-2. **Understand the context.** Before invoking the agent, gather:
+2. **Gather the context.** Collect answers to every item below before invoking the agent. **If any answer is missing: stop and ask the user — do not proceed to step 3.**
    - What is the application's purpose?
    - What is the entry point (HTTP server, CLI, MCP server, plugin)?
    - What external dependencies exist (database, APIs, message queues)?
@@ -61,11 +61,11 @@ Replicates the prior `/architect` skill.
 
    Pass the agent the context from step 2, plus any existing code that should be analyzed.
 
-4. **Review the output.** The architect agent returns: package/module map with responsibilities, dependency graph and layer boundaries, public API surface, configuration schema, trade-offs and alternatives considered. Review the proposal with the user before implementation begins. **Architecture decisions are expensive to reverse — confirm before proceeding.**
+4. **Review the output.** The architect agent returns: package/module map with responsibilities, dependency graph and layer boundaries, public API surface, configuration schema, trade-offs and alternatives considered. Present the proposal to the user. **If the user has not explicitly approved the design: stop and do not proceed to step 5.** Architecture decisions are expensive to reverse.
 
 5. **Capture decisions.** After the user approves the design: document key decisions in `ARCHITECTURE.md` or `docs/architecture.md` if one doesn't exist. Note the *why* behind non-obvious choices — future readers need the reasoning.
 
-**Rules for `design`.** Never start implementing before the design is confirmed. If the user asks to just start coding, recommend at least a 5-minute design sketch first. For greenfield projects, always invoke the agent before writing any production code. For redesigns, always read the existing code before invoking the agent.
+**Rules for `design`.** Never start implementing before the design is confirmed. If the user asks to just start coding, stop and require a design sketch before any production code is written. For greenfield projects, always invoke the agent before writing any production code. For redesigns, always read the existing code before invoking the agent.
 
 ### 3. Dispatch — `patterns`
 
