@@ -84,7 +84,7 @@ Invoke the matching debugger agent. Pass it the artifact path and the captured f
 
 The agent identifies root cause, gathers evidence, and proposes a fix.
 
-**Quick-reference symptom tables.** Read the matching table for the detected language and include the matching likely cause in the agent's input. These tables are reference material — when extracted to a Level 3 file in a follow-up, this section will become a one-line `Read` directive.
+**Quick-reference symptom tables.** Read the matching table for the detected language and include the matching likely cause in the agent's input.
 
 *Go:*
 
