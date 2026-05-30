@@ -3,6 +3,8 @@ description: Git workflow dispatcher — ship, sync, main, worktree, release-not
 argument-hint: "<subcommand> [arguments]"
 aliases: git-ship, git-cpr, git-sync, git-main, worktree, release-notes, ship, sync, main, commit-push-pr
 allowed-tools: Bash(git *) Bash(gh pr *) Bash(uv lock) Read
+# Human-gated: ship pushes commits, worktree mutates parallel checkouts. Block model auto-invocation; users invoke the slash command explicitly.
+disable-model-invocation: true
 ---
 
 # Git: Workflow Dispatcher
@@ -130,7 +132,8 @@ After the last group: `git stash drop`.
 Replicates the prior `/git-sync` skill. Rebases the current branch onto main without merging.
 
 1. **Check state.** `git status` and `git branch --show-current`.
-   - If on `main`/`master`: tell the user to use `/git main` instead and stop.
+   - **If on `main`/`master`: stop and tell the user to use `/git main` instead.**
+   - **If already up to date with `origin/main`: stop — do not create an empty rebase.**
 
 2. **Stash uncommitted changes** if any: `git stash push -m "sync: stash before rebase"`.
 
@@ -139,38 +142,35 @@ Replicates the prior `/git-sync` skill. Rebases the current branch onto main wit
    git fetch origin
    git rebase origin/main
    ```
-   If a `<base>` argument was given, rebase onto that instead.
+   If a `<base>` argument was given, rebase onto that instead. Never `git merge` — always rebase.
 
 4. **Handle conflicts.** Report conflicting files and hunks. Explain what each side changed. **Do not auto-resolve** — present options and wait. After resolution, `git rebase --continue`. On abort: `git rebase --abort`.
 
-5. **Pop stash** if stashed. Conflicts during pop are reported the same way.
+5. **Pop the stash if one was created in step 2 — always, even if rebase failed or was aborted.** Conflicts during pop are reported the same way as step 4 conflicts.
 
 6. **Report.** Current branch, commits rebased, stash state, the new base commit.
 
-7. **Suggest tests** if commits were actually applied:
-   ```bash
-   go test ./...   # Go
-   pytest          # Python
-   ```
+7. **Run tests if commits were actually applied.** Detect from cwd: `go test ./...` for Go, `pytest` for Python, `make test` if a `Makefile` defines a `test` target. **If no test command matches: stop and ask which command to run.** Report results before exiting.
 
-**Rules for `sync`.** Never `git merge` — always rebase. Never force-push unless the user asks (`--force-with-lease` is safer). If `main` does not exist but `master` does, use `master`. If already up to date, stop — do not create an empty rebase. Always pop the stash even if rebase fails.
+**Rules for `sync`.** Never force-push unless the user asks (`--force-with-lease` is safer). If `main` does not exist but `master` does, use `master`.
 
 ### 4. Dispatch — `main`
 
 Replicates the prior `/git-main` skill. Switch to main and sync.
 
-1. `git checkout main` (or `master` if no `main`).
-2. `git pull origin main`.
-3. If `uv.lock` exists: `uv lock`. Report if it changed; leave it unstaged.
-4. **Prune merged local branches in two passes:**
+1. **Check for uncommitted changes.** Run `git status --porcelain`. **If any uncommitted changes are present: stop and ask the user to choose — stash, commit, or abort. Do not switch branches until the choice is made.**
+2. `git checkout main` (or `master` if no `main`).
+3. `git pull origin main`.
+4. If `uv.lock` exists: `uv lock`. Report if it changed; leave it unstaged.
+5. **Prune merged local branches in two passes:**
    - **Pass 1 — fast-forward merges:**
      ```bash
      git branch --merged main | grep -v '^\*\|main\|master' | xargs -r git branch -d
      ```
    - **Pass 2 — squash/rebase merges:** for any branch `-d` skipped, run `gh pr list --state merged --head <branch>`. If a merged PR exists, force-delete with `git branch -D`. Otherwise leave the branch and report it.
-5. **Report.** Current branch, the pull output, and any deleted branches.
+6. **Report.** Current branch, the pull output, and any deleted branches.
 
-**Rules for `main`.** If there are uncommitted changes on the current branch, warn and ask (stash / commit / abort) before switching. If `main` doesn't exist but `master` does, use `master`. Omit "no deleted branches" from the report.
+**Rules for `main`.** If `main` doesn't exist but `master` does, use `master`. Omit "no deleted branches" from the report.
 
 ### 5. Dispatch — `worktree`
 
