@@ -48,7 +48,7 @@ Replicates the prior `/skill-author` skill. Guides creation of a new skill with 
    ```
    If a rule already enforces the behavior, the skill must reference the rule, not repeat it. Repeating creates drift.
 
-3. **Write the frontmatter.** Read `~/.claude/skills/CLAUDE.md` (Frontmatter section) before adding any field. That file is authoritative — do not duplicate the field reference here. Only `description` is required for Claude to know when to invoke the skill.
+3. **Write the frontmatter.** Read `~/.claude/skills/CLAUDE.md` (Frontmatter section) before adding any field. That file is authoritative — do not duplicate the field reference here. Only `description` is recommended for Claude to know when to invoke the skill.
 
 4. **Write the title and scope section.**
    ```markdown
