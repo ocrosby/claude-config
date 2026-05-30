@@ -2,15 +2,6 @@
 description: Documentation dispatcher — write (language auto-detect), review (Write-the-Docs audit), research (publish to here.now). The first word of $ARGUMENTS selects the subcommand; research publishes externally.
 argument-hint: "<subcommand> [arguments]"
 aliases: go-docs, py-docs, nvim-docs, gherkin-docs, doc-review, here-now
-paths:
-  - "**/*.go"
-  - "**/*.py"
-  - "**/*.lua"
-  - "**/*.feature"
-  - "**/*.md"
-  - "**/*.rst"
-  - "**/*.txt"
-  - "**/*.adoc"
 ---
 
 # Docs: Writing, Review, and Research Dispatcher
@@ -244,7 +235,7 @@ Replicates the prior `/gherkin-docs` skill.
 
 4. **Add coverage summary.** Compute totals: features, scenarios, `@smoke` (or other priority) tag counts per domain. Insert at top.
 
-5. **Write output.** Default path `docs/features.md` — create `docs/` if missing. Confirm path before writing.
+5. **Write output.** Default path `docs/features.md` — create `docs/` if missing. **If the user has not confirmed the output path: stop and ask. Do not write without an explicit path confirmation.**
 
 6. **Verify** output file exists, feature count matches parser's input file count, every feature has at least one scenario row. **If any check fails: stop.**
 
