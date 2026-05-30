@@ -48,21 +48,7 @@ Replicates the prior `/skill-author` skill. Guides creation of a new skill with 
    ```
    If a rule already enforces the behavior, the skill must reference the rule, not repeat it. Repeating creates drift.
 
-3. **Write the frontmatter.** Every field is optional; only `description` is recommended. Refer to `skills/CLAUDE.md` for the full field reference.
-
-   ```yaml
-   ---
-   description: <one sentence — specific, not generic; key use case first>
-   when_to_use: <optional trigger phrases or example requests>
-   aliases: <old-name>                  # if renamed
-   disable-model-invocation: true       # human-gated (deploys, releases, external side effects)
-   user-invocable: false                # hidden from / menu (background knowledge skills)
-   allowed-tools: Bash(git *) Read Grep # pre-approve tools while active
-   argument-hint: "<subcommand> [args]"
-   paths:
-     - "**/*.go"
-   ---
-   ```
+3. **Write the frontmatter.** Read `~/.claude/skills/CLAUDE.md` (Frontmatter section) before adding any field. That file is authoritative — do not duplicate the field reference here. Only `description` is required for Claude to know when to invoke the skill.
 
 4. **Write the title and scope section.**
    ```markdown
@@ -101,18 +87,7 @@ Replicates the prior `/skill-author` skill. Guides creation of a new skill with 
 
    Never write: "except for mechanical changes". Always write: "except for renaming an identifier, moving a file, or updating an import path with no logic change".
 
-7. **Audit the language.** Apply the filter:
-
-   | Advisory (rewrite) | Mandatory (keep) |
-   |---|---|
-   | should | must |
-   | consider | do |
-   | suggest | always |
-   | prefer | never |
-   | when appropriate | required |
-   | you may want to | do not |
-
-   Rewrite every advisory phrase as a mandatory directive, or move it to an explicit "optional" callout.
+7. **Audit the language.** Apply the advisory-vs-mandatory filter defined in `~/.claude/skills/CLAUDE.md` (Language section). Rewrite every advisory phrase as a mandatory directive, or move it to an explicit "optional" callout. Do not duplicate the filter table here — `skills/CLAUDE.md` is authoritative and any divergence is drift.
 
 8. **Review with the skill-reviewer agent.** Invoke `skill-reviewer` on the finished file. Address all Critical and Warning findings before committing. Suggestion-level findings are optional.
 
