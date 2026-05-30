@@ -41,7 +41,7 @@ Replicates the prior `/architect` skill.
    ```bash
    bash ~/.claude/scripts/detect_language.sh "${2-}"
    ```
-   The second token of `$ARGUMENTS` (after `design`) is an explicit override. Returns `go`, `py`, `nvim`, `gherkin`, `rest`, or `unknown`. `rest` is not supported by `design` — recommend `/architect spec` instead. `unknown` → stop and ask.
+   The second token of `$ARGUMENTS` (after `design`) is an explicit override. Returns `go`, `py`, `nvim`, `gherkin`, `rest`, or `unknown`. **If `rest`: stop and direct the user to `/architect spec` instead — `design` does not handle REST APIs.** **If `unknown`: stop and ask which language to apply.**
 
 2. **Gather the context.** Collect answers to every item below before invoking the agent. **If any answer is missing: stop and ask the user — do not proceed to step 3.**
    - What is the application's purpose?
