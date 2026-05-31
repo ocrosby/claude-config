@@ -1,3 +1,7 @@
+---
+description: Reference map for the full development workflow — orientation to which skill, agent, command, hook, and rule fires at each stage (architect → feature → code review → git ship → git main), plus maintenance commands, debugging paths, and automated quality gates.
+---
+
 # Development Workflow
 
 Complete reference for the development workflow and when to use each skill, agent, and hook.

@@ -1,3 +1,9 @@
+---
+description: Run a BDD feature file's pytest stub against a chosen environment/region — locates the .feature file under features/, derives the matching test stub under tests/bdd/, sets ENVIRONMENT/REGION, runs pytest, and reports a structured pass/fail summary with per-failure detail blocks.
+---
+
+# BDD: Run a Feature Stub
+
 Run a BDD feature file's pytest stub with the correct environment and region.
 
 ## Arguments
@@ -47,6 +53,10 @@ Run a BDD feature file's pytest stub with the correct environment and region.
    - Scan remaining tokens for `--env`/`-e` and `--region`/`-r` flags and their values.
    - Check for the presence of `--serial` or `-s` (boolean flag, no value).
    - Apply defaults: environment = `qa`, region = `auto`, serial = `false`.
+   - **Validate flag values against the allowed enums:**
+     - `--env` value must be one of `qa`, `prod`, `fastly`, `legacy`. **If not: print the help block from step 0 and stop. Do not run pytest.**
+     - `--region` value must be one of `auto`, `use1`, `usw2`, `euw1`, `apse1`. **If not: print the help block from step 0 and stop. Do not run pytest.**
+     - Any unknown flag (anything starting with `-` that is not `--env`/`-e`/`--region`/`-r`/`--serial`/`-s`) is also an error — **print the help block and stop.**
 
 2. **Locate the feature file** with a single Bash command:
    ```bash
