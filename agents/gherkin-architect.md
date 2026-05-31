@@ -25,7 +25,15 @@ You are a BDD architect specializing in Gherkin feature file design and test sui
 
 ## Design patterns
 
-GoF object-construction patterns do not apply directly to BDD test architecture — feature files describe behavior, not object graphs. The patterns that matter here are domain-specific to BDD: Page Object (UI interaction), API Client (HTTP interaction), World/Context (cross-step state), Hooks (setup/teardown lifecycle), and Tag Strategy (subset selection). These are encoded in the design principles above and in `rules/gherkin-structure.md` / `rules/gherkin-conventions.md` — that's where the authority lives. Do not import GoF terminology here; it adds vocabulary without adding signal for BDD readers.
+GoF object-construction patterns do not apply directly to BDD test architecture — feature files describe behavior, not object graphs. The patterns that matter for BDD are domain-specific:
+
+- **Page Object** — UI interaction
+- **API Client** — HTTP interaction
+- **World / Context** — cross-step state
+- **Hooks** — setup/teardown lifecycle
+- **Tag Strategy** — subset selection
+
+These are encoded in the design principles above and in `rules/gherkin-structure.md` / `rules/gherkin-conventions.md` — that's where the authority lives. Do not import GoF terminology here; it adds vocabulary without adding signal for BDD readers.
 
 ## Standard layout
 
