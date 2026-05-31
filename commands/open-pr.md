@@ -69,7 +69,7 @@ Use this command to push the current branch upstream and open a pull request aga
    )"
    ```
 
-   Derive bullets and motivation from the commit body and the diff against `main`. Use a `Depends on #<PR>` line in the body if the caller indicated a cross-PR dependency.
+   Derive bullets and motivation from the commit body and the diff against `main`. If `$ARGUMENTS` contains the literal token `depends-on=<PR>` (e.g. `depends-on=123`), append a `Depends on #123` line to the body. If `$ARGUMENTS` is empty or contains no such token, omit the dependency line.
 
 7. Run `gh pr view --json url,state --jq '"\(.state) \(.url)"'` and print the result. Confirm the state is `OPEN`.
 
@@ -77,6 +77,6 @@ Use this command to push the current branch upstream and open a pull request aga
 
 - Never `--force` or `--force-with-lease` push.
 - Never open a duplicate PR — if one exists, the push has already updated it.
-- Always assign the PR to `@me`.
+- Always assign the PR to `@me`. This is the intentional default for this solo-dev config; do not change it without a documented multi-assignee policy.
 - Never bypass the title length limit (70 characters) — abbreviate the scope or description instead.
 - PR title must follow Conventional Commits format and match the commit type used on the branch.
