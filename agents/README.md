@@ -47,16 +47,16 @@ Use this prompt to create a role-based reviewer agent:
 | Agent | Purpose |
 |---|---|
 | `gherkin-architect` | Designs BDD test architecture — feature file organization, step structure, support layer |
-| `gherkin-debugger` | Diagnoses and fixes bugs in Gherkin BDD test suites |
+| `gherkin-debugger` | Diagnoses bugs in Gherkin BDD test suites and proposes targeted fixes |
 | `gherkin-reviewer` | Reviews Gherkin feature files and step definitions for BDD best practices |
 | `go-architect` | Designs Go application architecture following clean architecture patterns |
-| `go-debugger` | Diagnoses and fixes bugs in Go applications |
+| `go-debugger` | Diagnoses bugs in Go applications and proposes targeted fixes |
 | `go-reviewer` | Reviews Go code for correctness, idiomatic patterns, and concurrency safety |
 | `nvim-architect` | Designs Neovim plugin architecture and module structure |
-| `nvim-debugger` | Diagnoses and fixes bugs in Neovim plugins |
+| `nvim-debugger` | Diagnoses bugs in Neovim plugins and proposes targeted fixes |
 | `nvim-reviewer` | Reviews Neovim plugin code for correctness and idiomatic Lua patterns |
 | `py-architect` | Designs Python application architecture following hexagonal architecture principles |
-| `py-debugger` | Diagnoses and fixes bugs in Python applications |
+| `py-debugger` | Diagnoses bugs in Python applications and proposes targeted fixes |
 | `py-reviewer` | Reviews Python code for correctness, architecture, type safety, and idiomatic patterns |
 | `rest-reviewer` | Reviews HTTP handler and route code for REST API convention compliance |
 | `skill-reviewer` | Reviews Claude skill files (SKILL.md) for structural quality and consistency |
