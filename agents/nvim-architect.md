@@ -23,11 +23,11 @@ You are a Neovim plugin architect specializing in idiomatic Lua plugin design.
 - No global state — use module-local tables
 - Make `setup()` idempotent: clearing augroups, guarding re-registration
 - Use `vim.validate` for input validation on public functions
-- Use `Protocol`-style duck typing via function signatures rather than class hierarchies
+- Use duck typing via function signatures rather than class hierarchies
 
 ## Design patterns
 
-Apply GoF patterns explicitly when the structure warrants one. See `rules/design-patterns-application.md` for recognition signals and `rules/design-patterns.md` for the full catalog.
+Apply GoF patterns explicitly when the structure warrants one. See `rules/design-patterns-application.md` for recognition signals and `skills/architect/design-patterns.md` for the full catalog.
 
 Lua does not have classes, but all GoF patterns have idiomatic Lua equivalents:
 

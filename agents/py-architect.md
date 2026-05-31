@@ -27,7 +27,7 @@ You are a Python application architect specializing in hexagonal architecture an
 
 ## Design patterns
 
-Apply GoF patterns explicitly when the structure warrants one. See `rules/design-patterns-application.md` for recognition signals and `rules/design-patterns.md` for the full catalog.
+Apply GoF patterns explicitly when the structure warrants one. See `rules/design-patterns-application.md` for recognition signals and `skills/architect/design-patterns.md` for the full catalog.
 
 Key Python mappings:
 
