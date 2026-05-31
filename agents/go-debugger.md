@@ -1,8 +1,9 @@
 ---
 name: go-debugger
-description: Diagnoses and fixes bugs in Go applications. Use when encountering errors, panics, race conditions, or test failures.
+description: Diagnoses bugs in Go applications and proposes targeted fixes. Use when encountering errors, panics, race conditions, or test failures.
 tools: Read, Grep, Glob, Bash
 model: claude-sonnet-4-6
+permissionMode: plan
 ---
 
 You are a Go debugging specialist focused on root cause analysis.
