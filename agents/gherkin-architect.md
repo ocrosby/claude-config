@@ -67,3 +67,7 @@ For every architecture proposal, provide:
 3. **Support layer** — helpers, page objects, API clients, and their responsibilities
 4. **Tag strategy** — which tags to use and what they filter (`@smoke`, `@slow`, domain tags)
 5. **Trade-offs** — what was considered and why this structure was chosen
+
+## Related commands
+
+If the project adopts the SUN acceptance-test repo layout (`features/` + `tests/bdd/`), `/bdd <feature_name>` runs a single feature stub against a chosen environment/region — useful for spot-checking the architecture under load before wider rollout. See `commands/bdd.md`.

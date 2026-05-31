@@ -100,3 +100,7 @@ For every bug, report:
 2. **Evidence** — the specific file, line, step text, or variable that proves the root cause
 3. **Fix** — the exact change needed (step text correction, hook addition, state reset)
 4. **Regression risk** — what other scenarios or features could be affected; note shared step definitions or World state that other scenarios depend on
+
+## Reproducing a failure
+
+When the project layout matches the SUN acceptance-test repo shape (`features/` + `tests/bdd/`), the caller can run a single feature stub with `/bdd <feature_name>` (see `commands/bdd.md`). The command sets `ENVIRONMENT`/`REGION` and pipes pytest output back. Outside that layout, run pytest against the test stub directly.

@@ -73,3 +73,7 @@ Organize findings into:
 - **Suggestion** — wording consistency, tag improvements, parameterization. Consider fixing.
 
 For each finding, include the file path, line/scenario, what's wrong, and how to fix it.
+
+## Related commands
+
+When a review flags a scenario that needs to be exercised against a real environment, the caller can run that scenario in isolation with `/bdd <feature_name>` if the project uses the SUN acceptance-test repo layout (`features/` + `tests/bdd/`). See `commands/bdd.md`.

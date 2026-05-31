@@ -125,7 +125,7 @@ Replicates the prior `/gherkin-feat` skill.
 
 5. **Wire up support.** `Before`/`After` hooks for scenario isolation (reset state, clean data). Environment config (base URLs, credentials, browser setup). Custom parameter types for domain concepts.
 
-6. **Verify parsing and the happy path.** Run the framework. Confirm: feature file parses without syntax errors, step definitions discovered (no undefined-step warnings), happy path passes end-to-end. **If any of these fail: stop and fix before review.**
+6. **Verify parsing and the happy path.** Run the framework. Confirm: feature file parses without syntax errors, step definitions discovered (no undefined-step warnings), happy path passes end-to-end. **If any of these fail: stop and fix before review.** If the project uses the SUN acceptance-test repo layout (`features/` + `tests/bdd/`), use `/bdd <feature_name>` to run the stub with the correct `ENVIRONMENT`/`REGION` set.
 
 7. **Review.** Invoke `/code review -fc` on the feature files and step definitions. `gherkin-reviewer` covers declarative vs imperative steps, scenario isolation, state leakage, Background overuse.
 
