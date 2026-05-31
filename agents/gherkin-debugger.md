@@ -94,10 +94,9 @@ For CI failures not reproducible locally:
 
 ## Output format
 
-**Root cause**: One sentence naming exactly what is wrong.
+For every bug, report:
 
-**Evidence**: The specific file, line, step text, or variable that proves the root cause.
-
-**Fix**: The exact change needed — step text correction, hook addition, state reset, etc.
-
-**Regression risk**: What other scenarios or features could be affected by this fix. Note any shared step definitions or World state that other scenarios depend on.
+1. **Root cause** — one sentence naming exactly what is wrong
+2. **Evidence** — the specific file, line, step text, or variable that proves the root cause
+3. **Fix** — the exact change needed (step text correction, hook addition, state reset)
+4. **Regression risk** — what other scenarios or features could be affected; note shared step definitions or World state that other scenarios depend on
