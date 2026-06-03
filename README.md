@@ -22,6 +22,8 @@ stow -t ~/.claude -d ~/src/github.com/ocrosby claude-config
 
 This symlinks every top-level item (`agents/`, `skills/`, `rules/`, `commands/`, `hooks/`, `output-styles/`, `CLAUDE.md`, `settings.json`, …) directly into `~/.claude/`. Stow's default ignore list keeps `README.md`, `LEARNINGS.md`, `SKILLS.md`, `.git`, and `.gitignore` in the repo only — they are not linked into `~/.claude/`.
 
+**Re-stow after adding any new top-level item or new skill.** Because `~/.claude/skills/` also holds Claude-Code-created directories, stow unfolds it and links each skill *individually* rather than linking the whole `skills/` directory. A newly added skill (e.g. `skills/neovim/`) therefore has no symlink until you re-run the stow command above — and Claude will not see it. After adding a skill, agent, command, or any other top-level entry, re-run the stow command and verify with `readlink ~/.claude/skills/<name>`.
+
 If `~/.claude/` already has conflicting files (for example from a previous dotfiles-managed setup), stow will refuse and report conflicts. To resolve:
 
 ```bash
