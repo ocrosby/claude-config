@@ -64,7 +64,7 @@ See `rules/design-patterns-application.md` for recognition signals. Flag these a
 
 - [ ] No stuttering: `user.Name` not `user.UserName`
 - [ ] Package names are lowercase single words that describe the service provided, not a generic name (`utils`, `helpers`, `common`, `base`)
-- [ ] Exported symbols have doc comments starting with the symbol name
+- [ ] Every type, function, method, and package — exported **or** unexported — has a doc comment starting with the symbol name (per `go-conventions.md` § Godoc conventions). Missing/malformed comment on an exported symbol is **Warning**; on an unexported symbol it is **Suggestion**
 - [ ] Short variable names for short scopes, descriptive for wider scopes — identifier length scales with distance between declaration and use
 - [ ] Variable names have no type suffixes: `users` not `usersMap`, `cfg` not `configPtr`
 - [ ] Acronyms uniformly cased: exported `OAuthEnabled`, unexported `oauthEnabled` — never mixed-case like `oAuthEnabled`
