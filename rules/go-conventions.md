@@ -113,6 +113,10 @@ project-name/
 - Variable names must not include type suffixes: `users` not `usersMap`, `cfg` not `configPtr` — the type system enforces types, names should communicate purpose
 - Identifier length scales with scope: single-letter (`i`, `r`) for innermost scopes; full descriptive names for package-level declarations
 - Omit unused receiver names: `func (foo) Method()` not `func (f foo) Method()` when the receiver is not accessed
+- Never use Go's predeclared identifiers as variable, parameter, or field names — they can be shadowed but should not be. The shadow looks fine in isolation and breaks subtly at the next call to the original:
+  - Functions: `new`, `make`, `len`, `cap`, `append`, `copy`, `delete`, `close`, `panic`, `recover`, `print`, `println`, `complex`, `real`, `imag`, `clear`, `min`, `max`
+  - Constants: `true`, `false`, `iota`, `nil`
+  - Types: `error`, `bool`, `string`, `int`, `int8`, `int16`, `int32`, `int64`, `uint`, `uint8`, `uint16`, `uint32`, `uint64`, `uintptr`, `float32`, `float64`, `complex64`, `complex128`, `byte`, `rune`, `any`, `comparable`
 
 ## Allocation and Data
 
@@ -216,6 +220,7 @@ func CopyFile(src string, dst Destination) error
 
 ## Comments and Spelling
 
+- Every comment ends with a period — including doc comments, line comments inside functions, and TODO/FIXME notes. The convention is uniform; `gofmt` and many linters assume it
 - Spell using American English: `marshaling`, `unmarshaling`, `canceling`, `canceled`, `cancellation` (not British variants)
 - Single space between sentences in doc comments — not double space
 - Compiler directives use no space: `//go:generate`, `//go:build` — this distinguishes them from regular comments
@@ -287,6 +292,19 @@ func ExampleEncode() {
 - HTTP APIs document request/response formats in handler comments
 - Use OpenAPI/Swagger generation tools if the project warrants it
 - Document all environment variables and config flags in `config.go`
+
+### Looking up documentation
+
+Use `go doc` from the terminal to read stdlib and module docs without leaving the shell — faster than navigating pkg.go.dev:
+
+```bash
+go doc fmt.Errorf
+go doc errors.Is
+go doc -all context
+go doc github.com/some/module.Func
+```
+
+Pair with the symbol you're about to call; the signature plus one paragraph is usually enough.
 
 ## Idiomatic Go
 
@@ -384,3 +402,4 @@ r.Body = http.MaxBytesReader(w, r.Body, 1<<20) // 1 MiB cap
 - `golangci-lint` as the meta-linter
 - Functions ≤ 40 lines, cyclomatic complexity ≤ 7
 - Files ≤ 500 lines; split when exceeded
+- Lines ≤ 120 characters; break long function signatures and `fmt.Errorf` calls at logical argument boundaries rather than mid-expression

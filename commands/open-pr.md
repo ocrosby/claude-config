@@ -71,6 +71,21 @@ Use this command to push the current branch upstream and open a pull request aga
 
    Derive bullets and motivation from the commit body and the diff against `main`. If `$ARGUMENTS` contains the literal token `depends-on=<PR>` (e.g. `depends-on=123`), append a `Depends on #123` line to the body. If `$ARGUMENTS` is empty or contains no such token, omit the dependency line.
 
+   **File references inside the body** must be SHA-pinned so they don't rot when `main` advances:
+
+   ```markdown
+   See [internal/auth/jwt.go:42](https://github.com/<owner>/<repo>/blob/<sha>/internal/auth/jwt.go#L42)
+   ```
+
+   Resolve the values once per invocation:
+
+   ```bash
+   SHA=$(git rev-parse HEAD)
+   REPO=$(gh repo view --json nameWithOwner -q .nameWithOwner)
+   ```
+
+   Never link to `/blob/main/` — those URLs silently change meaning the next time `main` is updated.
+
 7. Run `gh pr view --json url,state --jq '"\(.state) \(.url)"'` and print the result. Confirm the state is `OPEN`.
 
 ## Rules
