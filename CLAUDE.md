@@ -94,6 +94,15 @@ Iterate until the mistake rate measurably drops.
 - `/remote-control` controls a local session from your phone or browser.
 - `/voice` (CLI) or the voice button (Desktop) enables voice input.
 
+# Neovim Integration
+
+When `$NVIM` is set in the environment, Claude Code is running inside a Neovim terminal and can communicate with the parent Neovim instance over msgpack-RPC. Treat `skills/nvim/rpc.md` as **auto-applicable reference material** in this case — do not wait for the user to invoke `/nvim rpc` before using its patterns.
+
+- Apply RPC proactively when the question is about the live editor: current buffer, window, cursor, options, LSP clients, attached diagnostics, runtime files, or plugin install paths.
+- When opening a file at the user's request and `$NVIM` is set, use `nvim --server "$NVIM" --remote <path>` (or `--remote-tab`) rather than just printing the path — the user is already in the editor.
+- After editing files externally, refresh stale LSP diagnostics via the reload/`:LspRestart` sequence in `skills/nvim/rpc.md` rather than reasoning from stale lines.
+- The safety rules in `skills/nvim/rpc.md` still apply: prefer `--remote-expr` (read-only) over `--remote-send` (simulates typing); never send `:q` / `:qa` / `:bdelete` without explicit confirmation; never modify buffer contents via RPC without asking first.
+
 # Multi-Repo Work
 
 - Use `--add-dir` (or `/add-dir`) to give Claude access to additional repositories.
