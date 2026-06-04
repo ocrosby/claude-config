@@ -1,13 +1,13 @@
 ---
-description: Design-phase dispatcher — design (language auto-detect), patterns (GoF advisor), spec (OpenAPI design-first), catalog (Backstage init). The first word of $ARGUMENTS selects the subcommand; catalog commits and pushes.
+description: Design-phase dispatcher — design (language auto-detect), patterns (GoF advisor), spec (OpenAPI design-first), catalog (Backstage init), interview (plan-mode interview). The first word of $ARGUMENTS selects the subcommand; catalog commits and pushes.
 argument-hint: "<subcommand> [arguments]"
-aliases: patterns, rest-spec, backstage-catalog-init, backstage-init
+aliases: patterns, rest-spec, backstage-catalog-init, backstage-init, plan-interview
 allowed-tools: Read, Grep, Glob, Write, Edit, Bash
 ---
 
 # Architect: Design-Phase Dispatcher
 
-Use this skill for any design-time work: language-specific architecture, GoF pattern recommendations, OpenAPI specification authoring, or Backstage catalog registration.
+Use this skill for any design-time work: language-specific architecture, GoF pattern recommendations, OpenAPI specification authoring, Backstage catalog registration, or the pre-plan interview that surfaces open questions before a detailed plan is written.
 
 This skill delegates to the architect agents (`go-architect`, `py-architect`, `nvim-architect`, `gherkin-architect`) and to the shared scripts in `~/.claude/scripts/`. Pattern recognition signals live in `rules/design-patterns-application.md`; the full GoF catalog is bundled here as `design-patterns.md` (Level 3) and loaded only on demand.
 
@@ -21,6 +21,7 @@ This skill delegates to the architect agents (`go-architect`, `py-architect`, `n
 /architect patterns "<problem text>"    # GoF pattern advisor for a described problem
 /architect spec                         # write/update an OpenAPI entry (design-first)
 /architect catalog                      # create Backstage catalog-info.yaml + commit + push
+/architect interview                    # surface open questions + outline before a plan
 ```
 
 ## Workflow
@@ -30,7 +31,7 @@ This skill delegates to the architect agents (`go-architect`, `py-architect`, `n
 Split `$ARGUMENTS` on the first space. The first word is the subcommand.
 
 - Empty or `help` → print **Usage** and stop.
-- Not one of `design`, `patterns`, `spec`, `catalog` → print **Usage** and stop.
+- Not one of `design`, `patterns`, `spec`, `catalog`, `interview` → print **Usage** and stop.
 - Dispatch to the matching step.
 
 ### 2. Dispatch — `design`
@@ -302,7 +303,22 @@ Replicates the prior `/backstage-catalog-init` skill. Creates a `catalog-info.ya
 
 **Rules for `catalog`.** Never guess owner or system. Never overwrite an existing `catalog-info.yaml`. Never push if `git push` failed — tell the user to push manually.
 
-### 6. Final verification step
+### 6. Dispatch — `interview`
+
+Replicates the prior `/plan-interview` skill. Use this when the user asks for a plan / design / implementation strategy AND key questions are unresolved — surface the unknowns and a high-level outline first, iterate, then commit to a detailed plan.
+
+**When to skip.** The user said "just plan it" / "skip the interview"; all needed context is already on the table; you're inside `/architect design` (which runs its own interview step).
+
+Read `~/.claude/skills/architect/interview.md` and apply its workflow:
+
+- List 3–8 open questions grouped by Scope / Constraints / Inputs / Outputs / Risks
+- Sketch a 3–5 bullet outline tagged with `(Q1)`, `(Q3)`, etc.
+- Send questions + outline; iterate; restart from step 1 if scope reframes
+- Commit to the detailed plan once questions are resolved
+
+This subcommand is the information-gathering phase that precedes Claude Code's plan mode (Shift+Tab) — the two are complementary. Per `CLAUDE.md`'s "Working with Plan Mode" rule, pour energy into the plan so Claude can 1-shot the implementation.
+
+### 7. Final verification step
 
 Each dispatch above ends with its own verification gate:
 
@@ -310,6 +326,7 @@ Each dispatch above ends with its own verification gate:
 - `patterns` → report passes all 4 checks in step 9 (cited locations, ≤3 per file, plausible sketches, matches template)
 - `spec` → OpenAPI validator clean, handoff to `/feature rest` reported
 - `catalog` → file verified, committed, pushed, import URL printed
+- `interview` → open questions surfaced + outline shared; the detailed plan is written only after the user has answered
 
 If any verification was skipped, re-run it before exiting.
 
@@ -318,4 +335,5 @@ If any verification was skipped, re-run it before exiting.
 - This skill is design-first — never write production handler code from within it (`spec` is followed by `/feature rest`, not by inline handler authoring).
 - `patterns` is advisory only. Implementation delegates to the language architect agents.
 - `catalog` mutates remote git history — treat as human-gated.
+- `interview` does not write the detailed plan in the same turn the questions are surfaced — wait for the user's answers.
 - `rules/rest-api-conventions.md` and `rules/design-patterns-application.md` are authoritative for REST and pattern signals respectively. Do not duplicate their content here.

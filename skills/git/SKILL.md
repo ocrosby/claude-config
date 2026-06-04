@@ -1,15 +1,15 @@
 ---
-description: Git workflow dispatcher — ship, sync, main, worktree, release-notes. The first word of $ARGUMENTS selects the subcommand. Subcommands ship and worktree push to remote or mutate parallel checkouts; treat them as human-gated.
+description: Git workflow dispatcher — ship, sync, main, worktree, release-notes, cli. The first word of $ARGUMENTS selects the subcommand. Subcommands ship and worktree push to remote or mutate parallel checkouts; treat them as human-gated.
 argument-hint: "<subcommand> [arguments]"
-aliases: git-ship, git-cpr, git-sync, git-main, worktree, release-notes, ship, sync, main, commit-push-pr
-allowed-tools: Bash(git *) Bash(gh pr *) Bash(uv lock) Read
+aliases: git-ship, git-cpr, git-sync, git-main, worktree, release-notes, ship, sync, main, commit-push-pr, gh-cli
+allowed-tools: Bash(git *) Bash(gh *) Bash(uv lock) Read
 # Human-gated: ship pushes commits, worktree mutates parallel checkouts. Block model auto-invocation; users invoke the slash command explicitly.
 disable-model-invocation: true
 ---
 
 # Git: Workflow Dispatcher
 
-Use this skill for any git-graph operation: shipping a branch (creating it from main or committing onto your existing branch), rebasing, switching to main, creating a parallel worktree, or generating release notes.
+Use this skill for any git-graph or GitHub-CLI operation: shipping a branch (creating it from main or committing onto your existing branch), rebasing, switching to main, creating a parallel worktree, generating release notes, or looking up `gh` commands that the workflow subcommands do not already wrap.
 
 The orchestration delegates to atomic building blocks: `/branch-from-main`, `/conventional-commit-msg`, `/open-pr`, and the shared scripts at `~/.claude/scripts/git_group.py` and `~/.claude/scripts/classify_commits.py`. This skill never re-implements their mechanics.
 
@@ -28,6 +28,7 @@ The orchestration delegates to atomic building blocks: `/branch-from-main`, `/co
 /git main                             # checkout main, pull, prune merged branches
 /git worktree [<name>]                # create parallel worktree under .claude/worktrees/
 /git release-notes [<range>]          # generate changelog (default: since last tag)
+/git cli                              # GitHub CLI quick reference (gh api, runs, reviews, issues)
 ```
 
 `/git ship` subsumes the previous `/git cpr` subcommand. If you are already on a feature branch with a prior push, the branch is kept; only pre-flight, commit, push, and PR run. The `--quick` flag skips pre-flight for the same daily-iteration use case.
@@ -40,7 +41,7 @@ Split `$ARGUMENTS` on the first space. The first word is the subcommand; everyth
 
 - If the subcommand is empty or `help`: print the **Usage** block above and stop.
 - If the subcommand is `cpr`: print `/git cpr was merged into /git ship — for the daily-iteration ergonomics use /git ship --quick`, then dispatch to `ship` with `--quick` prepended to the remaining argument string. If `--quick` is already present in the remaining argument string, do not prepend a duplicate — treat the argument string as-is.
-- If the subcommand is not one of `ship`, `sync`, `main`, `worktree`, `release-notes`: stop and print the **Usage** block.
+- If the subcommand is not one of `ship`, `sync`, `main`, `worktree`, `release-notes`, `cli`: stop and print the **Usage** block.
 - Dispatch to the matching step.
 
 ### 2. Dispatch — `ship`
@@ -226,9 +227,26 @@ Replicates the prior `/release-notes` skill. Argument is an optional commit rang
 
 5. **Verify.** Every flagged Breaking Change appears; no commit hashes in the final notes; entries grouped under expected headings. **If a section the script populated is missing: stop and explain which commits were dropped and why.**
 
-### 7. Final verification step
+### 7. Dispatch — `cli`
 
-For every subcommand, the dispatch block above ends with its own verification gate. Before this skill exits, confirm the gate fired (PR URL reachable, branch pruned report emitted, worktree listed, etc.) — if any verification was skipped, re-run it.
+Reference subcommand. Surfaces a `gh` quick-reference for operations that the workflow subcommands above do not already wrap (CI debugging, PR reviews with inline comments, issue triage, GraphQL queries, `gh api` calls).
+
+Read `~/.claude/skills/git/cli.md` and apply what the user is asking for from its sections:
+
+- Discovery patterns (`--json`, `--limit`, `--web`)
+- CI/CD debugging (`gh run list`, `gh run view --log-failed`, `gh run rerun --failed`)
+- Reviewing a PR with line-level comments via `gh api repos/{owner}/{repo}/pulls/N/reviews`
+- Issue triage (`gh issue list`, `gh issue create`, `gh issue comment`)
+- JSON output + jq filtering
+- API access (REST and GraphQL)
+- Finding your work (`gh pr list --author @me`, `--search "review-requested:@me"`)
+- Environment variables and aliases
+
+**This subcommand is read/lookup oriented — do not push, comment, approve, or otherwise mutate remote state without the user explicitly asking for that action.** For routine PR creation use `/open-pr`; for branch → commit → push → PR use `/git ship`; for review with agent feedback use `/code review`.
+
+### 8. Final verification step
+
+For every subcommand, the dispatch block above ends with its own verification gate. Before this skill exits, confirm the gate fired (PR URL reachable, branch pruned report emitted, worktree listed, the requested `gh` command surfaced from the reference, etc.) — if any verification was skipped, re-run it.
 
 ## Rules (apply across all subcommands)
 

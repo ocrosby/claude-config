@@ -1,8 +1,3 @@
----
-description: Conventions for writing redistributable Neovim plugins in Lua per Neovim's official guide (https://neovim.io/doc/user/lua-plugin/) — file structure, lazy loading, setup() patterns, guard variables, health checks, LuaCATS annotations, vimdoc, and SemVer/deprecation. Use when authoring a standalone plugin, or when a yoda.nvim module is being extracted into one.
-when_to_use: User is creating, modifying, or reviewing a redistributable Neovim plugin — including mentions of plugin structure, ftplugin, health.lua, :checkhealth, setup() functions, `<Plug>` mappings, LuaCATS annotations, vimdoc, panvimdoc. Trigger when working in a directory that looks like a plugin (top-level `plugin/`, `lua/<name>/`, `ftplugin/`, `doc/<name>.txt`). NOT for configuring your own Neovim — use `/nvim-config` for native configs or `/add-plugin` for yoda.nvim's lazy.nvim adds.
----
-
 # Writing Neovim Plugins
 
 Reference: https://neovim.io/doc/user/lua-plugin/.
@@ -16,11 +11,11 @@ You haven't published a standalone Neovim plugin yet (no `topic:neovim` repos un
 - A `lua/yoda/<module>` extracted from yoda.nvim into its own repo (e.g. one of the dependency-injection or logging modules under that tree)
 - A net-new plugin to scratch a specific itch
 
-If you're configuring your own Neovim setup (not authoring a redistributable plugin), this isn't the right skill:
+If you're configuring your own Neovim setup (not authoring a redistributable plugin), this isn't the right scope:
 
 - yoda.nvim / lazy.nvim adds → use **`/add-plugin`**
-- Native vim.pack config work → use **`/nvim-config`**
-- Driving a running Neovim from a `:terminal` → use **`/neovim`**
+- Native vim.pack config work → use **`/nvim config`**
+- Driving a running Neovim from a `:terminal` → use **`/nvim rpc`**
 
 ## File structure
 
@@ -266,7 +261,7 @@ Reuse `/docs write` for the Markdown source (it dispatches to language-specific 
 }
 ```
 
-- For native vim.pack configs, use the local-dev loader pattern from `/nvim-config` (a `lua/dev.lua` helper that falls back to `vim.pack.add()` when the local clone is absent)
+- For native vim.pack configs, use the local-dev loader pattern from `/nvim config` (a `lua/dev.lua` helper that falls back to `vim.pack.add()` when the local clone is absent)
 
 ## Testing
 

@@ -1,9 +1,3 @@
----
-description: Before writing a plan for non-trivial work, interview the user — surface open questions and a high-level outline first, iterate, then commit to a plan. Pairs naturally with Claude Code's plan mode (Shift+Tab); use when entering planning without enough context.
-when_to_use: User asks for a plan / design / implementation strategy AND key questions are unresolved. Examples — "plan how we'd add X", "design the migration", "what's the approach for Y", or any time you'd otherwise jump to writing a multi-step plan without enough context. Skip when the user has already provided full context or explicitly says "just plan it".
-disable-model-invocation: false
----
-
 # Plan Interview
 
 Before writing a plan, work back and forth with the user. Surface the open questions and a high-level outline first; commit to a detailed plan only after the unknowns are resolved.
@@ -38,9 +32,9 @@ When the open questions are answered and the outline survives a round, write the
 
 ## Pairs with plan mode
 
-This skill is the *information-gathering* phase that should precede entering Claude Code's plan mode (Shift+Tab). Once questions are resolved, switch to plan mode for the detailed plan itself — the two are complementary, not redundant. Per `CLAUDE.md`'s "Working with Plan Mode" rule: "Pour energy into the plan so Claude can 1-shot the implementation."
+This subcommand is the *information-gathering* phase that should precede entering Claude Code's plan mode (Shift+Tab). Once questions are resolved, switch to plan mode for the detailed plan itself — the two are complementary, not redundant. Per `CLAUDE.md`'s "Working with Plan Mode" rule: "Pour energy into the plan so Claude can 1-shot the implementation."
 
-## When to skip this skill
+## When to skip this subcommand
 
 - The user said "just plan it" or "skip the interview"
 - All context needed is already on the table (the task is mechanical: a bug fix with a clear repro, a refactor with a known target shape)

@@ -63,15 +63,15 @@ See `skills/CLAUDE.md` for the recognition signals and the full token-economics 
 
 ---
 
-## The 10 user-facing skills
+## The 11 dispatchers
 
-Each top-level skill is a dispatcher: the first word of `$ARGUMENTS` selects a subcommand or the dispatcher auto-detects the language from the working directory. The full list of subcommands lives in each `SKILL.md`.
+Each top-level skill is a dispatcher: the first word of `$ARGUMENTS` selects a subcommand or the dispatcher auto-detects the language from the working directory. The full list of subcommands lives in each `SKILL.md`. Reference-only content for a subcommand lives alongside `SKILL.md` (e.g. `skills/nvim/config.md`) and is loaded only when that subcommand is invoked.
 
 ### Git workflow
 
 | Skill | Subcommands | Description |
 |---|---|---|
-| `/git` | `ship`, `sync`, `main`, `worktree`, `release-notes` | Branch / commit / push / PR / rebase / merge cleanup / parallel worktrees / changelog generation. `ship` (with `--quick` for daily iteration) and `worktree` push to remote or mutate parallel checkouts. |
+| `/git` | `ship`, `sync`, `main`, `worktree`, `release-notes`, `cli` | Branch / commit / push / PR / rebase / merge cleanup / parallel worktrees / changelog generation. `cli` is a quick reference for `gh` operations the workflow subcommands don't already wrap (CI debugging, inline PR reviews, GraphQL, issue triage). |
 
 ### Code quality and transformation
 
@@ -101,7 +101,7 @@ Each top-level skill is a dispatcher: the first word of `$ARGUMENTS` selects a s
 
 | Skill | Subcommands | Description |
 |---|---|---|
-| `/architect` | `design` (lang auto-detect), `patterns`, `spec`, `catalog` | Language-architect agents for design proposals, GoF pattern recognition, OpenAPI design-first authoring, and first-time Backstage catalog registration. |
+| `/architect` | `design` (lang auto-detect), `patterns`, `spec`, `catalog`, `interview` | Language-architect agents for design proposals, GoF pattern recognition, OpenAPI design-first authoring, first-time Backstage catalog registration, and the standalone plan-mode interview (questions + outline before a detailed plan). |
 
 ### Debugging
 
@@ -109,23 +109,38 @@ Each top-level skill is a dispatcher: the first word of `$ARGUMENTS` selects a s
 |---|---|---|
 | `/debug` | language auto-detect (or `/debug go / py / nvim / gherkin`) | Reproduce → isolate → emit a minimal-repro artifact → escalate to the matching language debugger agent → verify the fix. |
 
+### Audit
+
+| Skill | Subcommands | Description |
+|---|---|---|
+| `/audit` | `system`, `repo`, `skill` | `system` — Claude workflow components (rules, agents, hooks, skills, commands, settings) for inter-component correctness. `repo` — any git repository's history (churn, ownership / bus factor, hotspots, momentum, firefighting). `skill` — per-SKILL.md structural quality via `skill-reviewer`. |
+
+### Neovim
+
+| Skill | Subcommands | Description |
+|---|---|---|
+| `/nvim` | `rpc`, `config`, `plugin` | `rpc` — talk to a running Neovim via msgpack-RPC. `config` — native vim.pack config authoring (no plugin manager). `plugin` — authoring redistributable Neovim plugins. For yoda.nvim / lazy.nvim adds, use `/add-plugin`. |
+
 ### Skill-system maintenance
 
 | Skill | Subcommands | Description |
 |---|---|---|
-| `/skill` | `author`, `audit`, `gaps`, `usage` | Interactive new-skill workflow, per-SKILL.md health check via `skill-reviewer`, gaps (repeating tasks lacking skills) from session history, invocation counts with retirement recommendations. |
-
-### System audit
-
-| Skill | Description |
-|---|---|
-| `/audit` | Reads every component (rules, agents, hooks, skills, commands, settings) and reports inter-component findings — correctness, redundancy, missing connections, coverage gaps, discoverability. For per-skill structural quality only, use `/skill audit`. |
+| `/skill` | `author`, `gaps`, `usage` | Interactive new-skill workflow, gaps (repeating tasks lacking skills) from session history, invocation counts with retirement recommendations. For per-SKILL.md structural quality, use `/audit skill`. |
 
 ### Work journal
 
 | Skill | Subcommands | Description |
 |---|---|---|
-| `/work` | `add`, `list`, `done`, `update`, `note` | Date-structured daily log of engineering activity at `~/work/{YYYY}/{M}/{D}.md`. Already used subcommand dispatch internally; the model for the other 9. |
+| `/work` | `add`, `list`, `done`, `update`, `note` | Date-structured daily log of engineering activity at `~/work/{YYYY}/{M}/{D}.md`. Already used subcommand dispatch internally; the model for the other dispatchers. |
+
+## Standalone primitives
+
+These skills are single-purpose primitives with unique triggers — they intentionally remain top-level rather than folding under a dispatcher.
+
+| Skill | Purpose |
+|---|---|
+| `/obsidian` | Read / create / edit notes in the PARA-organized vault at `~/src/github.com/ocrosby/obsidian`. |
+| `/proof` | Back up a claim with a verifiable citation (file:line, version-pinned URL, commit SHA, test result), or honestly downgrade the claim. |
 
 ---
 

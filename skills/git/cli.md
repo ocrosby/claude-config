@@ -1,13 +1,8 @@
----
-description: GitHub CLI (gh) command reference — PR/issue/run/repo workflows, `gh api` direct calls, GraphQL, JSON+jq filtering, code-review submission with line comments, and CI/CD debugging. Use when working with GitHub from the terminal in any way the existing `/git` and `/open-pr` workflows don't already cover.
-when_to_use: User asks how to do something with `gh` that isn't already a building-block command. Examples — "submit a PR review with inline comments", "rerun the failed CI job", "list PRs that need my review", "query the GitHub API for X", "find issues assigned to me". For routine PR creation use `/open-pr`; for branch/commit/push/PR orchestration use `/git ship`.
----
-
 # GitHub CLI Quick Reference
 
-The `gh` CLI is GitHub's official command-line tool. This skill is a quick reference — for the canonical docs see https://cli.github.com/manual.
+Reference for `gh` (GitHub's official CLI) covering the operations the rest of `/git` does not already wrap. For the canonical docs see https://cli.github.com/manual.
 
-Source: adapted from [fredrikaverpil/dotfiles](https://github.com/fredrikaverpil/dotfiles/blob/main/stow/shared/.claude/skills/gh-cli/SKILL.md). Cross-references to existing workflow:
+Source: adapted from [fredrikaverpil/dotfiles](https://github.com/fredrikaverpil/dotfiles/blob/main/stow/shared/.claude/skills/gh-cli/SKILL.md). Cross-references inside `/git`:
 
 - **Routine PR creation** → `/open-pr` (pushes branch + composes structured body + assigns `@me`)
 - **Full branch → commit → push → PR flow** → `/git ship`
