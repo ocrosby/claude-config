@@ -1,11 +1,4 @@
----
-description: Analyze a git repo's history to surface high-churn files, ownership risks / bus factor, bug hotspots, momentum trends, and firefighting patterns. Use when orienting in an unfamiliar codebase or assessing repo health — git-only, with optional GitHub enrichments when `gh` is authenticated.
-when_to_use: User wants to understand the health, ownership, or risk profile of a git repository before reading code. Examples — "audit this repo", "codebase audit", "analyze this repo's history", "what's the state of this codebase?", "bus factor", "churn analysis", "tell me about this repo", "who owns this code?", "is this repo healthy?".
-allowed-tools:
-  - Bash
----
-
-# Codebase Audit
+# Codebase Audit (Repository History)
 
 Analyze the current git repository's history to produce a structured health report covering churn, ownership, bugs, momentum, and firefighting patterns.
 

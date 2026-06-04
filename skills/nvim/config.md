@@ -1,8 +1,3 @@
----
-description: Reference for Neovim configs that use the built-in native conventions (vim.pack for plugin management, plugin/*.lua loading, lsp/*.lua auto-discovery, after/ overrides) WITHOUT a plugin manager framework. Requires Neovim ≥ 0.12. Use when designing, reviewing, or modifying a native nvim config — not lazy.nvim, packer, or any other framework.
-when_to_use: User is working in a Neovim config that calls vim.pack.add() / vim.lsp.enable() / uses plugin/*.lua loading; user explicitly says "native nvim config", "vim.pack", "no plugin manager", or "switching off lazy.nvim". Trigger phrases — "convert to native", "vim.pack lockfile", "after/lsp override", "plugin/lang/<ft>.lua pattern".
----
-
 # Native Neovim Config Reference
 
 Reference for Neovim configs using the built-in conventions (`vim.pack`, `plugin/`, `lsp/`, `after/`) without a plugin manager framework. Requires Neovim ≥ v0.12.0.
@@ -42,7 +37,7 @@ Key help files for native config work:
 
 **Online** — https://neovim.io/doc/user/ mirrors the same help pages.
 
-For RPC into a running instance (querying state, listing runtime files, finding plugin source), see `/neovim`.
+For RPC into a running instance (querying state, listing runtime files, finding plugin source), use `/nvim rpc`.
 
 ## Startup sequence (`:h initialization`)
 

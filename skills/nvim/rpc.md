@@ -1,8 +1,3 @@
----
-description: Interact with the user's running Neovim instance via msgpack-RPC — execute Lua/Vimscript, query buffer/window/LSP state, send commands, open files, and inspect the Neovim runtime from inside a Neovim terminal.
-when_to_use: User asks about their current Neovim session, wants to run something inside Neovim, needs to inspect Neovim state (buffers, windows, options, LSP), or Claude Code is running inside a Neovim terminal and needs to communicate with the parent editor.
----
-
 # Neovim RPC
 
 When Claude Code runs inside a Neovim terminal, the `$NVIM` environment variable points to the parent Neovim's Unix socket. This gives full access to Neovim's msgpack-RPC API without any plugins or HTTP servers.

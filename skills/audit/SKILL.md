@@ -1,94 +1,78 @@
 ---
-description: Audits the Claude workflow system — reads every component (rules, agents, hooks, skills, commands, settings) and reports what's suboptimal with specific fixes, grouped by category and ordered by impact. For per-skill structural quality only, use /skill audit instead.
-aliases: workflow-audit
+description: Audit dispatcher — system (Claude workflow components), repo (git history of any repository), skill (per-SKILL.md structural quality). The first word of $ARGUMENTS selects the subcommand.
+argument-hint: "<subcommand> [arguments]"
+aliases: codebase-audit, workflow-audit
+allowed-tools: Read, Grep, Glob, Bash
 ---
 
-# Workflow Audit
+# Audit: Audit Dispatcher
+
+Use this skill for any "audit X" workflow. The dispatcher routes between three disjoint scopes:
+
+- `system` — the Claude workflow system in `~/.claude/` (rules, agents, hooks, skills, commands, settings)
+- `repo` — the git history of any repository (churn, ownership, bug hotspots, momentum, firefighting)
+- `skill` — individual `SKILL.md` files against the skill-authoring conventions
+
+## Usage
+
+```
+/audit                  # show this help
+/audit system           # audit the Claude workflow components
+/audit repo             # audit the current git repository's history
+/audit skill [name]     # audit every SKILL.md (or one by name) via skill-reviewer
+```
 
 ## Workflow
 
-### 1. Read Everything
+### 1. Parse the subcommand
 
-**Use two parallel batches — do not read files sequentially.**
+Split `$ARGUMENTS` on the first space. The first word is the subcommand.
 
-**Batch 1 — discover file paths** (run these Glob calls in a single parallel message):
-- `Glob("agents/*.md")`
-- `Glob("hooks/*.sh")`
-- `Glob("skills/*/SKILL.md")`
-- `Glob("commands/*.md")`
-- `Glob("rules/*.md")`
+- Empty or `help` → print **Usage** and stop.
+- Not one of `system`, `repo`, `skill` → print **Usage** and stop.
+- Dispatch to the matching step.
 
-**Batch 2 — read all discovered files plus settings** (issue every Read call in a single parallel message):
-- `skills/*/SKILL.md` — read with `limit: 50` (frontmatter + purpose section is sufficient; full workflow steps are not needed for structural analysis)
-- `agents/*.md` — read in full (they're short and the full content is needed)
-- `hooks/*.sh` — read in full (enforcement logic must be understood completely)
-- `rules/*.md` — read in full (they're short and the full path/content is needed)
-- `commands/*.md` — read in full
-- `settings.json` and `CLAUDE.md` — read in full
+### 2. Dispatch — `system`
 
-Do not read files one at a time. Issue all Read calls together so they execute concurrently. If a skill's first 50 lines reveal an issue that requires deeper inspection, read that specific file in full as a follow-up. The audit is only as good as its coverage — do not skip any file.
+Use this when auditing the Claude workflow components (`~/.claude/rules/`, `agents/`, `hooks/`, `skills/`, `commands/`, `settings.json`).
 
-### 2. Analyze Against Five Categories
+Read `~/.claude/skills/audit/system.md` and apply its workflow:
 
-#### Correctness
-- Rules or skills that fire in the wrong context (e.g., a mandatory rule that activates during tasks it doesn't apply to)
-- Semantic mismatches between a stated intent and actual behavior
-- Skills whose workflow steps contradict their own rules or each other
+- Two parallel batches — discover file paths, then read every file
+- Analyze against five categories (correctness, redundancy, missing connections, coverage gaps, discoverability)
+- Verify coverage before reporting
+- Report findings grouped by category and ordered by impact
+- Confirm with the user before implementing any fix
 
-#### Redundancy
-- Duplicate sources of truth (e.g., a rule that restates what `settings.json` already enforces)
-- Skills that duplicate agent logic instead of delegating to it
-- Rules that repeat guidance already covered by another rule on the same paths
+### 3. Dispatch — `repo`
 
-#### Missing Connections
-- Skills that should delegate to specialist agents but do their own inline analysis instead
-- Agents that have no user-invocable skill entry point
-- Rules that state "never do X" with no hook to enforce it
-- Skills that reference related skills/agents without linking to them
+Use this when auditing the git history of the current repository (orientation, repo health assessment).
 
-#### Coverage Gaps
-- Language families with inconsistent coverage (one language has a security rule, others don't; one has a debugger agent, others don't)
-- Hooks that cover some file types but not others in the same family
-- Automation that would close a gap between a stated rule and its enforcement
+Read `~/.claude/skills/audit/repo.md` and apply its workflow:
 
-#### Discoverability
-- Workflows that exist but aren't surfaced via autocomplete, rules, or skill cross-references
-- Skills or agents that solve the same problem without knowing about each other
-- The `commands/` directory underused when key workflows aren't reachable via `/`
+- Detect GitHub availability (`gh repo view --json nameWithOwner`)
+- Five parallel analyses: high-churn files, ownership / bus factor, bug hotspots, project momentum, firefighting patterns
+- Synthesize into a structured markdown report with key takeaways
 
-### 3. Verify Coverage
+### 4. Dispatch — `skill`
 
-Before assembling the report, confirm every file path discovered in Batch 1 of step 1 was actually read in Batch 2. **If any file was skipped: read it now and re-run the analysis in step 2. Do not proceed to step 4 until coverage is complete.** A report built on partial coverage is worse than no report — it gives false confidence that the system is sound.
+Use this when auditing individual `SKILL.md` files for structural quality.
 
-### 4. Report Findings
+Read `~/.claude/skills/audit/skills.md` and apply its workflow:
 
-For each finding:
+- Discover every `SKILL.md` under `~/.claude/skills/`
+- Run the `skill-reviewer` agent on each
+- Compile findings into Critical / Warnings / Suggestions
+- Surface the top 3 to fix now
+- Optionally fix in place, one skill at a time, with per-skill commits
 
-```
-**[Category] Title**
-What: one sentence describing the issue
-Why: why it matters — what breaks or degrades without a fix
-Fix: the specific change needed (file, section, what to add/remove/change)
-```
+### 5. Final verification step
 
-Group by category. Within each group, order by impact — correctness and safety issues first, symmetry and polish last.
+Each dispatch step ends with its own verification gate inside the referenced Level 3 file. Confirm the gate fired before exiting.
 
-If no issues are found in a category, omit it from the report.
-
-Apply these constraints to every report:
+## Rules (apply across all subcommands)
 
 - Never report issues that were already fixed in the current session.
-- Always distinguish "this is broken" (correctness) from "this could be better" (polish).
-- If the system looks genuinely well-optimized, say so — never manufacture findings.
-
-### 5. Confirm Before Implementing
-
-**After presenting all findings: stop and do not proceed with any changes.** Ask the user:
-
-> Which of these should I implement? (say "all" or list specific items)
-
-**Do not make any changes until the user explicitly confirms.**
-
-## Related
-
-For auditing individual `SKILL.md` files against structural conventions, use `/skill audit` instead — it runs `skill-reviewer` on each skill file and is scoped to skill quality, not system-wide integration.
+- Never manufacture findings — if the system looks well-optimized, say so.
+- For `system` and `skill`: do not make changes without explicit user confirmation.
+- For `repo`: the audit is read-only; never modify the repository being audited.

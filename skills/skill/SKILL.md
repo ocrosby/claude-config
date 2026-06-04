@@ -1,24 +1,25 @@
 ---
-description: Skill-system maintenance dispatcher — author (interactive new-skill workflow), audit (run skill-reviewer on every SKILL.md), gaps (find repeating tasks with no skill coverage), usage (count invocations and recommend retirement). The first word of $ARGUMENTS selects the subcommand.
+description: Skill-system maintenance dispatcher — author (interactive new-skill workflow), gaps (find repeating tasks with no skill coverage), usage (count invocations and recommend retirement). The first word of $ARGUMENTS selects the subcommand. For per-SKILL.md structural quality, use /audit skill.
 argument-hint: "<subcommand> [arguments]"
 aliases: skill-author, skill-audit, skill-gaps, skill-usage
 ---
 
 # Skill: Skill-System Maintenance Dispatcher
 
-Use this skill to manage the skill catalog itself: create new skills, audit every SKILL.md for structural quality, find gaps where repeated tasks lack skill coverage, or report invocation counts and retirement candidates.
+Use this skill to manage the skill catalog itself: create new skills, find gaps where repeated tasks lack skill coverage, or report invocation counts and retirement candidates.
 
-For a system-wide audit of how all components (hooks, rules, agents, skills, settings) integrate, use `/audit` instead — it covers inter-component correctness, not individual file quality.
+For per-SKILL.md structural quality, use `/audit skill` — it runs `skill-reviewer` on each file. For a system-wide audit of how all components (hooks, rules, agents, skills, settings) integrate, use `/audit system`.
 
 ## Usage
 
 ```
 /skill                              # show this help
 /skill author [skill-name]          # create skills/<name>/SKILL.md interactively
-/skill audit [name]                 # run skill-reviewer on every SKILL.md, or one by name
 /skill gaps [--since 30d|90d]       # find repeating tasks with no skill coverage
 /skill usage [--since 30d|90d]      # invocation counts and retirement recommendations
 ```
+
+If you typed `/skill audit`, use `/audit skill` instead — the per-skill structural audit moved to the `/audit` dispatcher to co-locate the three audit surfaces (`system`, `repo`, `skill`).
 
 ## Workflow
 
@@ -27,7 +28,8 @@ For a system-wide audit of how all components (hooks, rules, agents, skills, set
 Split `$ARGUMENTS` on the first space. The first word is the subcommand.
 
 - Empty or `help` → print **Usage** and stop.
-- Not one of `author`, `audit`, `gaps`, `usage` → print **Usage** and stop.
+- `audit` → print: "`/skill audit` moved to `/audit skill`. Re-run as `/audit skill [name]`." Then stop.
+- Not one of `author`, `gaps`, `usage` → print **Usage** and stop.
 - Dispatch.
 
 ### 2. Dispatch — `author`
@@ -100,38 +102,7 @@ Replicates the prior `/skill-author` skill. Guides creation of a new skill with 
 
 **Rules for `author`.** Never create a skill that duplicates an existing rule — reference the rule instead. Never use advisory language in workflow steps. Every exception must have a literal example. Always run the `skill-reviewer` agent before committing.
 
-### 3. Dispatch — `audit`
-
-Replicates the prior `/skill-audit` skill. Health-checks all skills.
-
-1. **Discover skill files.**
-   ```bash
-   find ~/.claude/skills -name "SKILL.md" | sort
-   ```
-   If a skill name was provided after `audit`, filter to that file only.
-
-2. **Run `skill-reviewer` on each file** discovered. Collect all findings.
-
-3. **Compile the report.** Organize into three sections:
-
-   *Critical (must fix before next use)* — skills with findings that will cause them to not work, be ignored, or create cycles. For each:
-   ```
-   **skills/<name>/SKILL.md**
-   - <finding>
-   - <finding>
-   ```
-
-   *Warnings (should fix — will drift)* — findings that will produce inconsistent behavior across sessions.
-
-   *Suggestions (optional improvements)* — minor quality improvements worth making.
-
-4. **Prioritize.** After the report, write a **Top 3 to fix now** section: the three skills whose issues are most likely to affect current work or cause immediate cycles.
-
-5. **Optionally fix in place.** If the user asks: fix Critical findings immediately, one skill at a time. Confirm each fix with `skill-reviewer` before moving to the next. Commit after each: `fix(claude): resolve skill-audit findings in /<skill-name>`. **Do not batch multiple skills into one commit** — it makes reverts harder.
-
-**Rules for `audit`.** Do not skip any skill file in step 1 — a partial audit is misleading. Do not auto-fix without user confirmation. Report findings even if the skill is rarely used.
-
-### 4. Dispatch — `gaps`
+### 3. Dispatch — `gaps`
 
 Replicates the prior `/skill-gaps` skill. Scans `~/.claude/history.jsonl` for repeating tasks that no existing skill covers.
 
@@ -164,7 +135,7 @@ Replicates the prior `/skill-gaps` skill. Scans `~/.claude/history.jsonl` for re
 
    **If any of those are missing, the script failed silently — re-run with the same arguments and inspect stderr.**
 
-### 5. Dispatch — `usage`
+### 4. Dispatch — `usage`
 
 Replicates the prior `/skill-usage` skill. Invocation counts and retirement recommendations.
 
@@ -230,13 +201,13 @@ Replicates the prior `/skill-usage` skill. Invocation counts and retirement reco
 
    **If any of those sections are absent, the script failed silently — re-run with the same arguments and inspect stderr.**
 
-### 6. Final verification step
+### 5. Final verification step
 
 Each dispatch above ends with its own verification gate. Confirm the gate fired before exiting.
 
 ## Rules (apply across all subcommands)
 
-- For per-skill structural quality, use `audit` (delegates to `skill-reviewer`).
-- For the broader inter-component audit (hooks, rules, agents, skills, settings together), use `/audit` — a separate top-level skill.
+- For per-skill structural quality, use `/audit skill` (delegates to `skill-reviewer`).
+- For the broader inter-component audit (hooks, rules, agents, skills, settings together), use `/audit system`.
 - `gaps` reads `~/.claude/history.jsonl`; `usage` reads it too — both are read-only on history.
 - `author` always ends in a `skill-reviewer` pass before commit. Do not skip.
