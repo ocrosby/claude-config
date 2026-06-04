@@ -1,0 +1,12 @@
+# Defining this file overrides stow's built-in default ignore list,
+# so the defaults we still want must be repeated here.
+
+# --- Stow defaults we want to keep ---
+\.git
+\.gitignore
+^/README.*
+^/LICENSE.*
+
+# --- Repo-only meta-docs (not part of live ~/.claude/ config) ---
+^/LEARNINGS\.md
+^/SKILLS\.md
