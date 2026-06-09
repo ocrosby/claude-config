@@ -111,22 +111,22 @@ Rules the script applies: `uri-has-verb` (Must), `uri-uppercase` / `uri-snake-ca
 
 Then invoke `rest-reviewer` with the same files, passing the script findings as context so the agent focuses on auth, pagination, error envelope, HATEOAS, versioning, bulk-operation design.
 
-**Compile the report.** Aggregate findings per file:
+**Compile the report.** Aggregate findings per file using the shape from `rules/findings-format.md`:
 
 ```
 ## Review: <filename>
 
 ### Must Fix
-- <issue> — <why it matters> (line N)
+- `path/to/file.ext:42` — <what>. **Why:** <why>. **Fix:** <fix>.
 
 ### Should Fix
-- <issue> — <why it matters> (line N)
+- `path/to/file.ext:88` — <what>. **Why:** <why>. **Fix:** <fix>.
 
 ### Consider
-- <suggestion> — <trade-off> (line N)
+- `path/to/file.ext:120` — <what>. **Why:** <why>.
 ```
 
-If a file has no issues: `✓ <filename> — no issues found`. End with a one-paragraph summary: overall verdict, most important issue, cross-cutting patterns.
+Omit a bucket entirely when it has no entries — do not print an empty `### Must Fix` header. If a file has no issues at all: `✓ <filename> — no issues found`. End with a one-paragraph summary: overall verdict, most important issue, cross-cutting patterns.
 
 **Auto-fix (`-f` flag).** **If `-f` was not passed: stop after the report.**
 
