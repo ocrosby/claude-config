@@ -91,7 +91,7 @@ Replicates the prior `/skill-author` skill. Guides creation of a new skill with 
 
 7. **Audit the language.** Apply the advisory-vs-mandatory filter defined in `~/.claude/skills/CLAUDE.md` (Language section). Rewrite every advisory phrase as a mandatory directive, or move it to an explicit "optional" callout. Do not duplicate the filter table here — `skills/CLAUDE.md` is authoritative and any divergence is drift.
 
-8. **Review with the skill-reviewer agent.** Invoke `skill-reviewer` on the finished file. Address all Critical and Warning findings before committing. Suggestion-level findings are optional.
+8. **Review with the skill-reviewer agent.** Invoke `skill-reviewer` on the finished file. Address all **Must Fix** and **Should Fix** findings before committing; **Consider**-level findings are optional. See `rules/findings-format.md`.
 
 9. **Commit.**
    ```bash
