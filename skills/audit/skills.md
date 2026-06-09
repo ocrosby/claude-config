@@ -20,27 +20,22 @@ Collect all findings.
 
 ### 3. Compile the report
 
-Organize into three sections:
+Group findings by severity per `rules/findings-format.md` — **Must Fix → Should Fix → Consider**. Within each bucket, order by impact. Omit a bucket that has no entries.
 
-**Critical (must fix before next use)** — skills with findings that will cause them to not work, be ignored, or create cycles. For each:
+Per-skill section shape:
 
 ```
 **skills/<name>/SKILL.md**
-- <finding>
-- <finding>
+- `path/to/SKILL.md:LINE` — <what>. **Why:** <why>. **Fix:** <fix>.
 ```
-
-**Warnings (should fix — will drift)** — findings that will produce inconsistent behavior across sessions.
-
-**Suggestions (optional improvements)** — minor quality improvements worth making.
 
 ### 4. Prioritize
 
-After the report, write a **Top 3 to fix now** section: the three skills whose issues are most likely to affect current work or cause immediate cycles.
+After the report, write a **Top 3 to fix now** section: the three skills whose Must Fix or Should Fix findings are most likely to affect current work or cause immediate cycles.
 
 ### 5. Optionally fix in place
 
-If the user asks: fix Critical findings immediately, one skill at a time. Confirm each fix with `skill-reviewer` before moving to the next. Commit after each:
+If the user asks: fix Must Fix findings immediately, one skill at a time. Confirm each fix with `skill-reviewer` before moving to the next. Commit after each:
 
 ```
 fix(claude): resolve skill-audit findings in /<skill-name>

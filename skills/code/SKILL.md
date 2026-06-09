@@ -286,6 +286,7 @@ If any verification was skipped, re-run it before declaring the subcommand done.
 
 ## Rules (apply across all subcommands)
 
+- `rules/findings-format.md` is authoritative for the **Must Fix / Should Fix / Consider** buckets and the per-finding shape. Do not restate the bucket definitions inline.
 - Report issues with file and line number when possible (`file:line — rule_id — message` for script-derived findings).
 - Distinguish blocking issues from suggestions — not everything is a Must Fix.
 - Without `-f`/`-fc`: describe what to change and why; do not modify code.
