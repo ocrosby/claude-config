@@ -46,9 +46,9 @@ See `rules/design-patterns-application.md` for recognition signals. Flag these a
 - [ ] `Protocol` used for structural subtyping where appropriate
 - [ ] No `Any` without justification
 - [ ] Pydantic models for all API boundaries
-- [ ] `X | Y` used instead of `Union[X, Y]`; `X | None` instead of `Optional[X]` — **Warning** (outdated 3.9 style)
-- [ ] `Self` used for methods that return `self` or a new same-type instance — **Suggestion**
-- [ ] Overriding methods decorated with `@override` from `typing` — **Suggestion**
+- [ ] `X | Y` used instead of `Union[X, Y]`; `X | None` instead of `Optional[X]` — **Should Fix** (outdated 3.9 style)
+- [ ] `Self` used for methods that return `self` or a new same-type instance — **Consider**
+- [ ] Overriding methods decorated with `@override` from `typing` — **Consider**
 
 ### FastAPI (if applicable)
 
@@ -82,17 +82,17 @@ See `rules/design-patterns-application.md` for recognition signals. Flag these a
 - [ ] `dataclass` or Pydantic for structured data, not plain dicts
 - [ ] Context managers (`with`) for all resource management
 - [ ] Modern type syntax (`str | None` not `Optional[str]`)
-- [ ] `asyncio.TaskGroup` used instead of `asyncio.gather()` for concurrent tasks — **Warning**
-- [ ] `asyncio.timeout()` used instead of `asyncio.wait_for()` — **Warning**
-- [ ] `except*` / `ExceptionGroup` used when handling errors from concurrent async tasks — **Suggestion**
-- [ ] `match`/`case` considered for complex `if/elif` chains dispatching on type or structure — **Suggestion**
+- [ ] `asyncio.TaskGroup` used instead of `asyncio.gather()` for concurrent tasks — **Should Fix**
+- [ ] `asyncio.timeout()` used instead of `asyncio.wait_for()` — **Should Fix**
+- [ ] `except*` / `ExceptionGroup` used when handling errors from concurrent async tasks — **Consider**
+- [ ] `match`/`case` considered for complex `if/elif` chains dispatching on type or structure — **Consider**
 
 ## Output format
 
-Organize findings into:
+Use the three buckets and per-finding shape from `rules/findings-format.md` — **Must Fix → Should Fix → Consider**. Do not restate the bucket definitions inline; the rule is authoritative.
 
-- **Critical** — bugs, security issues, or data loss risks. Must fix.
-- **Warning** — architectural violations, missing types, or outdated patterns. Should fix.
-- **Suggestion** — idiomatic improvements or readability. Consider fixing.
+Per-finding shape (per the rule):
 
-For each finding, include the file path, line number, what's wrong, and how to fix it.
+- `path/to/file.py:42` — <what>. **Why:** <why>. **Fix:** <fix>.
+
+The **Fix** field is required for Must Fix and Should Fix; optional for Consider.

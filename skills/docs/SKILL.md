@@ -271,19 +271,22 @@ Replicates the prior `/doc-review` skill. Audits documentation against `rules/do
 
 4. **Classify** each document. The script reports its classification (`README`, `Changelog`, `Tutorial`, `Document`). Weight findings — README without a code example is Must Fix; Changelog without a code example is N/A.
 
-5. **Compile the per-file report.**
+5. **Compile the per-file report** using the per-finding shape from `rules/findings-format.md`.
    ```
    ## Review: <filename>
 
    **Type**: <README | Tutorial | Reference | Guide | Changelog | UI Copy>
 
    ### Must Fix
-   - <rule_id or judgment> — <message> (line N)
+   - `path/to/file.md:42` — <what>. **Why:** <why>. **Fix:** <fix>.
 
    ### Should Fix
+   - `path/to/file.md:88` — <what>. **Why:** <why>. **Fix:** <fix>.
+
    ### Consider
+   - `path/to/file.md:120` — <what>. **Why:** <why>.
    ```
-   `✓ <filename> — no issues found` if clean. Cross-file findings (terminology drift, duplicate content, broken cross-references) go in a separate `## Cross-File Findings` section.
+   Omit a bucket entirely when it has no entries. `✓ <filename> — no issues found` if clean. Cross-file findings (terminology drift, duplicate content, broken cross-references) go in a separate `## Cross-File Findings` section.
 
 6. **One-paragraph summary.** Publication-ready / needs work / significant gaps; most critical issue; systemic pattern.
 

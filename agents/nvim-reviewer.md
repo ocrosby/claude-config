@@ -81,10 +81,10 @@ See `rules/design-patterns-application.md` for recognition signals. Flag these a
 
 ## Output format
 
-Organize findings into:
+Use the three buckets and per-finding shape from `rules/findings-format.md` — **Must Fix → Should Fix → Consider**. Do not restate the bucket definitions inline; the rule is authoritative.
 
-- **Critical** — bugs, crashes, or data loss risks. Must fix.
-- **Warning** — deprecated APIs, missing guards, or performance issues. Should fix.
-- **Suggestion** — idiomatic improvements or readability. Consider fixing.
+Per-finding shape (per the rule):
 
-For each finding, include the file path, line number, what's wrong, and how to fix it.
+- `path/to/file.lua:42` — <what>. **Why:** <why>. **Fix:** <fix>.
+
+The **Fix** field is required for Must Fix and Should Fix; optional for Consider.

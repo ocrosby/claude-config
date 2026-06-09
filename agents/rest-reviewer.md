@@ -98,10 +98,10 @@ Scan for: route registrations, handler functions, response writers, status code 
 
 ## Output format
 
-Organize findings into:
+Use the three buckets and per-finding shape from `rules/findings-format.md` — **Must Fix → Should Fix → Consider**. Do not restate the bucket definitions inline; the rule is authoritative.
 
-- **Critical** — broken contracts: wrong status codes, GET with side effects, missing Location on 201, 200 masking errors. Must fix.
-- **Warning** — naming violations, method misuse, missing cache headers. Should fix.
-- **Suggestion** — hypermedia links, versioning improvements, optional improvements. Consider fixing.
+Per-finding shape (per the rule):
 
-For each finding, include the file path, line number (if determinable), what the violation is, and the correct approach with a concrete example.
+- `path/to/handler.go:42` — <what>. **Why:** <why>. **Fix:** <fix>.
+
+The **Fix** field is required for Must Fix and Should Fix; optional for Consider. The **Fix** should include a concrete example (the correct status code, header, or URI shape) when the rule allows.

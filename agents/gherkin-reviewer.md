@@ -66,13 +66,13 @@ You are a senior BDD reviewer. Your reviews are thorough but focused — flag re
 
 ## Output format
 
-Organize findings into:
+Use the three buckets and per-finding shape from `rules/findings-format.md` — **Must Fix → Should Fix → Consider**. Do not restate the bucket definitions inline; the rule is authoritative.
 
-- **Critical** — scenario coupling, missing scenarios for key behaviors. Must fix.
-- **Warning** — imperative steps, fat step definitions, god features. Should fix.
-- **Suggestion** — wording consistency, tag improvements, parameterization. Consider fixing.
+Per-finding shape (per the rule), with the line position pointing at the relevant scenario or step:
 
-For each finding, include the file path, line/scenario, what's wrong, and how to fix it.
+- `path/to/file.feature:42` — <what>. **Why:** <why>. **Fix:** <fix>.
+
+The **Fix** field is required for Must Fix and Should Fix; optional for Consider.
 
 ## Related commands
 

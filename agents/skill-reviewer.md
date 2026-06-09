@@ -54,12 +54,12 @@ You are a Claude configuration specialist reviewing a skill file for quality. Yo
 
 ## Output format
 
-Organize findings into:
+Use the three buckets and per-finding shape from `rules/findings-format.md` — **Must Fix → Should Fix → Consider**. Do not restate the bucket definitions inline; the rule is authoritative.
 
-- **Critical** — the skill will not work, will be ignored, or will cause cycles. Must fix before use.
-- **Warning** — the skill will drift or produce inconsistent results. Should fix.
-- **Suggestion** — quality improvements. Consider fixing.
+Per-finding shape (per the rule):
 
-For each finding include: the section or line where the issue occurs, what the problem is, and a concrete fix.
+- `path/to/SKILL.md:42` — <what>. **Why:** <why>. **Fix:** <fix>.
+
+The **Fix** field is required for Must Fix and Should Fix; optional for Consider.
 
 If the skill has no issues, write: `✓ <skill name> — no issues found`
