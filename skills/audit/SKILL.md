@@ -62,7 +62,7 @@ Read `~/.claude/skills/audit/skills.md` and apply its workflow:
 
 - Discover every `SKILL.md` under `~/.claude/skills/`
 - Run the `skill-reviewer` agent on each
-- Compile findings into Critical / Warnings / Suggestions
+- Compile findings into Must Fix / Should Fix / Consider buckets per `rules/findings-format.md`
 - Surface the top 3 to fix now
 - Optionally fix in place, one skill at a time, with per-skill commits
 
