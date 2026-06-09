@@ -444,6 +444,7 @@ Each dispatch above ends with its own verification gate (regenerated tags, outpu
 ## Rules (apply across all subcommands)
 
 - `rules/docs-principles.md` is authoritative for Write-the-Docs conventions. Do not duplicate its content.
+- `rules/findings-format.md` is authoritative for the **Must Fix / Should Fix / Consider** buckets and the per-finding shape used by `review`. Do not restate the bucket definitions inline.
 - For language-specific format conventions: the Documentation section of `rules/go-conventions.md`, `rules/py-docs.md`, `rules/nvim-docs.md`. Skill orchestrates, rule defines.
 - `write` never modifies source code other than the documentation strings/files it generates.
 - `review` is non-destructive without `-f`/`-fc`.
