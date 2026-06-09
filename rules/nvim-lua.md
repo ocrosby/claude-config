@@ -5,6 +5,8 @@ paths:
 
 # Lua & Neovim Conventions
 
+> Core Lua idioms (scoping, modules, error-handling boundaries, table iteration, string building) live in `lua-idioms.md`. It loads alongside this file on any `.lua` source. This rule covers Neovim-specific patterns only.
+
 ## Neovim API
 
 - Use `vim.keymap.set` for all keymaps — never `vim.api.nvim_set_keymap` or `nvim_buf_set_keymap`
@@ -50,8 +52,6 @@ paths:
 - Use `vim.tbl_contains` for membership checks
 - Use `vim.inspect` for debug output, never string concatenation of tables
 - Use `vim.validate` for input validation on public functions
-- Prefer local variables — no globals unless explicitly required by Neovim's loader
-- Cache `require()` results at module scope for hot paths
 
 ## Error Handling
 
