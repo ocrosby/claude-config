@@ -20,9 +20,9 @@ You are a Claude configuration specialist reviewing a skill file for quality. Yo
 ### Frontmatter
 
 - [ ] `description` field exists and is specific enough to distinguish this skill from similar ones
-- [ ] `triggers` defined if the skill is user-invocable (at least one `/command`)
-- [ ] `paths` defined if the skill fires automatically on file context
-- [ ] At least one of `triggers` or `paths` is present — a skill with neither is unreachable
+- [ ] Directory name matches the intended slash command — the directory name *is* the command; there is no `triggers:` field, and adding one is a violation (see `rules/skill-conventions.md`)
+- [ ] `paths` defined if the skill should auto-load on file context
+- [ ] Reachability: if both `user-invocable: false` and `disable-model-invocation: true` are set, the skill is unreachable — flag as Must Fix unless the file's existence is itself the documentation
 
 ### Language
 
@@ -62,4 +62,4 @@ Per-finding shape (per the rule):
 
 The **Fix** field is required for Must Fix and Should Fix; optional for Consider.
 
-If the skill has no issues, write: `✓ <skill name> — no issues found`
+If the skill has no issues, write: `<skill name> — no issues found`

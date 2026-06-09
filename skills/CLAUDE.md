@@ -184,7 +184,7 @@ Every skill must be composable, portable, efficient, and powerful. Apply these c
 
 - Run `grep -rl "<topic>" ~/.claude/rules/` to confirm no existing rule already covers the behavior — if one does, reference it rather than repeat it
 - Run `ls ~/.claude/skills/` and `grep -h "^description:" ~/.claude/skills/*/SKILL.md` to confirm no existing skill already covers the purpose
-- Invoke the `skill-reviewer` agent on the finished file and address all Critical and Warning findings
+- Invoke the `skill-reviewer` agent on the finished file and address all **Must Fix** and **Should Fix** findings per `rules/findings-format.md`; **Consider** items are optional
 
 ## Do not
 

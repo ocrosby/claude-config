@@ -1,9 +1,7 @@
 ---
 description: Enforces professional structure and up-to-date workflow badges in root README.md files; also covers how to document Claude-configuration learnings in the dotfiles README.
 paths:
-  - "README.md"
-  - "./README.md"
-  - ".claude/**"
+  - "**/README.md"
 ---
 
 # README Standard — Root README.md
