@@ -109,5 +109,5 @@ These run without being asked:
 | Research and publish | `/docs research <topic>` | Research any topic via live web sources and publish a self-contained report to here.now — returns a live URL |
 | Skill catalog gaps | `/skill gaps` | Identify repeating tasks with no skill coverage |
 | Skill catalog usage | `/skill usage` | Count invocations and recommend retirement |
-| System audit | `/audit` | Audit the whole `.claude/` system (rules, agents, hooks, skills, commands, settings) |
-| Per-skill audit | `/skill audit` | Run `skill-reviewer` on every SKILL.md |
+| System audit | `/audit system` | Audit the whole `.claude/` system (rules, agents, hooks, skills, commands, settings) |
+| Per-skill audit | `/audit skill` | Run `skill-reviewer` on every SKILL.md |

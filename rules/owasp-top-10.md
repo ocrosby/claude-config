@@ -295,7 +295,7 @@ New in 2025. Errors, timeouts, and unexpected states that leave the system in an
 
 **When generating code:** before declaring a change complete, scan the diff against the signal tables above. If a signal fires, apply the matching mandatory behavior. For any change that touches a trust boundary (auth, input parsing, persistence, network I/O, deserialization, error paths), always state which OWASP categories you considered — e.g. `A01, A05, A09 considered — none triggered`.
 
-**When reviewing code:** report findings using the three-severity format from `rules/docs-principles.md`:
+**When reviewing code:** report findings using the three-bucket format from `rules/findings-format.md`:
 - **Must Fix** — an OWASP signal fires and the corresponding mitigation is missing
 - **Should Fix** — a signal fires and the mitigation is present but incomplete (e.g., parameterized query but no length cap; auth check but no rate limit)
 - **Consider** — defense-in-depth opportunity (e.g., add CSP header even though XSS is already escaped)
