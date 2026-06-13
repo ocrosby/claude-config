@@ -80,6 +80,8 @@ Remaining positional words after flags are the optional `<branch-name>` or `feat
   - Merged or remote-deleted → stash, checkout main, pull, pop. Continue.
   - Unmerged or first push → keep current branch. Skip branch creation; staging and committing happen here.
 
+Note: `/branch-from-main` now performs this same merge-check internally via `/check-branch-merged`, so any caller that always branches from main gets the cleanup for free. The inline check above stays because ship needs to make a behavior decision the building block cannot — *commit on the current branch* vs. *start fresh* — and that decision must happen before grouping and stashing kick in.
+
 **Identify conceptual groups.** Run the shared grouping script:
 
 ```bash
