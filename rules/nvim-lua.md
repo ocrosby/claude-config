@@ -101,6 +101,7 @@ vim.loop.fs_stat(path, function(err, stat) ... end)
 
 - Functions ≤ 40 lines, cyclomatic complexity ≤ 7
 - Files ≤ 500 lines; split into focused modules when exceeded
+- Comments (`--`, `---`) wrap at 80 columns; continue long explanations on the next line with another `-- ` prefix instead of letting a single comment line exceed the boundary. Stylua does not reflow comments, so this is manual discipline — not enforced by `make lint`/`make format`.
 
 ## Performance
 
