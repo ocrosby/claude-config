@@ -1,8 +1,8 @@
 ---
-description: Git workflow dispatcher — ship, sync, main, worktree, release-notes, cli. The first word of $ARGUMENTS selects the subcommand. Subcommands ship and worktree push to remote or mutate parallel checkouts; treat them as human-gated.
+description: Git workflow dispatcher — ship, sync, main, worktree, release-notes, cli, reviewer. The first word of $ARGUMENTS selects the subcommand. Subcommands ship, worktree, and reviewer push to remote, mutate parallel checkouts, or edit and push to PR branches; treat them as human-gated.
 argument-hint: "<subcommand> [arguments]"
-aliases: git-ship, git-cpr, git-sync, git-main, worktree, release-notes, ship, sync, main, commit-push-pr, gh-cli
-allowed-tools: Bash(git *) Bash(gh *) Bash(uv lock) Read
+aliases: git-ship, git-cpr, git-sync, git-main, worktree, release-notes, ship, sync, main, commit-push-pr, gh-cli, reviewer, pr-reviewer
+allowed-tools: Bash(git *) Bash(gh *) Bash(uv lock) Read Edit Write
 # Human-gated: ship pushes commits, worktree mutates parallel checkouts. Block model auto-invocation; users invoke the slash command explicitly.
 disable-model-invocation: true
 ---
@@ -29,6 +29,7 @@ The orchestration delegates to atomic building blocks: `/branch-from-main`, `/co
 /git worktree [<name>]                # create parallel worktree under .claude/worktrees/
 /git release-notes [<range>]          # generate changelog (default: since last tag)
 /git cli                              # GitHub CLI quick reference (gh api, runs, reviews, issues)
+/git reviewer                         # sweep your open PRs, address reviewer comments, report which are clean
 ```
 
 `/git ship` subsumes the previous `/git cpr` subcommand. If you are already on a feature branch with a prior push, the branch is kept; only pre-flight, commit, push, and PR run. The `--quick` flag skips pre-flight for the same daily-iteration use case.
@@ -41,7 +42,7 @@ Split `$ARGUMENTS` on the first space. The first word is the subcommand; everyth
 
 - If the subcommand is empty or `help`: print the **Usage** block above and stop.
 - If the subcommand is `cpr`: print `/git cpr was merged into /git ship — for the daily-iteration ergonomics use /git ship --quick`, then dispatch to `ship` with `--quick` prepended to the remaining argument string. If `--quick` is already present in the remaining argument string, do not prepend a duplicate — treat the argument string as-is.
-- If the subcommand is not one of `ship`, `sync`, `main`, `worktree`, `release-notes`, `cli`: stop and print the **Usage** block.
+- If the subcommand is not one of `ship`, `sync`, `main`, `worktree`, `release-notes`, `cli`, `reviewer`: stop and print the **Usage** block.
 - Dispatch to the matching step.
 
 ### 2. Dispatch — `ship`
@@ -246,9 +247,62 @@ Read `~/.claude/skills/git/cli.md` and apply what the user is asking for from it
 
 **This subcommand is read/lookup oriented — do not push, comment, approve, or otherwise mutate remote state without the user explicitly asking for that action.** For routine PR creation use `/open-pr`; for branch → commit → push → PR use `/git ship`; for review with agent feedback use `/code review`.
 
-### 8. Final verification step
+### 8. Dispatch — `reviewer`
 
-For every subcommand, the dispatch block above ends with its own verification gate. Before this skill exits, confirm the gate fired (PR URL reachable, branch pruned report emitted, worktree listed, the requested `gh` command surfaced from the reference, etc.) — if any verification was skipped, re-run it.
+Sweep every open PR you authored, surface and address reviewer comments (including the minor ones), and end with a summary that says exactly which PRs are clean — so you know when to stop. This subcommand **edits code and pushes to your PR branches**; only ever act on PRs authored by `@me`.
+
+1. **Enumerate your open PRs** in the current repo:
+   ```bash
+   gh pr list --author @me --state open --json number,title,headRefName,url,isDraft
+   ```
+   If there are none, print `No open PRs authored by you — nothing to review.` and stop. Resolve `<owner>/<repo>` once with `gh repo view --json owner,name`.
+
+2. **Collect reviewer feedback per PR.** Gather feedback authored by *someone other than you* — human reviewers **and** review bots (e.g. Copilot, `claude-review`); include their nits/minor notes too — from all three surfaces, keeping only **unresolved / actionable** items:
+   - **Inline review threads** with resolution state (skip `isResolved: true`):
+     ```bash
+     gh api graphql -f query='
+       query($owner:String!,$repo:String!,$num:Int!){
+         repository(owner:$owner,name:$repo){ pullRequest(number:$num){
+           reviewThreads(first:100){ nodes{ isResolved isOutdated
+             comments(first:20){ nodes{ author{login} path line body } } } } } } }' \
+       -F owner=<owner> -F repo=<repo> -F num=<N>
+     ```
+   - **Review summaries** with state `CHANGES_REQUESTED` or `COMMENTED` and a non-empty body:
+     ```bash
+     gh api repos/<owner>/<repo>/pulls/<N>/reviews --jq '.[] | select(.body != "") | {user:.user.login, state, body}'
+     ```
+   - **PR conversation comments** (general, non-inline):
+     ```bash
+     gh api repos/<owner>/<repo>/issues/<N>/comments --jq '.[] | {user:.user.login, body}'
+     ```
+   Exclude comments whose author is the PR author (those are yours, not feedback).
+
+3. **Classify and inform.** For each PR:
+   - **No actionable review comments** → record it as clean for the summary.
+   - **Has actionable review comments** → list each as `#<PR> <path>:<line> — <reviewer>: <ask>` (mark nits/minor explicitly) and tell the user what you intend to change *before* editing.
+
+4. **Address the comments**, one PR at a time, only on your own PRs:
+   - Require a clean working tree first; if dirty, stop and ask (stash/commit/abort). Prefer a worktree (`/git worktree`) or `gh pr checkout <N>`; restore the user's original branch when done.
+   - Implement **every** comment, including minor ones (naming, formatting, nits, comment wording). For a comment that is ambiguous, subjective, or whose fix would change intended behavior, **do not guess** — surface it under "Needs your input" and move on.
+   - Run the repo's lint/tests (the `ship` **Pre-flight** table) before pushing; if they fail, fix or stop — never `--no-verify`.
+   - Commit with a conventional message (e.g. `fix(review): address review feedback on <area>`) and push to update the PR (`git push`; never force unless the user asks; never amend a pushed commit).
+   - Optionally reply on each thread so the reviewer sees it was handled — but never resolve a thread you did not actually address:
+     ```bash
+     gh api repos/<owner>/<repo>/pulls/<N>/comments/<comment_id>/replies -f body='Addressed in <sha>.'
+     ```
+
+5. **Summary message — always print this last**, covering every open PR so the stop condition is unambiguous:
+   - **Clean (no review comments):** list `#<PR> <title>` for each — these need nothing.
+   - **Addressed:** list each PR, the comments resolved, and the pushed commit/URL.
+   - **Needs your input:** any comment you could not safely auto-address, with the question.
+
+   If every open PR falls in **Clean**, say so plainly — e.g. `All N open PRs are free of unaddressed review comments — nothing left to do.` — so you know to stop.
+
+**Rules for `reviewer`.** Only push to PRs authored by `@me`. Never resolve or dismiss a reviewer thread without a real change. Surface ambiguous or behavior-changing feedback as a question rather than guessing. Restore the user's original branch (or use worktrees) when finished.
+
+### 9. Final verification step
+
+For every subcommand, the dispatch block above ends with its own verification gate. Before this skill exits, confirm the gate fired (PR URL reachable, branch pruned report emitted, worktree listed, the requested `gh` command surfaced from the reference, the `reviewer` per-PR summary printed, etc.) — if any verification was skipped, re-run it.
 
 ## Rules (apply across all subcommands)
 
