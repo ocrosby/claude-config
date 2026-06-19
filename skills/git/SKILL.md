@@ -29,7 +29,7 @@ The orchestration delegates to atomic building blocks: `/branch-from-main`, `/co
 /git worktree [<name>]                # create parallel worktree under .claude/worktrees/
 /git release-notes [<range>]          # generate changelog (default: since last tag)
 /git cli                              # GitHub CLI quick reference (gh api, runs, reviews, issues)
-/git reviewer                         # sweep your open PRs, address reviewer comments, report which are clean
+/git reviewer                         # sweep your open PRs, address reviewer comments and failing CI checks, report which are clean
 ```
 
 `/git ship` subsumes the previous `/git cpr` subcommand. If you are already on a feature branch with a prior push, the branch is kept; only pre-flight, commit, push, and PR run. The `--quick` flag skips pre-flight for the same daily-iteration use case.
@@ -249,7 +249,7 @@ Read `~/.claude/skills/git/cli.md` and apply what the user is asking for from it
 
 ### 8. Dispatch — `reviewer`
 
-Sweep every open PR you authored, surface and address reviewer comments (including the minor ones), and end with a summary that says exactly which PRs are clean — so you know when to stop. This subcommand **edits code and pushes to your PR branches**; only ever act on PRs authored by `@me`.
+Sweep every open PR you authored, surface and address reviewer comments (including the minor ones) **and resolve failing GitHub Actions checks**, ending with a summary that says exactly which PRs are clean — so you know when to stop. This subcommand **edits code and pushes to your PR branches**; only ever act on PRs authored by `@me`.
 
 1. **Enumerate your open PRs** in the current repo:
    ```bash
@@ -257,7 +257,33 @@ Sweep every open PR you authored, surface and address reviewer comments (includi
    ```
    If there are none, print `No open PRs authored by you — nothing to review.` and stop. Resolve `<owner>/<repo>` once with `gh repo view --json owner,name`.
 
-2. **Collect reviewer feedback per PR.** Gather feedback authored by *someone other than you* — human reviewers **and** review bots (e.g. Copilot, `claude-review`); include their nits/minor notes too — from all three surfaces, keeping only **unresolved / actionable** items:
+2. **Collect failing CI checks per PR.** Always sweep checks before reviewer comments — review on top of a red branch wastes effort and re-runs CI for free once a fix lands. List every check and pull failure detail only for the failed ones:
+   ```bash
+   gh pr checks <N> --json name,state,link,workflow
+   ```
+   For each check whose `state` is `FAILURE` or `STARTUP_FAILURE`, look up the run for the PR's head branch and grab the failing-step logs:
+   ```bash
+   RUN=$(gh run list --branch <headRefName> --workflow <workflow> --limit 1 \
+           --json databaseId -q '.[0].databaseId')
+   gh run view "$RUN" --log-failed
+   ```
+   Ignore checks in `PENDING`, `QUEUED`, `IN_PROGRESS`, or `SUCCESS`. Classify each failed check before doing anything to it:
+   - **Auto-fixable** — deterministic lint/format errors (`ruff format`, `gofmt`, `stylua`, missing newline, trailing whitespace)
+   - **Code/test bug** — assertion, type, or compile failure pointing at a specific file/line you can fix
+   - **Flaky/transient** — network timeouts, runner provisioning errors, third-party service errors, no signal that the code is wrong
+   - **Ambiguous** — anything else (secrets, infra, behavior change of unclear intent)
+
+3. **Resolve failing checks first.** For each PR with failed checks, only on your own PRs, before touching reviewer comments:
+   - Require a clean working tree first; if dirty, stop and ask (stash/commit/abort). Prefer a worktree (`/git worktree`) or `gh pr checkout <N>`; restore the user's original branch when done.
+   - **Auto-fixable** → apply the formatter/linter fix locally.
+   - **Code/test bug** → fix the underlying code or test.
+   - **Flaky/transient** → rerun once with `gh run rerun --failed <run-id>`; if it fails again on the same step, reclassify as Ambiguous.
+   - **Ambiguous** → surface under "Needs your input" with the failing-step excerpt; do not guess.
+   - Run the repo's lint/tests (the `ship` **Pre-flight** table) before pushing; if they fail, fix or stop — never `--no-verify`.
+   - Commit with `fix(ci): resolve <check> failure` and push (`git push`; never force unless asked; never amend a pushed commit).
+   - **If a PR still has unresolved (Ambiguous) check failures after this step: skip its reviewer-comment pass and report it under "Needs your input" in the summary.** Do not address review comments on a red branch.
+
+4. **Collect reviewer feedback per PR** (only for PRs that are now green or whose only failures were resolved). Gather feedback authored by *someone other than you* — human reviewers **and** review bots (e.g. Copilot, `claude-review`); include their nits/minor notes too — from all three surfaces, keeping only **unresolved / actionable** items:
    - **Inline review threads** with resolution state (skip `isResolved: true`):
      ```bash
      gh api graphql -f query='
@@ -277,28 +303,28 @@ Sweep every open PR you authored, surface and address reviewer comments (includi
      ```
    Exclude comments whose author is the PR author (those are yours, not feedback).
 
-3. **Classify and inform.** For each PR:
-   - **No actionable review comments** → record it as clean for the summary.
-   - **Has actionable review comments** → list each as `#<PR> <path>:<line> — <reviewer>: <ask>` (mark nits/minor explicitly) and tell the user what you intend to change *before* editing.
+5. **Classify and inform.** For each PR:
+   - **No actionable review comments** (and checks resolved in step 3) → record it as clean for the summary.
+   - **Otherwise** → list each item as `#<PR> <path>:<line> — <reviewer>: <ask>` (mark nits/minor explicitly) and tell the user what you intend to change *before* editing.
 
-4. **Address the comments**, one PR at a time, only on your own PRs:
-   - Require a clean working tree first; if dirty, stop and ask (stash/commit/abort). Prefer a worktree (`/git worktree`) or `gh pr checkout <N>`; restore the user's original branch when done.
-   - Implement **every** comment, including minor ones (naming, formatting, nits, comment wording). For a comment that is ambiguous, subjective, or whose fix would change intended behavior, **do not guess** — surface it under "Needs your input" and move on.
+6. **Address review comments**, one PR at a time, only on your own PRs:
+   - Require a clean working tree (or stay in the worktree/`gh pr checkout` from step 3); restore the user's original branch when done.
+   - Implement **every** comment, including minor ones (naming, formatting, nits, comment wording). For an ambiguous, subjective, or behavior-changing comment, **do not guess** — surface it under "Needs your input" and move on.
    - Run the repo's lint/tests (the `ship` **Pre-flight** table) before pushing; if they fail, fix or stop — never `--no-verify`.
-   - Commit with a conventional message (e.g. `fix(review): address review feedback on <area>`) and push to update the PR (`git push`; never force unless the user asks; never amend a pushed commit).
+   - Commit with `fix(review): address review feedback on <area>` and push to update the PR (`git push`; never force unless the user asks; never amend a pushed commit).
    - Optionally reply on each thread so the reviewer sees it was handled — but never resolve a thread you did not actually address:
      ```bash
      gh api repos/<owner>/<repo>/pulls/<N>/comments/<comment_id>/replies -f body='Addressed in <sha>.'
      ```
 
-5. **Summary message — always print this last**, covering every open PR so the stop condition is unambiguous:
-   - **Clean (no review comments):** list `#<PR> <title>` for each — these need nothing.
-   - **Addressed:** list each PR, the comments resolved, and the pushed commit/URL.
-   - **Needs your input:** any comment you could not safely auto-address, with the question.
+7. **Summary message — always print this last**, covering every open PR so the stop condition is unambiguous:
+   - **Clean (no review comments, all checks green):** list `#<PR> <title>` for each — these need nothing.
+   - **Addressed:** list each PR, the comments resolved and checks fixed, and the pushed commit/URL.
+   - **Needs your input:** any comment or check failure you could not safely auto-address, with the question or failing-step excerpt.
 
-   If every open PR falls in **Clean**, say so plainly — e.g. `All N open PRs are free of unaddressed review comments — nothing left to do.` — so you know to stop.
+   If every open PR falls in **Clean**, say so plainly — e.g. `All N open PRs are free of unaddressed review comments and have all checks green — nothing left to do.` — so you know to stop.
 
-**Rules for `reviewer`.** Only push to PRs authored by `@me`. Never resolve or dismiss a reviewer thread without a real change. Surface ambiguous or behavior-changing feedback as a question rather than guessing. Restore the user's original branch (or use worktrees) when finished.
+**Rules for `reviewer`.** Only push to PRs authored by `@me`. Never resolve or dismiss a reviewer thread without a real change. Never `gh run rerun` a check whose log shows a clear code-level failure — fix the code instead. Surface ambiguous or behavior-changing feedback (or unclear CI failures) as a question rather than guessing. Restore the user's original branch (or use worktrees) when finished.
 
 ### 9. Final verification step
 
