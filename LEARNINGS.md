@@ -111,6 +111,12 @@ When golangci-lint can't run due to a Go version mismatch, falling back to `go v
 
 ---
 
+### Per-repo `tool` directives in `go.mod` eliminate cross-repo lint version drift
+
+When working across Go repos pinned to different `go.mod` versions, a single global `golangci-lint` cannot satisfy them all — the binary's build-Go must be ≥ every repo's declared Go version, and the next Go SDK bump re-creates the mismatch. Go 1.24's `tool` directive solves this structurally: each repo runs `go get -tool github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest` once to pin its lint version in `go.mod`, and lint orchestrators (the `hooks/lint.sh` Go branch, CI) prefer `go tool golangci-lint run ./<pkg>` over the global binary. The tool is rebuilt against the local Go SDK on every invocation, so version mismatch is impossible by construction. Dispatch order in `hooks/lint.sh`: (1) `go tool golangci-lint` if `go.mod` declares it, (2) `task lint` if `Taskfile.yml` defines it, (3) global `golangci-lint` with the version check, (4) `go vet` with warning.
+
+---
+
 ### Pre-push hooks prevent CI-only lint failures
 
 A `.githooks/pre-push` script that runs `golangci-lint run ./...` per module blocks the push before it reaches CI. Without this, any lint issue — regardless of how obvious — must wait for a CI run to be discovered. Add `task hooks` to configure it in one step, and document in the README.
