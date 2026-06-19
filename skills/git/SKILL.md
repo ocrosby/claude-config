@@ -13,6 +13,8 @@ Use this skill for any git-graph or GitHub-CLI operation: shipping a branch (cre
 
 The orchestration delegates to atomic building blocks: `/branch-from-main`, `/conventional-commit-msg`, `/open-pr`, and the shared scripts at `~/.claude/scripts/git_group.py` and `~/.claude/scripts/classify_commits.py`. This skill never re-implements their mechanics.
 
+**Commit messages.** Every commit produced by this skill uses the **Angular Conventional Commits** convention — `<type>(<scope>): <subject>`, lowercase type/scope, imperative-present subject, no trailing period, optional body explaining *why*, optional `BREAKING CHANGE:` footer. Allowed types: `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `build`, `ci`, `chore`, `revert`. The canonical format lives in `~/.claude/commands/conventional-commit-msg.md`; every commit step below routes through `/conventional-commit-msg` or quotes a header that conforms to it.
+
 ## Usage
 
 ```
