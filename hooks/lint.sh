@@ -55,6 +55,49 @@ case "${FILE##*.}" in
     done
     # No go.mod found anywhere in the tree — skip linting
     [[ ! -f "$MODULE_ROOT/go.mod" ]] && exit 0
+
+    # Per-package relative path used by the `go tool` and global paths.
+    PKG_DIR="$(dirname "$FILE")"
+    if [[ "$PKG_DIR" == "$MODULE_ROOT" ]]; then
+      REL_PKG="."
+    else
+      REL_PKG="${PKG_DIR#${MODULE_ROOT}/}"
+    fi
+
+    # 1. Repo-pinned golangci-lint via go.mod `tool` directive (Go 1.24+).
+    # Built with the local Go SDK, so no version-mismatch is possible. Fastest
+    # per-edit path because we keep per-package scoping.
+    if (cd "$MODULE_ROOT" && go tool 2>/dev/null | grep -qE '(^|/)golangci-lint$'); then
+      echo "$HOOK go tool golangci-lint: checking ./$REL_PKG" >&2
+      LINT_OUT=$(cd "$MODULE_ROOT" && go tool golangci-lint run "./$REL_PKG" 2>&1)
+      LINT_EXIT=$?
+      if [[ $LINT_EXIT -ne 0 ]]; then
+        echo "$LINT_OUT" >&2
+        exit $LINT_EXIT
+      fi
+      exit 0
+    fi
+
+    # 2. Repo-defined `task lint` — the repo decides what "lint" means and what
+    # version of golangci-lint (or other linters) backs it. Scoping is whatever
+    # the Taskfile chose; may be slower than per-package but matches CI exactly.
+    if command -v task &>/dev/null; then
+      for tf in "$MODULE_ROOT/Taskfile.yml" "$MODULE_ROOT/Taskfile.yaml"; do
+        if [[ -f "$tf" ]] && grep -qE '^[[:space:]]+lint:' "$tf"; then
+          echo "$HOOK task lint: checking $MODULE_ROOT" >&2
+          LINT_OUT=$(cd "$MODULE_ROOT" && task lint 2>&1)
+          LINT_EXIT=$?
+          if [[ $LINT_EXIT -ne 0 ]]; then
+            echo "$LINT_OUT" >&2
+            exit $LINT_EXIT
+          fi
+          exit 0
+        fi
+      done
+    fi
+
+    # 3. Globally-installed golangci-lint. Used when the repo has not opted into
+    # a pinned version via go.mod tool directive or Taskfile.
     if command -v golangci-lint &>/dev/null; then
       # Fail if local golangci-lint version is incompatible with the module's Go version.
       # Do NOT fall back to go vet — it misses godot, goimports, gocyclo and other linters
@@ -68,20 +111,18 @@ case "${FILE##*.}" in
           echo "$HOOK ERROR: golangci-lint was built with go${LINT_BUILD_GO} but go.mod declares go ${MOD_GO_VERSION}." >&2
           echo "golangci-lint will not run and lint issues will reach CI undetected." >&2
           echo "" >&2
-          echo "Fix: reinstall golangci-lint using your current Go version:" >&2
-          echo "  go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest" >&2
-          echo "  (or: task deps  if the project has a Taskfile)" >&2
+          echo "Fix options (pick one):" >&2
+          echo "  a) Pin per-repo (recommended for repos at different Go versions):" >&2
+          echo "       cd $MODULE_ROOT && go get -tool github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest" >&2
+          echo "       Commit the updated go.mod/go.sum; the hook will use 'go tool' next time." >&2
+          echo "  b) Rebuild your global binary against the current Go SDK:" >&2
+          echo "       go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest" >&2
+          echo "  c) Add a 'lint' task to Taskfile.yml — the hook will run 'task lint' instead." >&2
           exit 1
         fi
       fi
       # Lint only the package containing the changed file, not the whole module.
       # Faster per-edit; run golangci-lint ./... manually for a full module check.
-      PKG_DIR="$(dirname "$FILE")"
-      if [[ "$PKG_DIR" == "$MODULE_ROOT" ]]; then
-        REL_PKG="."
-      else
-        REL_PKG="${PKG_DIR#${MODULE_ROOT}/}"
-      fi
       echo "$HOOK golangci-lint: checking ./$REL_PKG" >&2
       LINT_OUT=$(cd "$MODULE_ROOT" && golangci-lint run "./$REL_PKG" 2>&1)
       LINT_EXIT=$?
