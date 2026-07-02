@@ -1,5 +1,5 @@
 ---
-description: Git workflow dispatcher — ship, sync, main, worktree, release-notes, cli, reviewer. The first word of $ARGUMENTS selects the subcommand. Subcommands ship, worktree, and reviewer push to remote, mutate parallel checkouts, or edit and push to PR branches; treat them as human-gated.
+description: Git workflow dispatcher — ship, sync, main, merge, worktree, release-notes, cli, reviewer. The first word of $ARGUMENTS selects the subcommand. Subcommands ship, merge, worktree, and reviewer mutate remote state (push commits, merge PRs, edit PR branches) or parallel checkouts; treat them as human-gated.
 argument-hint: "<subcommand> [arguments]"
 aliases: git-ship, git-cpr, git-sync, git-main, worktree, release-notes, ship, sync, main, commit-push-pr, gh-cli, reviewer, pr-reviewer
 allowed-tools: Bash(git *) Bash(gh *) Bash(uv lock) Read Edit Write
@@ -32,6 +32,10 @@ The orchestration delegates to atomic building blocks: `/branch-from-main`, `/co
 /git release-notes [<range>]          # generate changelog (default: since last tag)
 /git cli                              # GitHub CLI quick reference (gh api, runs, reviews, issues)
 /git reviewer                         # sweep your open PRs, address reviewer comments and failing CI checks, report which are clean
+/git merge <N> [<N> ...]              # merge these open PRs in order, syncing main between each
+/git merge --all                      # merge every open PR you authored, ascending PR order
+/git merge <N> ... --keep-branch      # keep the remote branch (default deletes it)
+/git merge <N> ... --merge|--rebase   # merge method (default: --squash)
 ```
 
 `/git ship` subsumes the previous `/git cpr` subcommand. If you are already on a feature branch with a prior push, the branch is kept; only pre-flight, commit, push, and PR run. The `--quick` flag skips pre-flight for the same daily-iteration use case.
@@ -44,7 +48,7 @@ Split `$ARGUMENTS` on the first space. The first word is the subcommand; everyth
 
 - If the subcommand is empty or `help`: print the **Usage** block above and stop.
 - If the subcommand is `cpr`: print `/git cpr was merged into /git ship — for the daily-iteration ergonomics use /git ship --quick`, then dispatch to `ship` with `--quick` prepended to the remaining argument string. If `--quick` is already present in the remaining argument string, do not prepend a duplicate — treat the argument string as-is.
-- If the subcommand is not one of `ship`, `sync`, `main`, `worktree`, `release-notes`, `cli`, `reviewer`: stop and print the **Usage** block.
+- If the subcommand is not one of `ship`, `sync`, `main`, `merge`, `worktree`, `release-notes`, `cli`, `reviewer`: stop and print the **Usage** block.
 - Dispatch to the matching step.
 
 ### 2. Dispatch — `ship`
@@ -328,9 +332,105 @@ Sweep every open PR you authored, surface and address reviewer comments (includi
 
 **Rules for `reviewer`.** Only push to PRs authored by `@me`. Never resolve or dismiss a reviewer thread without a real change. Never `gh run rerun` a check whose log shows a clear code-level failure — fix the code instead. Surface ambiguous or behavior-changing feedback (or unclear CI failures) as a question rather than guessing. Restore the user's original branch (or use worktrees) when finished.
 
-### 9. Final verification step
+### 9. Dispatch — `merge`
 
-For every subcommand, the dispatch block above ends with its own verification gate. Before this skill exits, confirm the gate fired (PR URL reachable, branch pruned report emitted, worktree listed, the requested `gh` command surfaced from the reference, the `reviewer` per-PR summary printed, etc.) — if any verification was skipped, re-run it.
+Merge a set of open PRs **in the order given**, refreshing local `main` between each so every PR
+merges against the latest base. This is a single operation with one job: land a queue of PRs
+sequentially. It does not review, rebase-for-cleanliness, or trigger follow-on builds — for
+review-then-merge use `/git reviewer` first; for the "wait for a release, then bump and un-skip"
+playbook use the dedicated orchestration, not this subcommand. **Merging is a remote mutation —
+only ever run this on explicit `/git merge` invocation, and only merge PRs that are green and
+conflict-free.**
+
+**Flag and argument parsing.** Inspect the argument string first:
+
+- `--all` — target every open PR authored by `@me` in the current repo, in ascending PR-number
+  order. Mutually exclusive with an explicit number list. **If both `--all` and one or more bare
+  integers are present: stop and ask which the user meant.**
+- Bare integers (`30 31 32`) — the exact PRs to merge, **in the order written**. Order matters;
+  never reorder them.
+- `--keep-branch` — keep the remote head branch. Default is to delete it after a successful merge.
+- `--merge` / `--rebase` — merge method. Default is `--squash`. `--merge`, `--rebase`, and
+  `--squash` are mutually exclusive; **if more than one is present: stop and ask.**
+
+Resolve the PR list:
+
+- `--all`:
+  ```bash
+  gh pr list --author @me --state open --json number,title,headRefName --jq 'sort_by(.number)[]'
+  ```
+  If none, print `No open PRs authored by you — nothing to merge.` and stop. `headRefName` is
+  fetched so the confirmation step can name the branches that deletion will remove.
+- Explicit numbers: use them verbatim in the given order.
+
+**Confirm before mutating.** Print the ordered list as `#<N> <title> (<headRefName>)` and the
+resolved options (method, and — when deletion is on — the exact branches that will be removed).
+For `--all`, or any list of more than one PR, **wait for explicit confirmation** before merging
+anything — the order and set are the user's decision.
+
+**Per PR, in order:**
+
+1. **Inspect state.**
+   ```bash
+   gh pr view <N> --json number,title,state,isDraft,mergeable,mergeStateStatus,headRefName
+   ```
+   - `state != OPEN` → skip with a note (already merged/closed); continue to the next PR.
+   - `isDraft: true` → **stop the run** and report; do not merge a draft.
+   - `mergeable == CONFLICTING` → **stop the run**, name the conflict, and do not force. The user
+     resolves conflicts (via `/git sync` on that branch) before re-running.
+   - `mergeStateStatus == BLOCKED` (required reviews outstanding, an unmet branch-protection rule,
+     etc.) → **stop the run** and report the blocking reason. Do not attempt the merge — `gh pr
+     merge` will fail. This is a distinct fourth stop condition, not a conflict or a red check.
+2. **Require green checks.**
+   ```bash
+   gh pr checks <N>
+   ```
+   If any required check is failing or still pending → **stop the run** and report which check.
+   Never merge a red or in-flight PR.
+3. **Merge.** Build the command from the parsed flags — do not hardcode `--squash`/`--delete-branch`:
+   - Method token: `--squash` (default), or `--merge` / `--rebase` when the user passed one.
+   - Branch flag: include `--delete-branch` **unless** `--keep-branch` was passed; omit it when it was.
+   ```bash
+   gh pr merge <N> <--squash|--merge|--rebase> [--delete-branch]
+   ```
+   Example — default flags: `gh pr merge 31 --squash --delete-branch`. With `--rebase --keep-branch`:
+   `gh pr merge 31 --rebase`.
+4. **Sync `main` between PRs.** Dispatch to the `main` subcommand (Section 4) to checkout `main`,
+   pull, and prune the merged branch. This is the "sync main between" step.
+5. **Bring the next PR up to date.** If more PRs remain, run `gh pr update-branch` on the next one
+   — it is idempotent (a no-op when the branch is already current), so run it unconditionally
+   rather than guessing whether branch protection requires it:
+   ```bash
+   gh pr update-branch <next-N>
+   ```
+   If the output reports the branch is already up to date, continue immediately. **If it updates
+   the branch, its checks are now pending — stop the run and tell the user checks are re-running
+   on `#<next-N>`; do not proceed until they re-invoke `/git merge` after checks pass.** (Do not
+   poll or block waiting for CI.)
+
+**Stop semantics.** On the first draft / conflict / BLOCKED / red-check PR, stop the whole run —
+do not skip ahead to later PRs, because a queue is usually ordered for a reason (a later PR may
+depend on an earlier one). Report exactly which PRs merged and which remain untouched.
+
+**Verify.** For each PR that was merged:
+```bash
+gh pr view <N> --json state --jq .state    # expect MERGED
+```
+Confirm local `main` is at the latest (`git log -1 origin/main --oneline`). Print a summary table:
+
+| PR | Title | Result | Branch |
+|----|-------|--------|--------|
+
+with Result one of `merged` / `skipped (not open)` / `stopped (<reason>)` and Branch `deleted` /
+`kept`.
+
+**Rules for `merge`.** Never merge a PR with failing/pending checks or a conflict. Never force.
+Never reorder the requested PR list. Confirm the set and order before merging when more than one
+PR is targeted. Only merge PRs in the current repo; for `--all`, only PRs authored by `@me`.
+
+### 10. Final verification step
+
+For every subcommand, the dispatch block above ends with its own verification gate. Before this skill exits, confirm the gate fired (PR URL reachable, branch pruned report emitted, worktree listed, the requested `gh` command surfaced from the reference, the `reviewer` per-PR summary printed, the `merge` summary table printed with every merged PR showing MERGED, etc.) — if any verification was skipped, re-run it.
 
 ## Rules (apply across all subcommands)
 
