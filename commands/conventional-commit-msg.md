@@ -1,18 +1,26 @@
 ---
-description: "Compose a Conventional Commits message from staged changes and commit. Building block for /git ship."
+description: "Compose an Angular Conventional Commits message from staged changes and commit. Building block for /git ship."
 user-invocable: false
 ---
 
 # Conventional Commit Message
 
-Use this command to commit already-staged changes with a Conventional Commits message. This is the atomic commit step extracted from `/git ship` — it does **not** stage files, push, or create a branch.
+Use this command to commit already-staged changes with an **Angular Conventional Commits** message. This is the atomic commit step extracted from `/git ship` — it does **not** stage files, push, or create a branch.
+
+The Angular convention is the canonical format used everywhere in this repo:
+
+- Header: `<type>(<scope>): <subject>` — type and scope lowercase, subject in imperative present tense ("change" not "changed" or "changes"), no trailing period.
+- Optional body separated by a blank line, explaining **why** not what, wrapped at 72 columns.
+- Optional footers — `BREAKING CHANGE: …` and issue references like `Closes #123`.
+
+Reference: https://www.conventionalcommits.org/ and https://github.com/angular/angular/blob/main/contributing.md.
 
 **If nothing is staged: stop and tell the user to stage files first.**
 
 ## Steps
 
 1. Run `git diff --cached` to inspect what is staged. If empty, stop and tell the user there is nothing to commit.
-2. Determine the conventional commit type from the staged diff:
+2. Determine the Angular conventional commit type from the staged diff:
    - New behavior or public API → `feat`
    - Bug fix → `fix`
    - Docs only → `docs`
@@ -20,11 +28,12 @@ Use this command to commit already-staged changes with a Conventional Commits me
    - Code restructure with no behavior change → `refactor`
    - Performance-only change → `perf`
    - Test-only change → `test`
+   - Reverting a previous commit → `revert`
    - Tooling, CI, deps → `chore` or `ci` or `build`
 
    The canonical type list lives in `CLAUDE.md` — if it ever diverges from this list, `CLAUDE.md` wins.
 3. Derive a scope from the most prominent affected path (package name, module, or top-level dir). Omit the scope when the change crosses three or more unrelated scopes.
-4. Compose the subject line: `<type>(<scope>): <imperative description>`. Lowercase, no trailing period, under 72 characters.
+4. Compose the subject line: `<type>(<scope>): <imperative description>`. Type and scope lowercase, subject in imperative present tense, no trailing period, under 72 characters. Omit the scope (and its parens) when the change crosses three or more unrelated scopes.
 5. Compose the body (optional, only when the subject is insufficient): explain **why**, not what. Wrap at 72 columns.
 6. Commit with a HEREDOC to preserve formatting:
 
