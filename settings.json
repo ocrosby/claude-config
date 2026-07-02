@@ -1,5 +1,4 @@
 {
-  "autoApprove": true,
   "includeCoAuthoredBy": false,
   "permissions": {
     "allow": [
@@ -103,14 +102,19 @@
       "mcp__location__*",
       "mcp__insights__*",
       "mcp__oapi__*",
-      "mcp__jenkins-*",
+      "mcp__jenkins__*",
+      "mcp__jenkins-useast1__*",
       "mcp__context7__*",
       "WebFetch",
       "Skill(update-config)"
     ],
     "deny": [],
-    "additionalDirectories": ["/tmp"]
+    "defaultMode": "auto",
+    "additionalDirectories": [
+      "/tmp"
+    ]
   },
+  "model": "opus[1m]",
   "hooks": {
     "SessionStart": [
       {
@@ -225,5 +229,8 @@
     "lua-lsp@claude-plugins-official": true,
     "pyright-lsp@claude-plugins-official": true
   },
-  "voiceEnabled": true
+  "skipAutoPermissionPrompt": true,
+  "voiceEnabled": true,
+  "autoApprove": true,
+  "tui": "fullscreen"
 }
