@@ -396,7 +396,12 @@ anything — the order and set are the user's decision.
    Example — default flags: `gh pr merge 31 --squash --delete-branch`. With `--rebase --keep-branch`:
    `gh pr merge 31 --rebase`.
 4. **Sync `main` between PRs.** Dispatch to the `main` subcommand (Section 4) to checkout `main`,
-   pull, and prune the merged branch. This is the "sync main between" step.
+   pull, and prune the merged branch. This is the "sync main between" step. **Note:** Section 4
+   prunes *every* local branch fully merged into `main`, not only the branches in this merge set —
+   so an unrelated, already-merged local branch (even one you were sitting on before the run) can
+   be cleaned up here. This is harmless (`git branch -d` refuses unmerged branches, so nothing
+   with unmerged work is ever deleted), but do not assume the only branch removed is the one just
+   merged.
 5. **Bring the next PR up to date.** If more PRs remain, run `gh pr update-branch` on the next one
    — it is idempotent (a no-op when the branch is already current), so run it unconditionally
    rather than guessing whether branch protection requires it:
