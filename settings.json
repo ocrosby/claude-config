@@ -114,7 +114,6 @@
       "/tmp"
     ]
   },
-  "model": "opus[1m]",
   "hooks": {
     "SessionStart": [
       {
@@ -229,8 +228,8 @@
     "lua-lsp@claude-plugins-official": true,
     "pyright-lsp@claude-plugins-official": true
   },
+  "tui": "fullscreen",
   "skipAutoPermissionPrompt": true,
   "voiceEnabled": true,
-  "autoApprove": true,
-  "tui": "fullscreen"
+  "autoApprove": true
 }
