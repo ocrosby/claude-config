@@ -15,6 +15,15 @@ FILE=$(printf '%s' "$INPUT" | jq -r '.tool_input.file_path // empty' 2>/dev/null
 HOOK="[hook: lint]"
 LOG="$HOME/.claude/hooks/hook-debug.log"
 
+# On any non-zero exit, tell Claude what to do with the diagnostics above:
+# fix them directly, or explain in detail why a given one can't be fixed.
+trap '
+  ec=$?
+  if [[ $ec -ne 0 ]]; then
+    echo "$HOOK ACTION: fix the issues reported above directly in the affected file(s). For any issue you cannot fix (missing tool, ambiguous design choice, requires human input), explain in detail why, inline in your response." >&2
+  fi
+' EXIT
+
 case "${FILE##*.}" in
   py)
     echo "$(date -u +%FT%TZ) $HOOK py: $FILE" >> "$LOG"
