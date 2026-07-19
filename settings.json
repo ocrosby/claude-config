@@ -219,6 +219,10 @@
           {
             "type": "command",
             "command": "echo \"If there is remaining work, keep going. Check your task list.\""
+          },
+          {
+            "type": "command",
+            "command": "echo \"If this session involved a correction or a repeated mistake, capture the guard before ending: update the relevant rule/skill/CLAUDE.md, and record repo-committed insights in LEARNINGS.md (per CLAUDE.md # Self-Improvement).\""
           }
         ]
       }
