@@ -44,6 +44,23 @@ The full field reference and `disable-model-invocation` vs `user-invocable` deci
 - Every skill that has exceptions must define them with literal examples, not category names
 - If the skill delegates to an agent, name the agent explicitly
 
+## Scope buckets
+
+Every skill must fit cleanly into exactly **one** of four scope buckets. A skill that straddles two or more confuses invocation — split it or trim its scope until it fits one.
+
+- **Utility** — does one small reusable thing, every time.
+- **Verification** — checks final output quality against an objective bar.
+- **Data Enrichment** — pulls external data in.
+- **Orchestration** — chains other skills into a multi-step playbook.
+
+Orchestration that coordinates other skills is **not** straddling — a playbook is allowed to touch every bucket through the skills it calls, as long as it does not itself do their work inline.
+
+A **Verification** skill must produce an objective output — a Pass/Fail or a grade out of 10, never a vague verdict ("looks good", "seems fine") — and check one of:
+
+- **Correctness** — does the output run/compile/pass tests, match a schema or API contract, or satisfy a lint/style rule?
+- **Fidelity** — are facts, config values, version numbers, and referenced docs real and accurate — not hallucinated flags, deprecated APIs, or wrong paths?
+- **Quality** — does it meet a bar the user cares about (idiomatic code, consistent commit-message format, a PR body that explains the "why", docs that match the current CLI surface)?
+
 ## Conflict check
 
 - Before finalizing a skill, verify it does not duplicate what an existing rule already enforces

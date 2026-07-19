@@ -31,6 +31,7 @@ Do not read files one at a time. Issue all Read calls together so they execute c
 - Rules or skills that fire in the wrong context (e.g., a mandatory rule that activates during tasks it doesn't apply to)
 - Semantic mismatches between a stated intent and actual behavior
 - Skills whose workflow steps contradict their own rules or each other
+- Skills straddling more than one scope bucket (Utility / Verification / Data Enrichment / Orchestration, per `rules/skill-conventions.md`) — doing multiple jobs confuses invocation; recommend split or scope-trim. Orchestration that coordinates other skills is NOT straddling
 
 #### Redundancy
 - Duplicate sources of truth (e.g., a rule that restates what `settings.json` already enforces)
@@ -47,6 +48,7 @@ Do not read files one at a time. Issue all Read calls together so they execute c
 - Language families with inconsistent coverage (one language has a security rule, others don't; one has a debugger agent, others don't)
 - Hooks that cover some file types but not others in the same family
 - Automation that would close a gap between a stated rule and its enforcement
+- Generators, drafters, or scaffolders (commit messages, PR bodies, boilerplate, config, docs) that produce output but never verify it — no objective Pass/Fail, /10 grade, or check against tests / schema / style guide / repo state. The Verification scope is the one most often missing; name what a Pass/Fail check would compare against
 
 #### Discoverability
 - Workflows that exist but aren't surfaced via autocomplete, rules, or skill cross-references
