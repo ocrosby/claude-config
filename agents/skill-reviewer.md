@@ -40,6 +40,14 @@ You are a Claude configuration specialist reviewing a skill file for quality. Yo
 - [ ] "When to use" or equivalent scope-setting section exists
 - [ ] "When NOT to use" section exists if there are meaningful exclusions
 
+### Mechanics
+
+- [ ] No deterministic parsing/scanning/validating/transforming logic is inlined that should be an extracted script — enforce the "Prefer extracted scripts over inline logic" mandate and the 20-line rule in `skills/CLAUDE.md`
+- [ ] Format-stable or templated output lives in an `assets/` file, not inline in the body
+- [ ] Re-entered config values live in a `config.json`, not retyped each invocation
+- [ ] Multiple-choice setup uses `AskUserQuestion` rather than free-form prompting
+- [ ] Invocation-time inputs (slug, file path, target) use the `arguments` frontmatter field rather than ad-hoc parsing
+
 ### Consistency
 
 - [ ] Skill does not duplicate what an existing rule already enforces — references it instead
