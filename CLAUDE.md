@@ -112,3 +112,10 @@ When `$NVIM` is set in the environment, Claude Code is running inside a Neovim t
 
 - Use `--add-dir` (or `/add-dir`) to give Claude access to additional repositories.
 - Add `"additionalDirectories"` to `settings.json` to always load extra folders on startup (this repo's `settings.json` already has `/tmp` here).
+
+# Reference Repositories
+
+Standing external references. When a task resembles something they cover — designing a skill, agent, hook, or workflow — consult them for prior art before inventing a new pattern. They are references to read and adapt, not dependencies: never copy wholesale, and rework anything borrowed to this repo's conventions.
+
+- **everything-claude-code** — https://github.com/worldflowai/everything-claude-code
+- **superpowers** (obra) — https://github.com/obra/superpowers — brainstorming, subagent-driven development with built-in code review, systematic debugging, red/green TDD, and skill authoring/testing.
