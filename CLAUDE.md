@@ -72,6 +72,11 @@ When ending a correction, prompt with: "Now update the relevant rule/skill/CLAUD
 
 Iterate until the mistake rate measurably drops.
 
+Each learning has exactly one home — route it, do not duplicate it:
+- **A rule / skill / `CLAUDE.md` guard** — when the fix is an enforceable behavior change. This is the default.
+- **`LEARNINGS.md`** (repo root) — repo-committed insights about how these rules/skills/hooks/agents behave (drift patterns, tooling gotchas). See `rules/readme-standard.md`. Do not put these in `README.md`.
+- **The memory system** — cross-project, user-specific behavioral preferences and feedback (e.g. the "ship it" vs "push it" wording), not tied to this repo.
+
 # Working with Plan Mode
 
 - Start every complex task in plan mode (shift+tab to cycle).

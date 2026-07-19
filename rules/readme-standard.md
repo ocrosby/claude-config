@@ -100,9 +100,9 @@ This rule fires whenever `README.md` at the repository root is edited. Before fi
 
 ## Documenting Claude-Configuration Learnings (claude-config repo only)
 
-The remainder of this rule applies only when editing the `README.md` of the `claude-config` dotfiles repo, or any file under `.claude/**`. In other projects, ignore this section.
+The remainder of this rule applies only when working in the `claude-config` dotfiles repo, or any file under `.claude/**`. In other projects, ignore this section.
 
-When a session produces a new insight about how Claude rules, skills, hooks, or agents work — or reveals a pattern that caused drift, cycles, or inconsistency — update `README.md` in the `.claude/` directory and push it to main.
+When a session produces a new insight about how Claude rules, skills, hooks, or agents work — or reveals a pattern that caused drift, cycles, or inconsistency — record it in `LEARNINGS.md` at the repo root and push it to main. `LEARNINGS.md` is the single home for these repo-committed config learnings — do **not** add them to `README.md`, which stays a clean user-facing document per the required-sections standard above. (Cross-project behavioral preferences and feedback go to the memory system instead; see `CLAUDE.md` `# Self-Improvement`.)
 
 ### When to trigger this
 
@@ -119,11 +119,11 @@ A learning has occurred when any of these happen:
 - A build/test failure was caused by a pattern that an existing rule or hook should have caught
 - An audit (`/audit`) revealed gaps between stated behavior and actual enforcement
 
-**These are high-priority triggers.** If a session involved 3+ rounds of CI debugging to fix an issue that a rule could have prevented, that is always worth a README entry.
+**These are high-priority triggers.** If a session involved 3+ rounds of CI debugging to fix an issue that a rule could have prevented, that is always worth a `LEARNINGS.md` entry.
 
 ### What to write
 
-Each entry should be placed under the appropriate section heading in `README.md`. Write it as a short, concrete lesson — not a description of what was changed, but what was learned and why it matters for future rule authoring.
+Each entry should be placed under the appropriate section heading in `LEARNINGS.md`. Write it as a short, concrete lesson — not a description of what was changed, but what was learned and why it matters for future rule authoring.
 
 Structure:
 - **One sentence stating the lesson**
@@ -134,12 +134,12 @@ Do not pad entries. If the lesson can be stated in one sentence, use one sentenc
 
 ### How to update
 
-1. Read the current `README.md`
+1. Read the current `LEARNINGS.md`
 2. Add the new entry under the appropriate section (or create a new section if none fits)
 3. Run `/git ship -m` to commit directly to main and push without a PR — use commit message `docs(claude): add learning — <one-line summary>`
 4. Do not batch learnings across sessions — ship immediately after each session that produced a new learning
 
-### Sections in README.md
+### Sections in LEARNINGS.md
 
 - **Rule Authoring** — lessons about writing durable, enforceable rules
 - **TDD Enforcement** — lessons about test-driven development consistency
