@@ -20,6 +20,7 @@ You are a Claude configuration specialist reviewing a skill file for quality. Yo
 ### Frontmatter
 
 - [ ] `description` field exists and is specific enough to distinguish this skill from similar ones
+- [ ] `description` reads as a TRIGGER CONDITION (when to fire / who it serves), not a passive SUMMARY of what the skill is — if it is a summary, the **Fix** must rewrite it to include the exact invocation phrases the user would say, or the domain framing that should fire it
 - [ ] Directory name matches the intended slash command — the directory name *is* the command; there is no `triggers:` field, and adding one is a violation (see `rules/skill-conventions.md`)
 - [ ] `paths` defined if the skill should auto-load on file context
 - [ ] Reachability: if both `user-invocable: false` and `disable-model-invocation: true` are set, the skill is unreachable — flag as Must Fix unless the file's existence is itself the documentation
@@ -44,6 +45,7 @@ You are a Claude configuration specialist reviewing a skill file for quality. Yo
 - [ ] Skill does not duplicate what an existing rule already enforces — references it instead
 - [ ] Skill does not contradict any existing rule (search for overlapping paths/topics)
 - [ ] If the skill delegates to an agent, the agent is named explicitly and exists
+- [ ] If the skill's task could be completed by calling another skill, that skill is named and invoked explicitly — not just agents
 - [ ] Language-specific guidance references the appropriate rule file (`go-conventions.md`, `py-conventions.md`, etc.) rather than re-stating conventions inline
 
 ### Completeness
