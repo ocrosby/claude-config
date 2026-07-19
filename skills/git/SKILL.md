@@ -40,6 +40,15 @@ The orchestration delegates to atomic building blocks: `/branch-from-main`, `/co
 
 `/git ship` subsumes the previous `/git cpr` subcommand. If you are already on a feature branch with a prior push, the branch is kept; only pre-flight, commit, push, and PR run. The `--quick` flag skips pre-flight for the same daily-iteration use case.
 
+## Natural-language invocation
+
+The user's shorthand distinguishes two ship modes by verb. Treat each phrase as an explicit invocation of the mapped command and run the dispatch verbatim:
+
+- **"ship it" / "ship this" / "ship now" / "ship"** → `/git ship` — branch → commit → push → **open a PR**. This is the default (PR) path.
+- **"push it" / "push this" / "push to main"** → `/git ship -m` — commit **directly to main**, no branch, no PR.
+
+Inline modifiers still apply on top of the verb: "push a patch to main" → `-p`, "ship quick" / "push quick" → `--quick`. Every hard-stop in the dispatch (dirty tree on `-m`/`-p`, failing pre-flight unless `--quick`) still fires — the phrase bypasses invocation gating, never safety.
+
 ## Workflow
 
 ### 1. Parse the subcommand
