@@ -44,7 +44,7 @@ Ordered by how often you reach for them, most-used first.
 
 | Skill | Subcommands / Routes by | Description |
 |---|---|---|
-| `/architect` | `design` (lang auto-detect), `patterns`, `spec`, `catalog`, `interview` | Language-architect agents for design proposals, GoF pattern recognition, OpenAPI design-first authoring, first-time Backstage catalog registration, and the standalone plan-mode interview (questions + outline before a detailed plan). |
+| `/architect` | `design` (lang auto-detect), `patterns`, `spec`, `catalog`, `interview`, `grill` | Language-architect agents for design proposals, GoF pattern recognition, OpenAPI design-first authoring, first-time Backstage catalog registration, the standalone plan-mode interview (questions + outline before a detailed plan), and adversarial one-question-at-a-time stress-testing of an existing plan or decision. |
 | `/docs` | `write` (lang auto-detect), `review` (`-f`/`-fc`), `research <topic>` | Generate per-language API docs (godoc, Google-style docstrings, vimdoc, Gherkin living-docs), audit any documentation against Write-the-Docs principles, or research a topic and publish to here.now. |
 
 ### Periodic — maintenance cadence, not per-task

@@ -1,5 +1,5 @@
 ---
-description: Design-phase dispatcher — design (language auto-detect), patterns (GoF advisor), spec (OpenAPI design-first), catalog (Backstage init), interview (plan-mode interview). The first word of $ARGUMENTS selects the subcommand; catalog commits and pushes.
+description: Design-phase dispatcher — design (language auto-detect), patterns (GoF advisor), spec (OpenAPI design-first), catalog (Backstage init), interview (plan-mode interview), grill (adversarial plan stress-test). The first word of $ARGUMENTS selects the subcommand; catalog commits and pushes.
 argument-hint: "<subcommand> [arguments]"
 aliases: patterns, rest-spec, backstage-catalog-init, backstage-init, plan-interview
 allowed-tools: Read, Grep, Glob, Write, Edit, Bash
@@ -7,7 +7,7 @@ allowed-tools: Read, Grep, Glob, Write, Edit, Bash
 
 # Architect: Design-Phase Dispatcher
 
-Use this skill for any design-time work: language-specific architecture, GoF pattern recommendations, OpenAPI specification authoring, Backstage catalog registration, or the pre-plan interview that surfaces open questions before a detailed plan is written.
+Use this skill for any design-time work: language-specific architecture, GoF pattern recommendations, OpenAPI specification authoring, Backstage catalog registration, the pre-plan interview that surfaces open questions before a detailed plan is written, or the adversarial grill that stress-tests an existing plan or decision one question at a time.
 
 This skill delegates to the architect agents (`go-architect`, `py-architect`, `nvim-architect`, `gherkin-architect`) and to the shared scripts in `~/.claude/scripts/`. Pattern recognition signals live in `rules/design-patterns-application.md`; the full GoF catalog is bundled here as `design-patterns.md` (Level 3) and loaded only on demand.
 
@@ -22,6 +22,7 @@ This skill delegates to the architect agents (`go-architect`, `py-architect`, `n
 /architect spec                         # write/update an OpenAPI entry (design-first)
 /architect catalog                      # create Backstage catalog-info.yaml + commit + push
 /architect interview                    # surface open questions + outline before a plan
+/architect grill                        # stress-test an existing plan/decision one Q at a time
 ```
 
 ## Workflow
@@ -31,7 +32,7 @@ This skill delegates to the architect agents (`go-architect`, `py-architect`, `n
 Split `$ARGUMENTS` on the first space. The first word is the subcommand.
 
 - Empty or `help` → print **Usage** and stop.
-- Not one of `design`, `patterns`, `spec`, `catalog`, `interview` → print **Usage** and stop.
+- Not one of `design`, `patterns`, `spec`, `catalog`, `interview`, `grill` → print **Usage** and stop.
 - Dispatch to the matching step.
 
 ### 2. Dispatch — `design`
@@ -318,7 +319,24 @@ Read `~/.claude/skills/architect/interview.md` and apply its workflow:
 
 This subcommand is the information-gathering phase that precedes Claude Code's plan mode (Shift+Tab) — the two are complementary. Per `CLAUDE.md`'s "Working with Plan Mode" rule, pour energy into the plan so Claude can 1-shot the implementation.
 
-### 7. Final verification step
+### 7. Dispatch — `grill`
+
+Adversarial one-question-at-a-time stress-test of an *existing* plan, decision, or design. Adapts [mattpocock/skills — productivity/grill-me](https://github.com/mattpocock/skills/tree/main/skills/productivity/grill-me) (MIT).
+
+**When to use.** A plan, decision, or design is already on the table and the user wants its weak points surfaced before committing to implementation.
+
+**When to skip.** The user wants a *new* plan built from scratch (use `interview` instead); the user asks for adversarial *code* review (use `/code grill`); the user said "just do it" / "skip the grill".
+
+Read `~/.claude/skills/architect/grill.md` and apply its workflow:
+
+- Restate the target in one sentence before any question
+- Look up every fact from the environment before asking — questions are for decisions only
+- Ask exactly one question per turn, with the recommended answer and the failure mode of the recommendation
+- Walk the decision tree in dependency order; prune closed branches
+- Summarize as `What stood / What changed / What got dropped`; wait for the user's confirmation of the summary
+- Do not begin implementation, editing, or follow-up planning in the same turn as confirmation
+
+### 8. Final verification step
 
 Each dispatch above ends with its own verification gate:
 
@@ -327,6 +345,7 @@ Each dispatch above ends with its own verification gate:
 - `spec` → OpenAPI validator clean, handoff to `/feature rest` reported
 - `catalog` → file verified, committed, pushed, import URL printed
 - `interview` → open questions surfaced + outline shared; the detailed plan is written only after the user has answered
+- `grill` → step 6 self-check passes (every heading populated or explicitly `_(none)_`; every answered question reflected in exactly one section; unanswered questions listed under `### Unresolved`; no invalidated recommendation lingers); the user then explicitly confirms the summary before any implementation starts
 
 If any verification was skipped, re-run it before exiting.
 
@@ -336,4 +355,5 @@ If any verification was skipped, re-run it before exiting.
 - `patterns` is advisory only. Implementation delegates to the language architect agents.
 - `catalog` mutates remote git history — treat as human-gated.
 - `interview` does not write the detailed plan in the same turn the questions are surfaced — wait for the user's answers.
+- `grill` never batches questions and never begins implementation in the same turn as the user's summary confirmation — the two are always separate turns.
 - `rules/rest-api-conventions.md` and `rules/design-patterns-application.md` are authoritative for REST and pattern signals respectively. Do not duplicate their content here.
