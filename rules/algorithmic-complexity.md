@@ -44,11 +44,28 @@ Code that works on small input often fails on real input. Time and space complex
 | Prefix lookup / autocomplete | Trie — not iterating all keys |
 | Sparse boolean state across a wide ID space | Set of present IDs — not a giant array of bools |
 
+### Bounded loops — when unbounded iteration is the problem
+
+Every loop that iterates over user-controlled or externally-supplied input must have a **provable upper bound**. Provable means: a reader (human or static analyzer) can point to the constant, config value, or validated length that caps the loop and confirm it is finite. This is the portable form of Holzmann's *Power of Ten* Rule 2 — the rule that lets a checker prove termination and bound stack/heap growth.
+
+| Signal | Bounded alternative |
+|---|---|
+| `for x in request.items:` with no cap on request size | Validate `len(items) <= MAX_ITEMS` at the boundary; or `itertools.islice(items, MAX_ITEMS)` |
+| `while queue:` on a queue fed by external producers | Cap dequeues per tick: `for _ in range(MAX_DEQUEUE_PER_TICK): if not queue: break; ...` |
+| Recursion on user-controlled depth (JSON tree walk, AST, filesystem) | Convert to iteration with an explicit stack **and** an explicit depth guard — `sys.setrecursionlimit` is not a bound, it is a language default |
+| `for line in open(path):` where the file is user-supplied | Stream with a bounded buffer, or validate file size at open time |
+| Retry loop without a max attempt count | `for attempt in range(MAX_RETRIES):` with an explicit ceiling and backoff |
+| Server / event loop that never terminates | Explicitly annotate: `// non-terminating: main event loop` — the *only* exception |
+
+The bound must be a **named constant or config value** at module or package top, not a magic number at the call site — so it is discoverable via grep and change-controlled via review.
+
 ## Mandatory Behaviors
 
 **When writing new code**: pick the data structure and algorithm that match the workload. If a signal from the tables above is present, apply the alternative — do not write the higher-complexity form first and "optimize later."
 
 **When editing existing code**: if the change touches a hot path or grows the working set, state the time/space complexity of the new code in your turn summary (e.g., "this remains O(n log n) time, O(n) space"). Do not silently regress complexity. If the change introduces a regression (higher time or space complexity on a hot path or unbounded input), stop and surface it as a Must Fix before proceeding — do not commit the regression and note it in the summary.
+
+**Bounded loops on external input**: every loop over user-controlled or externally-supplied input must reference a named cap. Missing bound where input crosses a trust boundary is a **Must Fix** regardless of the current input size — production input is not the same as development input. Missing bound on internal input is a **Should Fix** because internal bounds drift over time.
 
 **When reviewing code**: flag complexity regressions as findings:
 - **Must Fix**: a signal exists and the input is user-controlled or unbounded (the higher-complexity form will eventually hit production data that breaks it)

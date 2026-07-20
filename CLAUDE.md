@@ -20,7 +20,19 @@ Code that loses its reasoning becomes legacy code. Every interaction should add 
 
 # Algorithmic Complexity
 
-Default to the lowest time and space complexity that solves the problem, in every language. Recognize the signals in `rules/algorithmic-complexity.md` (nested loops over the same collection, `in list` checks inside a loop, recomputed subproblems, intermediate lists for single aggregates, wrong-container choices) and apply the lower-complexity alternative as the default form — not as a follow-up "optimization." When the higher-complexity form is intentional (small bounded N, one-shot script, dramatically clearer at a single-use call site), say so explicitly.
+Default to the lowest time and space complexity that solves the problem, in every language. Recognize the signals in `rules/algorithmic-complexity.md` (nested loops over the same collection, `in list` checks inside a loop, recomputed subproblems, intermediate lists for single aggregates, wrong-container choices, **unbounded loops on external input**) and apply the lower-complexity alternative as the default form — not as a follow-up "optimization." When the higher-complexity form is intentional (small bounded N, one-shot script, dramatically clearer at a single-use call site), say so explicitly. Every loop that iterates over user-controlled or externally-supplied input must reference a named cap — see the Bounded Loops subsection of the same rule.
+
+# Defensive Assertions
+
+Explicit runtime checks catch a class of defects unit tests routinely miss: silent state corruption, unexpected input at internal boundaries, and post-condition violations that surface far from the failure site. See `rules/defensive-assertions.md` for the full recognition table. In short: every non-trivial function should carry at least one precondition, postcondition, or invariant check; assertions must be side-effect-free; every non-void return value must be either used or explicitly discarded with a one-line reason. Never silently discard an error return (Go `_ = fn()`, Python `subprocess.run(...)` without `check=True`, Lua unchecked `pcall`, unhandled floating promise in TS).
+
+# Lint Suppression
+
+Every `# noqa`, `//nolint`, `# type: ignore`, `eslint-disable`, `-- luacheck: ignore`, and similar suppression must have an inline reason on the same line — naming the specific rule *and* stating why the code is correct despite the warning. See `rules/lint-suppression.md`. A bare or unjustified suppression is worse than the original warning: it hides both the defect and the intent behind hiding it. If a warning is annoying globally, disable it in the linter config — do not sprinkle per-line suppressions.
+
+# Tool Language Selection
+
+When scoping a *new* standalone tool (CLI, linter, formatter, code generator, editor-adjacent binary), pick the implementation language against the signal tables in `rules/tool-language-selection.md` — do not default to whichever language you last used. In short: **Rust** for tree-sitter parsing, AST-heavy scans over many files, or ecosystem-consistency with the stylua/selene/ruff/biome shelf. **Go** for CI plumbing (HTTP downloads, subprocess orchestration, cross-platform binary distribution), code-sharing with an existing Go tool, or cloud-native/Kubernetes tooling. Always name the signal that drove the pick. When path-dependence (extending a Go tool) disagrees with first-principles fit (Rust would be idiomatic), state both explicitly and choose consciously.
 
 # Task Tracking
 
