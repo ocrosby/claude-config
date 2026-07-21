@@ -37,8 +37,6 @@ Split `$ARGUMENTS` on the first space. The first word is the subcommand.
 
 ### 2. Dispatch — `design`
 
-Replicates the prior `/architect` skill.
-
 1. **Detect language.**
    ```bash
    set -- $ARGUMENTS
@@ -72,7 +70,7 @@ Replicates the prior `/architect` skill.
 
 ### 3. Dispatch — `patterns`
 
-Replicates the prior `/patterns` skill. Advisory only — never implements.
+Advisory only — never implements.
 
 **When NOT to use.** Config files (YAML, TOML, JSON, `.env`), data schema files (SQL migrations, Protobuf, OpenAPI), test fixtures and factory data, Markdown docs. GoF patterns apply to runtime behavior; non-runtime files are not candidates.
 
@@ -156,7 +154,7 @@ Replicates the prior `/patterns` skill. Advisory only — never implements.
 
 ### 4. Dispatch — `spec`
 
-Replicates the prior `/rest-spec` skill. Output is a valid OpenAPI entry in `openapi.yaml` (or the project's existing spec file). The spec is the contract; the handler comes later via `/feature rest`. **Do not write handler code in this subcommand.**
+Output is a valid OpenAPI entry in `openapi.yaml` (or the project's existing spec file). The spec is the contract; the handler comes later via `/feature rest`. **Do not write handler code in this subcommand.**
 
 **When to use.** A new endpoint being added; an existing endpoint changing shape (new param, new response, new status code); a new resource hierarchy (run `/architect design` first, then this subcommand).
 
@@ -232,7 +230,7 @@ Replicates the prior `/rest-spec` skill. Output is a valid OpenAPI entry in `ope
 
 ### 5. Dispatch — `catalog`
 
-Replicates the prior `/backstage-catalog-init` skill. Creates a `catalog-info.yaml` Backstage descriptor for a repo that does not yet have one.
+Creates a `catalog-info.yaml` Backstage descriptor for a repo that does not yet have one.
 
 **When NOT to use.** The repo already has a `catalog-info.yaml` — edit the existing file. The repo registers more than one `kind: Component` — this subcommand creates a single descriptor.
 
@@ -307,7 +305,7 @@ Replicates the prior `/backstage-catalog-init` skill. Creates a `catalog-info.ya
 
 ### 6. Dispatch — `interview`
 
-Replicates the prior `/plan-interview` skill. Use this when the user asks for a plan / design / implementation strategy AND key questions are unresolved — surface the unknowns and a high-level outline first, iterate, then commit to a detailed plan.
+Use this when the user asks for a plan / design / implementation strategy AND key questions are unresolved — surface the unknowns and a high-level outline first, iterate, then commit to a detailed plan.
 
 **When to skip.** The user said "just plan it" / "skip the interview"; all needed context is already on the table; you're inside `/architect design` (which runs its own interview step).
 
