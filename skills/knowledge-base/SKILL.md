@@ -1,5 +1,5 @@
 ---
-description: Set up or refresh an AI-indexed knowledge base over a directory of raw assets — raw/ holds untouched originals, wiki/ is an AI-written index. Use when the user says "set up a knowledge base", "index this folder", "build a wiki over these files/notes/exports", or wants an auto-maintained table of contents over a pile of documents.
+description: Use when the user says "set up a knowledge base", "index this folder", "build a wiki over these files/notes/exports", or wants an auto-maintained table of contents over a pile of documents. Creates raw/ (untouched originals) + wiki/ (AI-written index) + a pinned CLAUDE.md that enforces the split.
 argument-hint: "[dir]"
 arguments: [dir]
 allowed-tools: Bash(python3 *) Bash(mkdir *) Bash(mv *) Bash(ls *) Bash(find *) Bash(wc *) Read Write AskUserQuestion
