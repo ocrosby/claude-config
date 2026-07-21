@@ -1,5 +1,5 @@
 ---
-description: Audit dispatcher — system (Claude workflow components), repo (git history of any repository), skill (per-SKILL.md structural quality), actions (GitHub Actions Node-version deprecation).
+description: Use when the user asks to audit the Claude workflow system (rules, agents, hooks, skills, commands, settings), a git repository's history (churn, ownership, hotspots, momentum), individual SKILL.md files against authoring conventions, or GitHub Actions Node-version deprecation. Invoke as /audit <system|repo|skill|actions>.
 argument-hint: "<subcommand> [arguments]"
 aliases: codebase-audit, workflow-audit
 allowed-tools: Read, Grep, Glob, Bash
