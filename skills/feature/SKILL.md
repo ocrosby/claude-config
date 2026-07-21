@@ -48,7 +48,7 @@ bash ~/.claude/scripts/detect_language.sh "${1-}"
 
 1. **Understand.** Clarify the feature from the user's perspective. Identify which layer it belongs to: domain / port / adapter / cmd. Determine if it needs HTTP endpoints, CLI commands, or background workers.
 
-   Run `/architect` first **only when** the feature introduces a new package boundary, a new top-level abstraction, or crosses layer boundaries non-obviously. For incremental additions, skip.
+   **If the feature introduces a new package boundary, a new top-level abstraction, or crosses layer boundaries non-obviously: stop and run `/architect` first.** Do not proceed to step 2 until the design is settled. Never run `/architect` for a pure incremental addition inside an existing package.
 
 2. **Design the interface.** Public API types and function signatures. Define interfaces at the consumer side — small and focused. Configure via struct fields or functional options. Accept `context.Context` as the first parameter on all I/O methods.
 
@@ -60,7 +60,7 @@ bash ~/.claude/scripts/detect_language.sh "${1-}"
 
    Do not write production code before a failing test exists for that behavior.
 
-4. **Apply Go structure.** One package per concern — split at 500 lines. Domain logic has no external imports beyond stdlib. Adapters are thin: parse request, delegate, write response. HTTP uses stdlib `net/http` or a thin router.
+4. **Apply Go structure.** One package per concern — **must** split at 500 lines. Domain logic has no external imports beyond stdlib. Adapters are thin: parse request, delegate, write response. HTTP uses stdlib `net/http` or a thin router.
 
 5. **Apply Go error handling.** Wrap with context: `fmt.Errorf("creating user: %w", err)`. Define sentinel errors for expected conditions: `var ErrNotFound = errors.New("not found")`. Return early on error. Use custom error types when callers need to inspect.
 
@@ -72,7 +72,7 @@ bash ~/.claude/scripts/detect_language.sh "${1-}"
 
 1. **Understand.** Identify which layer: domain / port / adapter / application. Determine if it needs new API endpoints, CLI commands, MCP tools, or background tasks.
 
-   Run `/architect` first **only when** the feature introduces a new module boundary, a new port/adapter pair, or significant domain abstractions.
+   **If the feature introduces a new module boundary, a new port/adapter pair, or significant domain abstractions: stop and run `/architect` first.** Do not proceed to step 2 until the design is settled. Never run `/architect` for a pure incremental addition inside an existing module.
 
 2. **Design the interface.** Public functions/classes with full type hints. Define configuration with `pydantic.Settings` if new config is needed. Define request/response models with Pydantic `BaseModel`.
 
@@ -82,7 +82,7 @@ bash ~/.claude/scripts/detect_language.sh "${1-}"
    3. Adapters: FastAPI routes, DB repositories, API clients.
    4. Wire dependencies via injection (`Depends()` in FastAPI, constructor injection elsewhere).
 
-4. **Apply Python structure.** One module per concern — split at 300 lines. Domain has no I/O, no framework imports. Adapters are thin: validate input, delegate, return result. FastAPI uses `APIRouter`, one router per domain area. FastMCP tools use `@mcp.tool()` with type hints and docstrings for schema derivation.
+4. **Apply Python structure.** One module per concern — **must** split at 300 lines. Domain has no I/O, no framework imports. Adapters are thin: validate input, delegate, return result. FastAPI uses `APIRouter`, one router per domain area. FastMCP tools use `@mcp.tool()` with type hints and docstrings for schema derivation.
 
 5. **FastAPI specifics (when applicable).** Pydantic `BaseModel` for request/response. `Depends()` for shared logic (auth, DB sessions, config). `lifespan` context manager for startup/shutdown, not `on_event`. Explicit status codes (`status_code=201` for creation). `HTTPException` for error responses with appropriate status codes.
 
