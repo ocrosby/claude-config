@@ -6,7 +6,7 @@ aliases: go-docs, py-docs, nvim-docs, gherkin-docs, doc-review, here-now
 
 # Docs: Writing, Review, and Research Dispatcher
 
-Use this skill for any documentation work: generating per-language API docs, auditing existing documentation against Write-the-Docs principles, or producing a researched report and publishing it externally.
+Use this skill when generating per-language API documentation (Go, Python, Neovim, Gherkin), auditing existing markdown files against Write-the-Docs principles, or producing a researched report and publishing it externally via here.now. Do not invoke for inline code comments, CHANGELOG edits, or file renames — those are covered by other skills.
 
 ## Usage
 
@@ -113,7 +113,7 @@ Replicates the prior `/py-docs` skill.
 
 5. **Format rules.** First line is a concise imperative summary. `Args:` one per parameter — type info lives in the signature. `Returns:` describes what is returned, not its type. `Raises:` lists only exceptions the caller should handle. Omit sections that don't apply.
 
-6. **FastAPI routes** — add `summary` and `description` to non-obvious endpoints:
+6. **FastAPI routes** — add `summary` and `description` to any route whose path alone does not convey the operation. Example: `POST /users` does not need a description; `POST /users/{id}/notifications/batch` does. Also add to any route with query params that affect behavior beyond filtering:
    ```python
    @router.post("/users", status_code=201,
        summary="Register a new user",
