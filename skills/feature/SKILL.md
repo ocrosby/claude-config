@@ -27,10 +27,11 @@ Use this skill when implementing a new feature. The dispatcher detects the langu
 Run the shared detector:
 
 ```bash
+set -- $ARGUMENTS
 bash ~/.claude/scripts/detect_language.sh "${1-}"
 ```
 
-The first token of `$ARGUMENTS` is treated as an explicit override. The script returns one of: `go`, `py`, `nvim`, `gherkin`, `rest`, `unknown`.
+`set --` populates shell positional params from `$ARGUMENTS` so `${1-}` resolves to the first token (the explicit override, possibly empty). The script returns one of: `go`, `py`, `nvim`, `gherkin`, `rest`, `unknown`.
 
 - If the detector returns `unknown`: stop and ask the user which language workflow to apply.
 - Otherwise drop the consumed override token from `$ARGUMENTS` and dispatch to the matching step.
