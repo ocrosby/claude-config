@@ -8,6 +8,14 @@ aliases: go-feat, py-feat, nvim-feat, gherkin-feat, rest-implement, go-feature, 
 
 Use this skill when implementing a new feature. The dispatcher detects the language from the working directory and applies the matching architectural conventions. TDD enforcement (red-green-refactor with observable failure output) comes from the always-on `rules/tdd.md`. Final review delegates to `/code review -fc`.
 
+## When NOT to use
+
+- Design-only work with no implementation → use `/architect design`.
+- Reviewing existing code → use `/code review`.
+- Refactoring without new behavior → use `/code refactor`.
+- Deprecation migrations → use `/code migrate`.
+- Debugging a failing test or reported bug → use `/debug`.
+
 ## Usage
 
 ```
@@ -38,8 +46,6 @@ bash ~/.claude/scripts/detect_language.sh "${1-}"
 
 ### 2. Dispatch — `go`
 
-Replicates the prior `/go-feat` skill.
-
 1. **Understand.** Clarify the feature from the user's perspective. Identify which layer it belongs to: domain / port / adapter / cmd. Determine if it needs HTTP endpoints, CLI commands, or background workers.
 
    Run `/architect` first **only when** the feature introduces a new package boundary, a new top-level abstraction, or crosses layer boundaries non-obviously. For incremental additions, skip.
@@ -64,8 +70,6 @@ Replicates the prior `/go-feat` skill.
 
 ### 3. Dispatch — `py`
 
-Replicates the prior `/py-feat` skill.
-
 1. **Understand.** Identify which layer: domain / port / adapter / application. Determine if it needs new API endpoints, CLI commands, MCP tools, or background tasks.
 
    Run `/architect` first **only when** the feature introduces a new module boundary, a new port/adapter pair, or significant domain abstractions.
@@ -87,8 +91,6 @@ Replicates the prior `/py-feat` skill.
 7. **Review.** Invoke `/code review -fc`. `py-reviewer` covers type hints, domain purity, dependency injection, Pydantic boundaries, global state.
 
 ### 4. Dispatch — `nvim`
-
-Replicates the prior `/nvim-feat` skill.
 
 1. **Understand.** Identify which Neovim APIs are needed (`vim.api`, `vim.fn`, `vim.keymap`, `vim.treesitter`, etc.). Determine if the feature needs autocommands, user commands, keymaps, highlights.
 
@@ -112,8 +114,6 @@ Replicates the prior `/nvim-feat` skill.
 
 ### 5. Dispatch — `gherkin`
 
-Replicates the prior `/gherkin-feat` skill.
-
 1. **Understand the behavior.** Clarify the capability from the user's perspective. Identify actors (who triggers it?) and outcomes (what is observable on success? on failure?). Gather concrete examples from stakeholders — examples become scenarios.
 
    Run `/architect` first **only when** the feature spans multiple domain areas or requires designing the full suite structure.
@@ -126,13 +126,11 @@ Replicates the prior `/gherkin-feat` skill.
 
 5. **Wire up support.** `Before`/`After` hooks for scenario isolation (reset state, clean data). Environment config (base URLs, credentials, browser setup). Custom parameter types for domain concepts.
 
-6. **Verify parsing and the happy path.** Run the framework. Confirm: feature file parses without syntax errors, step definitions discovered (no undefined-step warnings), happy path passes end-to-end. **If any of these fail: stop and fix before review.** If the project uses the SUN acceptance-test repo layout (`features/` + `tests/bdd/`), use `/bdd <feature_name>` to run the stub with the correct `ENVIRONMENT`/`REGION` set.
+6. **Verify parsing and the happy path.** Run the framework. Confirm: feature file parses without syntax errors, step definitions discovered (no undefined-step warnings), happy path passes end-to-end. **If any of these fail: stop and fix before review.** **If the project uses the SUN acceptance-test repo layout (`features/` + `tests/bdd/`): always run the happy-path scenario via `/bdd <feature_name>` with `ENVIRONMENT` and `REGION` set — never substitute a generic runner.**
 
 7. **Review.** Invoke `/code review -fc` on the feature files and step definitions. `gherkin-reviewer` covers declarative vs imperative steps, scenario isolation, state leakage, Background overuse.
 
 ### 6. Dispatch — `rest` (handler-against-spec)
-
-Replicates the prior `/rest-implement` skill.
 
 **Precondition:** the OpenAPI spec entry must already exist. **If it does not: stop and recommend `/architect spec` first.** Never implement a handler ahead of the spec.
 
