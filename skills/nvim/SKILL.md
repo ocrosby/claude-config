@@ -1,5 +1,5 @@
 ---
-description: Neovim dispatcher — rpc (talk to a running instance via msgpack-RPC), config (native vim.pack config conventions), plugin (authoring redistributable Neovim plugins). The first word of $ARGUMENTS selects the subcommand.
+description: Use when working with Neovim from Claude Code — talk to a running instance over msgpack-RPC (rpc), author a native vim.pack config (config), or author a redistributable Neovim plugin (plugin). Invoke as /nvim <rpc|config|plugin>. For lazy.nvim plugin adds, apply the inline conservative-update checklist in the skill body.
 argument-hint: "<subcommand>"
 aliases: neovim, nvim-config, nvim-plugin
 ---
