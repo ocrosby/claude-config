@@ -1,5 +1,5 @@
 ---
-description: Git workflow dispatcher — ship, sync, main, merge, worktree, release-notes, cli, reviewer. The first word of $ARGUMENTS selects the subcommand. Subcommands ship, merge, worktree, and reviewer mutate remote state (push commits, merge PRs, edit PR branches) or parallel checkouts; treat them as human-gated.
+description: Use when the user wants to ship a branch or commit (ship), rebase onto main (sync), return to a clean main (main), merge PRs (merge), create parallel worktrees (worktree), generate release notes (release-notes), sweep reviewer comments (reviewer), or invoke gh CLI reference (cli). Invoke as /git <subcommand>. Subcommands ship, merge, worktree, and reviewer mutate remote state; human-gated.
 argument-hint: "<subcommand> [arguments]"
 aliases: git-ship, git-cpr, git-sync, git-main, worktree, release-notes, ship, sync, main, commit-push-pr, gh-cli, reviewer, pr-reviewer
 allowed-tools: Bash(git *) Bash(gh *) Bash(uv lock) Read Edit Write
