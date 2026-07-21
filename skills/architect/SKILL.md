@@ -1,5 +1,5 @@
 ---
-description: Design-phase dispatcher — design (language auto-detect), patterns (GoF advisor), spec (OpenAPI design-first), catalog (Backstage init), interview (plan-mode interview), grill (adversarial plan stress-test). The first word of $ARGUMENTS selects the subcommand; catalog commits and pushes.
+description: Use when the user needs design-phase work — language-specific architecture (design), GoF pattern advice (patterns), OpenAPI spec authoring (spec), Backstage catalog registration (catalog), plan-mode interviewing (interview), or adversarial plan stress-testing (grill). Invoke as /architect <design|patterns|spec|catalog|interview|grill>. catalog commits and pushes to remote.
 argument-hint: "<subcommand> [arguments]"
 aliases: patterns, rest-spec, backstage-catalog-init, backstage-init, plan-interview
 allowed-tools: Read, Grep, Glob, Write, Edit, Bash
