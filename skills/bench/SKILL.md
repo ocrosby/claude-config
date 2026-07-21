@@ -1,5 +1,5 @@
 ---
-description: Benchmarking dispatcher — auto-detects language (go, py, nvim) from cwd and routes to the matching write/run/analyze workflow. Override with /bench <language>.
+description: Use when writing, running, or analyzing benchmarks in a Go, Python, or Neovim/Lua codebase. Auto-detects language from cwd; override with /bench <go|py|nvim> [description].
 argument-hint: "[language] [description]"
 aliases: go-bench, py-bench, nvim-bench
 allowed-tools: Read, Grep, Glob, Edit, Write, Bash(go test *), Bash(go tool *), Bash(benchstat *), Bash(pytest *), Bash(python *), Bash(py-spy *), Bash(nvim *), Bash(uv *)
