@@ -25,6 +25,66 @@ VAULT="$HOME/src/github.com/ocrosby/obsidian"
 
 If `$VAULT` doesn't exist, stop and tell the user — don't fabricate notes.
 
+## Workflow
+
+### 1. Resolve the vault
+
+```bash
+VAULT="$HOME/src/github.com/ocrosby/obsidian"
+```
+
+**If `$VAULT` does not exist: stop and do not proceed.** Tell the user which path is missing. Never fabricate notes into a non-existent tree.
+
+**If the user's request seems to belong to the two other registered vaults (`~/notes/notes`, `~/src/github.com/ocrosby/notes`): stop and ask** which vault they mean before reading or writing.
+
+### 2. Identify the intent
+
+Route based on what the user asked for:
+
+| Intent | Go to |
+|---|---|
+| Read / find an existing note | step 3 |
+| Create a new note (non-daily) | step 4 |
+| Edit / append to an existing note | step 5 |
+| Daily-note operations (today's, yesterday's, or a specific date) | step 6 |
+| Quick-capture into `Inbox/` | step 4 (folder = `Inbox/`) |
+
+**If the intent is ambiguous between "find X" and "create X": stop and do not proceed.** Ask the user to clarify.
+
+### 3. Find or read a note
+
+Apply the recipes in the "Finding things" section below. Always exclude `.obsidian/` and `.trash/`.
+
+**If more than one candidate matches the query: stop and list them; ask which one.** Do not pick silently.
+
+### 4. Create a note
+
+Follow the "Creating notes" section below for folder choice, template application, snake_case filename, and wikilink style.
+
+**If the target PARA folder does not exist under `$VAULT`: run the "Setup checklist" first.** Never create ad-hoc top-level folders outside the documented PARA layout.
+
+### 5. Edit a note
+
+Follow the "Editing notes" section below. Preserve existing frontmatter, wikilink style, and surrounding formatting. Do not reformat content the user did not ask about.
+
+### 6. Daily-note operations
+
+Apply the recipes in the "Daily notes workflow" section below. The create-or-open shell block is idempotent — always append under `## Notes` rather than overwrite when the file exists.
+
+**If the user asked to backfill a past daily note: stop and confirm** — backfilling is usually not what they want.
+
+### 7. Verify the outcome
+
+Confirm the resulting path exists and print it so the user can open it in Obsidian.app:
+
+```bash
+[ -f "$RESULT" ] && echo "wrote: $RESULT" || { echo "FAILED: $RESULT"; exit 1; }
+```
+
+**If the write did not land where expected: stop and do not report success.** Return to the failing step and re-check the folder/filename derivation.
+
+Committing is the user's job — surface the change set per the "Git discipline" section, but do not run `git add`/`git commit` from this skill.
+
 ## Setup checklist (one-time bootstrap)
 
 The vault's own `readme.md` describes a PARA layout, but several folders it lists aren't created yet. Run this once to bring the on-disk structure in line with the readme so the workflow below has somewhere to write:
