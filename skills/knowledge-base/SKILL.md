@@ -55,7 +55,7 @@ Take the script's output and **replace each `_summary pending — fill in from t
 
 ### 6. Verify and summarize
 
-- Confirm `$dir/raw/` and `$dir/wiki/index.md` exist. Confirm `$dir/CLAUDE.md` exists — **if it is absent (e.g. reindex mode after it was deleted): run step 4 now to recreate it before continuing.**
+- Confirm `$dir/raw/` and `$dir/wiki/index.md` exist. Confirm `$dir/CLAUDE.md` exists — **if it is absent (e.g. reindex mode after it was deleted): run step 4 now to recreate it, then continue with the remaining verification bullets below. If the write fails (permission denied, disk full, etc.): stop and do not proceed — report the error to the user.**
 - Confirm `CLAUDE.md` is ≤60 lines (`wc -l`).
 - Confirm every link in `wiki/index.md` resolves to a real file under `raw/`. **If any link is dangling: stop and re-run step 5.**
 - Print a summary: mode (init vs reindex), what was created or updated, the asset count, and the pinned rules.
