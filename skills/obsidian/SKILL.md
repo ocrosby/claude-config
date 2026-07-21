@@ -1,5 +1,5 @@
 ---
-description: Find, navigate, read, and edit notes in Omar's PARA-organized Obsidian vault at ~/src/github.com/ocrosby/obsidian (git-tracked, not iCloud). Use whenever the user mentions "the vault", "my notes", "Obsidian", a daily note, an inbox capture, or asks to look up / jot down anything that sounds like personal knowledge management — even if they don't say the word "Obsidian".
+description: Use whenever the user mentions "the vault", "my notes", "Obsidian", a daily note, an inbox capture, or asks to look up or jot down anything that sounds like personal knowledge management — even if they do not say the word "Obsidian". Reads, writes, and navigates Omar's PARA-organized vault at ~/src/github.com/ocrosby/obsidian (git-tracked, not iCloud).
 when_to_use: User wants to read, create, or edit a note. Examples — "add a daily note", "what did I write about X", "jot this down in my inbox", "save this to the vault", "open today's note", "find my Postgres notes", "add to my scout-sleuth project", "what's in my vault about Y".
 allowed-tools: Bash(rg *) Bash(fd *) Bash(find *) Bash(grep *) Bash(mkdir *) Bash(touch *) Bash(cat *) Bash(date *) Bash(stat *) Bash(wc *) Bash(sort *) Bash(xargs *) Bash(cut *) Read Edit Write
 ---
