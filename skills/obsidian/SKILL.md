@@ -1,7 +1,17 @@
 ---
 description: Find, navigate, read, and edit notes in Omar's PARA-organized Obsidian vault at ~/src/github.com/ocrosby/obsidian (git-tracked, not iCloud). Use whenever the user mentions "the vault", "my notes", "Obsidian", a daily note, an inbox capture, or asks to look up / jot down anything that sounds like personal knowledge management — even if they don't say the word "Obsidian".
 when_to_use: User wants to read, create, or edit a note. Examples — "add a daily note", "what did I write about X", "jot this down in my inbox", "save this to the vault", "open today's note", "find my Postgres notes", "add to my scout-sleuth project", "what's in my vault about Y".
+allowed-tools: Bash(rg *) Bash(fd *) Bash(find *) Bash(grep *) Bash(mkdir *) Bash(touch *) Bash(cat *) Bash(date *) Bash(stat *) Bash(wc *) Bash(sort *) Bash(xargs *) Bash(cut *) Read Edit Write
 ---
+
+## When NOT to use
+
+This skill targets **only** the primary vault at `~/src/github.com/ocrosby/obsidian`. Do not use it for:
+
+- `~/src/github.com/ocrosby/notes` — the larger reference collection (adr/, algorithms/, architecture/). Ask which vault the user means if ambiguous.
+- `~/notes/notes` — the second registered vault; targeted only if the user names it explicitly.
+- AI-generated indexes over a pile of assets (raw/ + wiki/) → use `/knowledge-base` instead — `wiki/` is regenerable and must not be hand-edited.
+- Code-adjacent documentation (README.md, docs/) → use `/docs write` instead.
 
 # Obsidian vault
 
