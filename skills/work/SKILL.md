@@ -2,6 +2,7 @@
 description: Use when the user wants to log, review, complete, update, or annotate tasks in their daily engineering work journal. Invoke as /work <add|list|done|update|note>. Files land at ~/work/YYYY/MM-DD.md; tasks carry over from the last session.
 argument-hint: "<subcommand> [arguments]"
 aliases: work
+allowed-tools: Bash(bash *) Bash(find *) Bash(mkdir *) Bash(date *) Bash(cat *) Read Edit Write AskUserQuestion
 # Mutates ~/work journal files (add, done, update, note). Block model auto-invocation to prevent phantom journal entries; users invoke /work explicitly.
 disable-model-invocation: true
 ---
