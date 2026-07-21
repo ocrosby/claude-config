@@ -104,7 +104,7 @@ Available: `-cpuprofile`, `-memprofile`, `-blockprofile`, `-mutexprofile`.
 ### 3. Dispatch — `py`
 
 1. **Identify what to benchmark.** Functions called frequently, processing large inputs, or on latency-sensitive paths. One benchmark function per distinct operation or input class. If no benchmarks exist, write them before optimizing (measure first, optimize second).
-2. **Write the benchmark.** Prefer `pytest-benchmark`:
+2. **Write the benchmark.** Always use `pytest-benchmark`:
    ```python
    def test_foo_benchmark(benchmark):
        input_data = prepare_input()
