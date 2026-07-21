@@ -1,12 +1,14 @@
 ---
-description: Use when the user says "prove it", "cite that", "back that up", "where did you get that", "is that documented", or "show me the source" — or when about to assert a non-obvious technical fact (a flag, an API behavior, a config default) without a citation in hand. Forces a real citation or an explicit downgrade — never a fabricated one.
-when_to_use: User says "prove it", "cite that", "where did you get that", "back that up", "is that documented", "show me the source", or invokes `/proof` explicitly. Also use proactively when you're about to assert something non-obvious (a flag exists, a function behaves a certain way, a config option is on by default) and you're not 100% certain.
+# disable-model-invocation: /proof is a user-gated verification step; Claude must
+# not auto-invoke it. The citation-vs-downgrade discipline is applied on demand
+# only, when the user explicitly asks (e.g. "prove it", "cite that").
+description: Invoked by the user (via `/proof`) with phrases like "prove it", "cite that", "back that up", "where did you get that", "is that documented", or "show me the source". Forces a real citation or an explicit downgrade — never a fabricated one.
 disable-model-invocation: true
 ---
 
 # Proof
 
-Use this skill when you have made a claim and need to back it up with a verifiable citation, or when about to assert something non-obvious and want to anchor it first. Must produce either a real citation or an explicit downgrade — never a fabricated one.
+Use this skill when the user has asked you to back a specific claim with a verifiable citation. Must produce either a real citation or an explicit downgrade — never a fabricated one.
 
 Source: adapted from [fredrikaverpil/dotfiles](https://github.com/fredrikaverpil/dotfiles/blob/main/stow/shared/.claude/skills/proof/SKILL.md). Upstream is a one-line directive; expanded here with a recognition table and an honest-failure rule.
 
