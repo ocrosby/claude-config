@@ -23,10 +23,11 @@ Use this skill when a reported bug needs reproduction, isolation, and root-cause
 ### 1. Detect the language
 
 ```bash
+set -- $ARGUMENTS
 bash ~/.claude/scripts/detect_language.sh "${1-}"
 ```
 
-The first token of `$ARGUMENTS` is an explicit override. Returns `go`, `py`, `nvim`, `gherkin`, `rest`, or `unknown`. `rest` is not supported — recommend `/code review --rest` instead. `unknown` → stop and ask. Otherwise drop the consumed override token from `$ARGUMENTS` and continue.
+`set --` populates shell positional params from `$ARGUMENTS` so `${1-}` resolves to the first token (the explicit override, possibly empty). Returns `go`, `py`, `nvim`, `gherkin`, `rest`, or `unknown`. `rest` is not supported — recommend `/code review --rest` instead. `unknown` → stop and ask. Otherwise drop the consumed override token from `$ARGUMENTS` and continue.
 
 ### 2. Reproduce
 
