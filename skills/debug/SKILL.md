@@ -136,10 +136,10 @@ Apply the agent's proposed fix and re-run the **same minimal-repro artifact** fr
 
 ### 6. Decide the artifact's fate
 
-The minimal-repro artifact is now a regression test that proves the fix. Choose one:
+The minimal-repro artifact is now a regression test that proves the fix. The artifact **must** land as one of exactly two outcomes — orphaned `repro_*` files are never permitted:
 
-- **Keep it as a regression test** — rename from `repro_*` / `tests/repro/*` to a conventional name in the matching test directory. This is the default.
-- **Delete it** — only if the behavior is already covered by an existing higher-level test and the artifact adds no signal.
+- **Keep it as a regression test (default)** — rename from `repro_*` / `tests/repro/*` to a conventional name in the matching test directory.
+- **Delete it** — only when the behavior is already covered by an existing higher-level test and the artifact adds no signal.
 
 **If the artifact cannot be renamed to a conventional test path AND no existing higher-level test already covers the same code path: stop and do not proceed** — ask the user before touching the file. Never leave an orphaned `repro_*` file in the tree.
 
