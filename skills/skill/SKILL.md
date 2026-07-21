@@ -1,5 +1,5 @@
 ---
-description: Skill-system maintenance dispatcher — author (interactive new-skill workflow), gaps (find repeating tasks with no skill coverage), usage (count invocations and recommend retirement). The first word of $ARGUMENTS selects the subcommand. For per-SKILL.md structural quality, use /audit skill.
+description: Use when creating a new skill (author), finding recurring tasks that no existing skill covers (gaps), or reporting skill invocation counts and retirement candidates (usage). Invoke as /skill <author|gaps|usage>. For per-SKILL.md structural quality, use /audit skill.
 argument-hint: "<subcommand> [arguments]"
 aliases: skill-author, skill-audit, skill-gaps, skill-usage
 ---
