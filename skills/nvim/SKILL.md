@@ -83,10 +83,15 @@ Read `~/.claude/skills/nvim/plugin.md` and apply its workflow:
 
 ### 5. Final verification step
 
-Each dispatch step ends with its own verification gate inside the referenced Level 3 file. Confirm the gate fired before exiting.
+Each dispatch step ends with its own verification gate inside the referenced Level 3 file. After the dispatch returns, confirm concretely:
+
+- For `rpc`: the `$NVIM` socket is still live (`--remote-expr '1'` returns `1`) and the last expression returned a non-empty result.
+- For `config` and `plugin`: the file(s) written parse (`nvim --headless -c "luafile <path>" -c quit`) and no `E5108` was raised.
+
+**If the applicable check does not pass: stop and do not report success.** Return to the failing sub-step.
 
 ## Rules (apply across all subcommands)
 
-- `rpc` is for talking to a running Neovim — never use it to mutate buffers without explicit user confirmation; prefer `--remote-expr` (read-only) over `--remote-send` (simulates typing).
-- `config` and `plugin` are mutually exclusive scopes: `config` is for your own setup, `plugin` is for code that other people install. If unsure which applies, ask before proceeding.
-- For RPC into a Neovim instance from within a `config` or `plugin` workflow, switch to `rpc` rather than reinventing its patterns.
+- `rpc` is for talking to a running Neovim — never use it to mutate buffers without explicit user confirmation. Always use `--remote-expr` for read-only queries; use `--remote-send` only when keystroke simulation is explicitly required.
+- `config` and `plugin` are mutually exclusive scopes: `config` is for your own setup, `plugin` is for code that other people install. **If unsure which applies: stop and do not proceed — ask before proceeding.**
+- For RPC into a Neovim instance from within a `config` or `plugin` workflow, always switch to `rpc` — never reinvent its patterns.
