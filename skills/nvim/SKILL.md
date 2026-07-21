@@ -14,7 +14,7 @@ Use this skill for any Neovim work. The dispatcher routes between three disjoint
 2. **Spec file** — create `lua/plugins/<plugin_name>.lua` returning a lazy.nvim spec table. One plugin per file.
 3. **Version pin** — pin to a tag (`version = "v1.2.3"`) or a commit (`commit = "abc123..."`). Never track `main`.
 4. **Lockfile** — after `:Lazy sync`, commit `lazy-lock.json` in the same change as the spec file.
-5. **Lazy-load** — set `event`, `cmd`, `ft`, or `keys` where possible; avoid eager loading unless the plugin runs at startup by design.
+5. **Lazy-load** — always set `event`, `cmd`, `ft`, or `keys`. Never use eager loading unless the plugin runs at startup by design (colorscheme, statusline, dashboard).
 
 ## Usage
 
