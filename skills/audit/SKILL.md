@@ -38,54 +38,39 @@ Split `$ARGUMENTS` on the first space. The first word is the subcommand.
 
 Use this when auditing the Claude workflow components (`~/.claude/rules/`, `agents/`, `hooks/`, `skills/`, `commands/`, `settings.json`).
 
-Read `~/.claude/skills/audit/system.md` and apply its workflow:
+Read `~/.claude/skills/audit/system.md` and apply its workflow. **If the file cannot be read: stop and do not proceed. Report the missing dispatch file.**
 
-- Two parallel batches — discover file paths, then read every file
-- Analyze against five categories (correctness, redundancy, missing connections, coverage gaps, discoverability)
-- Verify coverage before reporting
-- Report findings grouped by category and ordered by impact
-- Confirm with the user before implementing any fix
+**If the user has not confirmed before any change is applied: stop and do not proceed.**
 
 ### 3. Dispatch — `repo`
 
 Use this when auditing the git history of the current repository (orientation, repo health assessment).
 
-Read `~/.claude/skills/audit/repo.md` and apply its workflow:
+Read `~/.claude/skills/audit/repo.md` and apply its workflow. **If the file cannot be read: stop and do not proceed. Report the missing dispatch file.**
 
-- Detect GitHub availability (`gh repo view --json nameWithOwner`)
-- Five parallel analyses: high-churn files, ownership / bus factor, bug hotspots, project momentum, firefighting patterns
-- Synthesize into a structured markdown report with key takeaways
+The audit is read-only — never modify the repository being audited.
 
 ### 4. Dispatch — `skill`
 
 Use this when auditing individual `SKILL.md` files for structural quality.
 
-Read `~/.claude/skills/audit/skills.md` and apply its workflow:
+Read `~/.claude/skills/audit/skills.md` and apply its workflow. **If the file cannot be read: stop and do not proceed. Report the missing dispatch file.**
 
-- Discover every `SKILL.md` under `~/.claude/skills/`
-- Run the `skill-reviewer` agent on each
-- Compile findings into Must Fix / Should Fix / Consider buckets per `rules/findings-format.md`
-- Surface the top 3 to fix now
-- Optionally fix in place, one skill at a time, with per-skill commits
+**If the user has not confirmed before any fix-in-place is applied: stop and do not proceed.**
 
 ### 5. Dispatch — `actions`
 
 Use this when checking third-party GitHub Actions referenced via `uses:` for the Node-20 runner deprecation.
 
-Read `~/.claude/skills/audit/actions.md` and apply its workflow:
+Read `~/.claude/skills/audit/actions.md` and apply its workflow. **If the file cannot be read: stop and do not proceed. Report the missing dispatch file.**
 
-- Extract every third-party `uses:` reference via `scripts/extract_workflow_actions.py`
-- For each, fetch its `action.yml` to read the actual Node runtime
-- Classify into Should Fix (upstream already fixed it — bump the pin) or Consider (no upstream fix yet)
-- Apply Should Fix version bumps only with explicit user confirmation
+**If the user has not confirmed before any version-pin bump is applied: stop and do not proceed.**
 
 ### 6. Final verification step
 
-Each dispatch step ends with its own verification gate inside the referenced Level 3 file. Confirm the gate fired before exiting.
+Each dispatch step ends with its own verification gate inside the referenced Level 3 file. After the dispatch step returns, confirm its verification step produced observable output — a report, a diff, or an explicit "no findings" message. **If no such output was produced: stop and do not report success.**
 
 ## Rules (apply across all subcommands)
 
 - Never report issues that were already fixed in the current session.
 - Never manufacture findings — if the system looks well-optimized, say so.
-- For `system`, `skill`, and `actions`: do not make changes without explicit user confirmation.
-- For `repo`: the audit is read-only; never modify the repository being audited.
