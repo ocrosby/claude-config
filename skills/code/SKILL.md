@@ -1,5 +1,5 @@
 ---
-description: Code quality dispatcher — review (with --grill / --rest), refactor, migrate, techdebt, simplify. The first word of $ARGUMENTS selects the subcommand. techdebt deletes code; grill enforces strictest verdict.
+description: Use when the user asks to review, grill (strictest verdict), refactor, migrate deprecated patterns, sweep tech debt, or simplify existing code. Invoke as /code <review|grill|refactor|migrate|techdebt|simplify>. techdebt deletes code; grill loops to SHIP IT or Needs Manual Fix.
 argument-hint: "<subcommand> [arguments]"
 aliases: code-review, rest-review, refactor, migrate, techdebt, simplify, grill
 paths:
