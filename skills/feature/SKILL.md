@@ -1,5 +1,5 @@
 ---
-description: Feature development dispatcher — auto-detects language (go, py, nvim, gherkin, rest) from cwd and routes to the matching layered/TDD-driven workflow. Override with /feature <language> [...].
+description: Use when implementing a new feature in Go, Python, Neovim/Lua, Gherkin, or REST — auto-detects language from cwd and applies layered / TDD-driven workflow. Override with /feature <language> [description].
 argument-hint: "[language] [feature description]"
 aliases: go-feat, py-feat, nvim-feat, gherkin-feat, rest-implement, go-feature, py-feature, nvim-feature, gherkin-feature
 ---
