@@ -44,12 +44,13 @@ Interpret the output:
 
 ### 2. Parse the subcommand
 
-Always split `$ARGUMENTS` on the first space. The first word is the subcommand; everything after is the subcommand's argument. Dispatch to the matching step below.
+Always split `$ARGUMENTS` on the first space. The first word is the subcommand; everything after is the subcommand's argument. **If `$ARGUMENTS` is empty: dispatch to step 8 (`help`).** Otherwise dispatch to the matching step below. **If the first word is not one of `add`, `list`, `done`, `update`, `note`, `help`: stop and do not proceed — print help and ask.**
 
 ### 3. Dispatch — `add <task text>`
 
-1. Add `- [ ] <task text>` as a new line under `## Tasks` in today's file, before the `## Notes` heading.
-2. Confirm the task was added and show today's full task list.
+1. Determine today's file path and read it. **If no file exists for today: stop and do not proceed.** Tell the user to run `/work` first to initialize today's journal.
+2. Add `- [ ] <task text>` as a new line under `## Tasks` in today's file, before the `## Notes` heading. **If no `## Notes` heading exists, append the task line at the end of the `## Tasks` section.** Never insert past the end of the file without a section anchor.
+3. Confirm the task was added and show today's full task list.
 
 ### 4. Dispatch — `list [period]`
 
@@ -90,8 +91,9 @@ Period is one of: today (default), yesterday, this-week, last-week.
 
 ### 7. Dispatch — `note <text>`
 
-1. Append the text (everything after `note`) as a new line under `## Notes` in today's file.
-2. Confirm the note was added and show the full `## Notes` section.
+1. Determine today's file path and read it. **If no file exists for today: stop and do not proceed.** Tell the user to run `/work` first to initialize today's journal.
+2. Append the text (everything after `note`) as a new line under `## Notes` in today's file. **If no `## Notes` heading exists, append it as `## Notes\n\n- <text>` at the end of the file.** Never insert past the end of the file without a section anchor.
+3. Confirm the note was added and show the full `## Notes` section.
 
 ### 8. Dispatch — no arguments or `help`
 
