@@ -1,5 +1,5 @@
 ---
-description: Back up a claim with a citation — a URL to authoritative documentation, a file path with line numbers, a `git blame` commit SHA, or a test result. Invoke when you've asserted something and the user wants verification. Forces you to either find the evidence or downgrade the claim to a guess.
+description: Use when the user says "prove it", "cite that", "back that up", "where did you get that", "is that documented", or "show me the source" — or when about to assert a non-obvious technical fact (a flag, an API behavior, a config default) without a citation in hand. Forces a real citation or an explicit downgrade — never a fabricated one.
 when_to_use: User says "prove it", "cite that", "where did you get that", "back that up", "is that documented", "show me the source", or invokes `/proof` explicitly. Also use proactively when you're about to assert something non-obvious (a flag exists, a function behaves a certain way, a config option is on by default) and you're not 100% certain.
 disable-model-invocation: true
 ---
