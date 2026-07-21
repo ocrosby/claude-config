@@ -169,7 +169,7 @@ Replicates the prior `/git-sync` skill. Rebases the current branch onto main wit
 
 6. **Report.** Current branch, commits rebased, stash state, the new base commit.
 
-7. **Run tests if commits were actually applied.** Detect from cwd: `go test ./...` for Go, `pytest` for Python, `make test` if a `Makefile` defines a `test` target. **If no test command matches: stop and ask which command to run.** Report results before exiting.
+7. **Run tests if commits were actually applied.** Detect from cwd: `go test ./...` for Go, `pytest` for Python, `make test` if a `Makefile` defines a `test` target. **If no test command matches the cwd: stop and do not proceed — ask the user which command to run.** Report results before exiting.
 
 **Rules for `sync`.** Never force-push. If the user explicitly requests a force push, always use `--force-with-lease` — never `--force`. If `main` does not exist but `master` does, use `master`.
 
