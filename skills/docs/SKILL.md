@@ -1,5 +1,5 @@
 ---
-description: Documentation dispatcher — write (language auto-detect), review (Write-the-Docs audit), research (publish to here.now). The first word of $ARGUMENTS selects the subcommand; research publishes externally.
+description: Use when generating per-language API docs (Go godoc, Python docstrings, Neovim vimdoc, Gherkin readme), auditing markdown against Write-the-Docs principles, or researching a topic and publishing to here.now. Invoke as /docs <write|review|research>. research publishes externally.
 argument-hint: "<subcommand> [arguments]"
 aliases: go-docs, py-docs, nvim-docs, gherkin-docs, doc-review, here-now
 ---
