@@ -171,7 +171,7 @@ Replicates the prior `/git-sync` skill. Rebases the current branch onto main wit
 
 7. **Run tests if commits were actually applied.** Detect from cwd: `go test ./...` for Go, `pytest` for Python, `make test` if a `Makefile` defines a `test` target. **If no test command matches: stop and ask which command to run.** Report results before exiting.
 
-**Rules for `sync`.** Never force-push unless the user asks (`--force-with-lease` is safer). If `main` does not exist but `master` does, use `master`.
+**Rules for `sync`.** Never force-push. If the user explicitly requests a force push, always use `--force-with-lease` — never `--force`. If `main` does not exist but `master` does, use `master`.
 
 ### 4. Dispatch — `main`
 
@@ -327,7 +327,7 @@ Sweep every open PR you authored, surface and address reviewer comments (includi
    - Implement **every** comment, including minor ones (naming, formatting, nits, comment wording). For an ambiguous, subjective, or behavior-changing comment, **do not guess** — surface it under "Needs your input" and move on.
    - Run the repo's lint/tests (the `ship` **Pre-flight** table) before pushing; if they fail, fix or stop — never `--no-verify`.
    - Commit with `fix(review): address review feedback on <area>` and push to update the PR (`git push`; never force unless the user asks; never amend a pushed commit).
-   - Optionally reply on each thread so the reviewer sees it was handled — but never resolve a thread you did not actually address:
+   - Always reply on each addressed thread so the reviewer sees it was handled — but never resolve a thread you did not actually address:
      ```bash
      gh api repos/<owner>/<repo>/pulls/<N>/comments/<comment_id>/replies -f body='Addressed in <sha>.'
      ```
