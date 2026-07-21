@@ -1,5 +1,5 @@
 ---
-description: Systematically triages and diagnoses bugs across Go, Python, Neovim, and Gherkin. Detects language from cwd, emits a minimal-repro artifact, delegates to a language debugger agent. Override with /debug <language>.
+description: Use when the user reports a bug, panic, crash, failing test, race condition, or unexpected behavior in Go, Python, Neovim/Lua, or Gherkin. Auto-detects language from cwd, emits a minimal-repro artifact, delegates to a language debugger agent. Override with /debug <language> [description].
 argument-hint: "[language] [description]"
 aliases: bug-triage
 ---
