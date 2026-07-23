@@ -79,6 +79,15 @@ See `rules/design-patterns-application.md` for recognition signals. Flag these a
 - [ ] Use `vim.tbl_map`, `vim.tbl_filter`, `vim.tbl_contains` where they simplify
 - [ ] Use `vim.inspect` for debug output, never string concatenation of tables
 
+### Safety-critical discipline
+
+See `rules/algorithmic-complexity.md` § Bounded loops, `rules/defensive-assertions.md`, and `rules/lint-suppression.md` for the underlying rules.
+
+- [ ] Every loop over external input (buffer contents, LSP responses, user config) has a named cap; recursion on unbounded structures (JSON, AST, filesystem walk) uses an explicit depth guard — missing bound at a trust boundary is **Must Fix**; missing bound on internal input is **Should Fix**
+- [ ] Non-trivial function (>10 lines or with a non-obvious invariant) carries at least one `assert(...)` on parameters or invariants beyond the `vim.validate` at `setup()` entry, and assertions are side-effect-free — assertion with a side effect is **Should Fix**; absence is **Consider** unless a plausible caller mistake would slip through, then **Should Fix**
+- [ ] `pcall`/`xpcall` return values are inspected — a bare `pcall(fn, ...)` with no `ok, err` binding is **Must Fix**
+- [ ] Every `-- luacheck: ignore <code>` and `-- selene: allow(<rule>)` carries an inline reason — bare form is **Must Fix**; code-without-reason is **Should Fix**
+
 ## Output format
 
 Use the three buckets and per-finding shape from `rules/findings-format.md` — **Must Fix → Should Fix → Consider**. Do not restate the bucket definitions inline; the rule is authoritative.

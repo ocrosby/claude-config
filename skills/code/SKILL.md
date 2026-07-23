@@ -1,5 +1,5 @@
 ---
-description: Code quality dispatcher — review (with --grill / --rest), refactor, migrate, techdebt, simplify. The first word of $ARGUMENTS selects the subcommand. techdebt deletes code; grill enforces strictest verdict.
+description: Use when the user asks to review, grill (strictest verdict), refactor, migrate deprecated patterns, sweep tech debt, or simplify existing code. Invoke as /code <review|grill|refactor|migrate|techdebt|simplify>. techdebt deletes code; grill loops to SHIP IT or Needs Manual Fix.
 argument-hint: "<subcommand> [arguments]"
 aliases: code-review, rest-review, refactor, migrate, techdebt, simplify, grill
 paths:
@@ -160,7 +160,7 @@ Adversarial review. Same pipeline as `review` but the reviewer agents are instru
    - **NEEDS WORK** — any Should Fix or Consider items remain
    - **BLOCK** — any Must Fix items, OR new/changed behavior missing tests, OR breaking change to a public API
 3. On NEEDS WORK or BLOCK, list every issue with file, line, and the specific fix. **Quote the reviewer agent verbatim — do not paraphrase.**
-4. After fixes are applied, re-run from step 1. Loop until SHIP IT.
+4. After fixes are applied, re-run from step 1. Loop a maximum of 5 passes. **On pass 5, if issues remain: mark them "Needs Manual Fix" and stop — do not proceed to another loop iteration.**
 5. Only return SHIP IT after a clean pass with zero remaining items.
 
 **Rules for `grill`.** Never lower the verdict to accommodate effort already spent. Never collapse Must Fix into Should Fix. Breaking change to a public API is always BLOCK until justified in commit message or restored. Missing tests for new/changed behavior is always BLOCK.

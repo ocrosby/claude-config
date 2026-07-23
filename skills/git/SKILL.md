@@ -1,5 +1,5 @@
 ---
-description: Git workflow dispatcher — ship, sync, main, merge, worktree, release-notes, cli, reviewer. The first word of $ARGUMENTS selects the subcommand. Subcommands ship, merge, worktree, and reviewer mutate remote state (push commits, merge PRs, edit PR branches) or parallel checkouts; treat them as human-gated.
+description: Use when the user wants to ship a branch or commit (ship), rebase onto main (sync), return to a clean main (main), merge PRs (merge), create parallel worktrees (worktree), generate release notes (release-notes), sweep reviewer comments (reviewer), or invoke gh CLI reference (cli). Invoke as /git <subcommand>. Subcommands ship, merge, worktree, and reviewer mutate remote state; human-gated.
 argument-hint: "<subcommand> [arguments]"
 aliases: git-ship, git-cpr, git-sync, git-main, worktree, release-notes, ship, sync, main, commit-push-pr, gh-cli, reviewer, pr-reviewer
 allowed-tools: Bash(git *) Bash(gh *) Bash(uv lock) Read Edit Write
@@ -39,6 +39,15 @@ The orchestration delegates to atomic building blocks: `/branch-from-main`, `/co
 ```
 
 `/git ship` subsumes the previous `/git cpr` subcommand. If you are already on a feature branch with a prior push, the branch is kept; only pre-flight, commit, push, and PR run. The `--quick` flag skips pre-flight for the same daily-iteration use case.
+
+## Natural-language invocation
+
+The user's shorthand distinguishes two ship modes by verb. Treat each phrase as an explicit invocation of the mapped command and run the dispatch verbatim:
+
+- **"ship it" / "ship this" / "ship now" / "ship"** → `/git ship` — branch → commit → push → **open a PR**. This is the default (PR) path.
+- **"push it" / "push this" / "push to main"** → `/git ship -m` — commit **directly to main**, no branch, no PR.
+
+Inline modifiers still apply on top of the verb: "push a patch to main" → `-p`, "ship quick" / "push quick" → `--quick`. Every hard-stop in the dispatch (dirty tree on `-m`/`-p`, failing pre-flight unless `--quick`) still fires — the phrase bypasses invocation gating, never safety.
 
 ## Workflow
 
@@ -160,9 +169,9 @@ Replicates the prior `/git-sync` skill. Rebases the current branch onto main wit
 
 6. **Report.** Current branch, commits rebased, stash state, the new base commit.
 
-7. **Run tests if commits were actually applied.** Detect from cwd: `go test ./...` for Go, `pytest` for Python, `make test` if a `Makefile` defines a `test` target. **If no test command matches: stop and ask which command to run.** Report results before exiting.
+7. **Run tests if commits were actually applied.** Detect from cwd: `go test ./...` for Go, `pytest` for Python, `make test` if a `Makefile` defines a `test` target. **If no test command matches the cwd: stop and do not proceed — ask the user which command to run.** Report results before exiting.
 
-**Rules for `sync`.** Never force-push unless the user asks (`--force-with-lease` is safer). If `main` does not exist but `master` does, use `master`.
+**Rules for `sync`.** Never force-push. If the user explicitly requests a force push, always use `--force-with-lease` — never `--force`. If `main` does not exist but `master` does, use `master`.
 
 ### 4. Dispatch — `main`
 
@@ -318,7 +327,7 @@ Sweep every open PR you authored, surface and address reviewer comments (includi
    - Implement **every** comment, including minor ones (naming, formatting, nits, comment wording). For an ambiguous, subjective, or behavior-changing comment, **do not guess** — surface it under "Needs your input" and move on.
    - Run the repo's lint/tests (the `ship` **Pre-flight** table) before pushing; if they fail, fix or stop — never `--no-verify`.
    - Commit with `fix(review): address review feedback on <area>` and push to update the PR (`git push`; never force unless the user asks; never amend a pushed commit).
-   - Optionally reply on each thread so the reviewer sees it was handled — but never resolve a thread you did not actually address:
+   - Always reply on each addressed thread so the reviewer sees it was handled — but never resolve a thread you did not actually address:
      ```bash
      gh api repos/<owner>/<repo>/pulls/<N>/comments/<comment_id>/replies -f body='Addressed in <sha>.'
      ```

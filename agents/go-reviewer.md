@@ -110,6 +110,14 @@ See `rules/design-patterns-application.md` for recognition signals. Flag these a
 - [ ] `http.NewServeMux` patterns for routing (Go 1.22+) where applicable
 - [ ] No `context.TODO()` in production code
 
+### Safety-critical discipline
+
+See `rules/algorithmic-complexity.md` § Bounded loops, `rules/defensive-assertions.md`, and `rules/lint-suppression.md` for the underlying rules.
+
+- [ ] Every loop over user-controlled or externally-supplied input references a named cap (constant or config) — missing bound at a trust boundary is **Must Fix**; missing bound on internal input is **Should Fix**
+- [ ] Non-trivial function (>10 lines or with a non-obvious invariant) checks at least one precondition/postcondition/invariant via `panic("invariant: ...")` or an error return — assertion with side effects is **Should Fix**; absence is **Consider** unless a plausible caller mistake would slip through, then **Should Fix**
+- [ ] Every `//nolint` and `//nolint:<rule>` carries an inline reason on the same line — bare `//nolint` or `//nolint:all` is **Must Fix**; targeted rule code without a reason is **Should Fix**
+
 ## Output format
 
 Use the three buckets and per-finding shape from `rules/findings-format.md` — **Must Fix → Should Fix → Consider**. Do not restate the bucket definitions inline; the rule is authoritative.

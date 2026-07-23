@@ -1,12 +1,14 @@
 ---
-description: Back up a claim with a citation — a URL to authoritative documentation, a file path with line numbers, a `git blame` commit SHA, or a test result. Invoke when you've asserted something and the user wants verification. Forces you to either find the evidence or downgrade the claim to a guess.
-when_to_use: User says "prove it", "cite that", "where did you get that", "back that up", "is that documented", "show me the source", or invokes `/proof` explicitly. Also use proactively when you're about to assert something non-obvious (a flag exists, a function behaves a certain way, a config option is on by default) and you're not 100% certain.
+# disable-model-invocation: /proof is a user-gated verification step; Claude must
+# not auto-invoke it. The citation-vs-downgrade discipline is applied on demand
+# only, when the user explicitly asks (e.g. "prove it", "cite that").
+description: Invoked by the user (via `/proof`) with phrases like "prove it", "cite that", "back that up", "where did you get that", "is that documented", or "show me the source". Forces a real citation or an explicit downgrade — never a fabricated one.
 disable-model-invocation: true
 ---
 
 # Proof
 
-Find a citation that backs up the most recent claim — or admit you don't have one.
+Use this skill when the user has asked you to back a specific claim with a verifiable citation. Must produce either a real citation or an explicit downgrade — never a fabricated one.
 
 Source: adapted from [fredrikaverpil/dotfiles](https://github.com/fredrikaverpil/dotfiles/blob/main/stow/shared/.claude/skills/proof/SKILL.md). Upstream is a one-line directive; expanded here with a recognition table and an honest-failure rule.
 
@@ -42,11 +44,11 @@ Source: adapted from [fredrikaverpil/dotfiles](https://github.com/fredrikaverpil
 
 ## When you have multiple claims
 
-If the user said "prove all of that," handle them sequentially, one per turn block — not in a wall of citations. Each claim gets its own line: claim, citation, confidence.
+When the user says "prove all of that," always process claims sequentially, one per turn block. Never emit a wall of citations. Each claim gets its own line: claim, citation, confidence.
 
 ## Rules
 
-- A citation must be **independently verifiable**. If the user couldn't click the link or open the file, it doesn't count
-- Version-pin URLs (commit SHA, release tag) whenever the source supports it — `main` branch URLs rot
-- Do not cite *this session's own prior turns* as proof. That's circular
-- Do not cite training-data recall as proof. If you "remember" a fact but can't produce a current link or file path, it's a recall — downgrade the claim accordingly
+- Citations **must** be independently verifiable — if the user cannot click the link or open the file, it does not count
+- Always version-pin URLs to a commit SHA or release tag — never use a `main` branch URL, which rots
+- Never cite *this session's own prior turns* as proof — that is circular
+- Never cite training-data recall as proof — if you "remember" a fact but cannot produce a current link or file path, always downgrade the claim to a recall

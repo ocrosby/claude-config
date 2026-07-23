@@ -17,10 +17,18 @@ LOG="$HOME/.claude/hooks/hook-debug.log"
 
 # On any non-zero exit, tell Claude what to do with the diagnostics above:
 # fix them directly, or explain in detail why a given one can't be fixed.
+#
+# Exit code 2 is the ONLY PostToolUse exit code that feeds stderr back into
+# Claude's context. Exit 1 shows stderr to the user's UI but the model never
+# sees it — which means Claude cannot act on the diagnostics. Force 2 here so
+# every downstream `exit $LINT_EXIT` / `exit 1` in this script becomes a
+# Claude-visible blocking finding regardless of the underlying tool's code.
+# shellcheck disable=SC2154 # ec is assigned inside the single-quoted trap body at trap-fire time, not at parse time
 trap '
   ec=$?
   if [[ $ec -ne 0 ]]; then
     echo "$HOOK ACTION: fix the issues reported above directly in the affected file(s). For any issue you cannot fix (missing tool, ambiguous design choice, requires human input), explain in detail why, inline in your response." >&2
+    exit 2
   fi
 ' EXIT
 
@@ -45,7 +53,7 @@ case "${FILE##*.}" in
       | grep 'max-complexity' | grep -oE '[0-9]+' | head -1)
     MAX_C="${MAX_C:-7}"
     FILE_DIR="$(dirname "$FILE")"
-    REL_DIR="${FILE_DIR#${PROJ_DIR}/}"
+    REL_DIR="${FILE_DIR#"${PROJ_DIR}"/}"
     echo "$HOOK cyclo: checking complexity (max $MAX_C) in $REL_DIR" >&2
     CYCLO_OUT=$(cd "$PROJ_DIR" && uv run cyclo -m "$MAX_C" "$FILE_DIR" 2>&1)
     CYCLO_EXIT=$?
@@ -70,7 +78,7 @@ case "${FILE##*.}" in
     if [[ "$PKG_DIR" == "$MODULE_ROOT" ]]; then
       REL_PKG="."
     else
-      REL_PKG="${PKG_DIR#${MODULE_ROOT}/}"
+      REL_PKG="${PKG_DIR#"${MODULE_ROOT}"/}"
     fi
 
     # 1. Repo-pinned golangci-lint via go.mod `tool` directive (Go 1.24+).

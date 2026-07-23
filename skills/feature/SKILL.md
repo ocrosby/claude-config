@@ -1,5 +1,5 @@
 ---
-description: Feature development dispatcher — auto-detects language (go, py, nvim, gherkin, rest) from cwd and routes to the matching layered/TDD-driven workflow. Override with /feature <language> [...].
+description: Use when implementing a new feature in Go, Python, Neovim/Lua, Gherkin, or REST — auto-detects language from cwd and applies layered / TDD-driven workflow. Override with /feature <language> [description].
 argument-hint: "[language] [feature description]"
 aliases: go-feat, py-feat, nvim-feat, gherkin-feat, rest-implement, go-feature, py-feature, nvim-feature, gherkin-feature
 ---
@@ -7,6 +7,14 @@ aliases: go-feat, py-feat, nvim-feat, gherkin-feat, rest-implement, go-feature, 
 # Feature: Language-Aware Feature Development
 
 Use this skill when implementing a new feature. The dispatcher detects the language from the working directory and applies the matching architectural conventions. TDD enforcement (red-green-refactor with observable failure output) comes from the always-on `rules/tdd.md`. Final review delegates to `/code review -fc`.
+
+## When NOT to use
+
+- Design-only work with no implementation → use `/architect design`.
+- Reviewing existing code → use `/code review`.
+- Refactoring without new behavior → use `/code refactor`.
+- Deprecation migrations → use `/code migrate`.
+- Debugging a failing test or reported bug → use `/debug`.
 
 ## Usage
 
@@ -27,21 +35,20 @@ Use this skill when implementing a new feature. The dispatcher detects the langu
 Run the shared detector:
 
 ```bash
+set -- $ARGUMENTS
 bash ~/.claude/scripts/detect_language.sh "${1-}"
 ```
 
-The first token of `$ARGUMENTS` is treated as an explicit override. The script returns one of: `go`, `py`, `nvim`, `gherkin`, `rest`, `unknown`.
+`set --` populates shell positional params from `$ARGUMENTS` so `${1-}` resolves to the first token (the explicit override, possibly empty). The script returns one of: `go`, `py`, `nvim`, `gherkin`, `rest`, `unknown`.
 
 - If the detector returns `unknown`: stop and ask the user which language workflow to apply.
 - Otherwise drop the consumed override token from `$ARGUMENTS` and dispatch to the matching step.
 
 ### 2. Dispatch — `go`
 
-Replicates the prior `/go-feat` skill.
-
 1. **Understand.** Clarify the feature from the user's perspective. Identify which layer it belongs to: domain / port / adapter / cmd. Determine if it needs HTTP endpoints, CLI commands, or background workers.
 
-   Run `/architect` first **only when** the feature introduces a new package boundary, a new top-level abstraction, or crosses layer boundaries non-obviously. For incremental additions, skip.
+   **If the feature introduces a new package boundary, a new top-level abstraction, or crosses layer boundaries non-obviously: stop and run `/architect` first.** Do not proceed to step 2 until the design is settled. Never run `/architect` for a pure incremental addition inside an existing package.
 
 2. **Design the interface.** Public API types and function signatures. Define interfaces at the consumer side — small and focused. Configure via struct fields or functional options. Accept `context.Context` as the first parameter on all I/O methods.
 
@@ -53,7 +60,7 @@ Replicates the prior `/go-feat` skill.
 
    Do not write production code before a failing test exists for that behavior.
 
-4. **Apply Go structure.** One package per concern — split at 500 lines. Domain logic has no external imports beyond stdlib. Adapters are thin: parse request, delegate, write response. HTTP uses stdlib `net/http` or a thin router.
+4. **Apply Go structure.** One package per concern — **must** split at 500 lines. Domain logic has no external imports beyond stdlib. Adapters are thin: parse request, delegate, write response. HTTP uses stdlib `net/http` or a thin router.
 
 5. **Apply Go error handling.** Wrap with context: `fmt.Errorf("creating user: %w", err)`. Define sentinel errors for expected conditions: `var ErrNotFound = errors.New("not found")`. Return early on error. Use custom error types when callers need to inspect.
 
@@ -63,11 +70,9 @@ Replicates the prior `/go-feat` skill.
 
 ### 3. Dispatch — `py`
 
-Replicates the prior `/py-feat` skill.
-
 1. **Understand.** Identify which layer: domain / port / adapter / application. Determine if it needs new API endpoints, CLI commands, MCP tools, or background tasks.
 
-   Run `/architect` first **only when** the feature introduces a new module boundary, a new port/adapter pair, or significant domain abstractions.
+   **If the feature introduces a new module boundary, a new port/adapter pair, or significant domain abstractions: stop and run `/architect` first.** Do not proceed to step 2 until the design is settled. Never run `/architect` for a pure incremental addition inside an existing module.
 
 2. **Design the interface.** Public functions/classes with full type hints. Define configuration with `pydantic.Settings` if new config is needed. Define request/response models with Pydantic `BaseModel`.
 
@@ -77,7 +82,7 @@ Replicates the prior `/py-feat` skill.
    3. Adapters: FastAPI routes, DB repositories, API clients.
    4. Wire dependencies via injection (`Depends()` in FastAPI, constructor injection elsewhere).
 
-4. **Apply Python structure.** One module per concern — split at 300 lines. Domain has no I/O, no framework imports. Adapters are thin: validate input, delegate, return result. FastAPI uses `APIRouter`, one router per domain area. FastMCP tools use `@mcp.tool()` with type hints and docstrings for schema derivation.
+4. **Apply Python structure.** One module per concern — **must** split at 300 lines. Domain has no I/O, no framework imports. Adapters are thin: validate input, delegate, return result. FastAPI uses `APIRouter`, one router per domain area. FastMCP tools use `@mcp.tool()` with type hints and docstrings for schema derivation.
 
 5. **FastAPI specifics (when applicable).** Pydantic `BaseModel` for request/response. `Depends()` for shared logic (auth, DB sessions, config). `lifespan` context manager for startup/shutdown, not `on_event`. Explicit status codes (`status_code=201` for creation). `HTTPException` for error responses with appropriate status codes.
 
@@ -86,8 +91,6 @@ Replicates the prior `/py-feat` skill.
 7. **Review.** Invoke `/code review -fc`. `py-reviewer` covers type hints, domain purity, dependency injection, Pydantic boundaries, global state.
 
 ### 4. Dispatch — `nvim`
-
-Replicates the prior `/nvim-feat` skill.
 
 1. **Understand.** Identify which Neovim APIs are needed (`vim.api`, `vim.fn`, `vim.keymap`, `vim.treesitter`, etc.). Determine if the feature needs autocommands, user commands, keymaps, highlights.
 
@@ -111,8 +114,6 @@ Replicates the prior `/nvim-feat` skill.
 
 ### 5. Dispatch — `gherkin`
 
-Replicates the prior `/gherkin-feat` skill.
-
 1. **Understand the behavior.** Clarify the capability from the user's perspective. Identify actors (who triggers it?) and outcomes (what is observable on success? on failure?). Gather concrete examples from stakeholders — examples become scenarios.
 
    Run `/architect` first **only when** the feature spans multiple domain areas or requires designing the full suite structure.
@@ -125,13 +126,11 @@ Replicates the prior `/gherkin-feat` skill.
 
 5. **Wire up support.** `Before`/`After` hooks for scenario isolation (reset state, clean data). Environment config (base URLs, credentials, browser setup). Custom parameter types for domain concepts.
 
-6. **Verify parsing and the happy path.** Run the framework. Confirm: feature file parses without syntax errors, step definitions discovered (no undefined-step warnings), happy path passes end-to-end. **If any of these fail: stop and fix before review.** If the project uses the SUN acceptance-test repo layout (`features/` + `tests/bdd/`), use `/bdd <feature_name>` to run the stub with the correct `ENVIRONMENT`/`REGION` set.
+6. **Verify parsing and the happy path.** Run the framework. Confirm: feature file parses without syntax errors, step definitions discovered (no undefined-step warnings), happy path passes end-to-end. **If any of these fail: stop and fix before review.** **If the project uses the SUN acceptance-test repo layout (`features/` + `tests/bdd/`): always run the happy-path scenario via `/bdd <feature_name>` with `ENVIRONMENT` and `REGION` set — never substitute a generic runner.**
 
 7. **Review.** Invoke `/code review -fc` on the feature files and step definitions. `gherkin-reviewer` covers declarative vs imperative steps, scenario isolation, state leakage, Background overuse.
 
 ### 6. Dispatch — `rest` (handler-against-spec)
-
-Replicates the prior `/rest-implement` skill.
 
 **Precondition:** the OpenAPI spec entry must already exist. **If it does not: stop and recommend `/architect spec` first.** Never implement a handler ahead of the spec.
 

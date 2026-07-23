@@ -87,6 +87,15 @@ See `rules/design-patterns-application.md` for recognition signals. Flag these a
 - [ ] `except*` / `ExceptionGroup` used when handling errors from concurrent async tasks — **Consider**
 - [ ] `match`/`case` considered for complex `if/elif` chains dispatching on type or structure — **Consider**
 
+### Safety-critical discipline
+
+See `rules/algorithmic-complexity.md` § Bounded loops, `rules/defensive-assertions.md`, and `rules/lint-suppression.md` for the underlying rules.
+
+- [ ] Every loop over user-controlled or externally-supplied input references a named cap (module-level constant or config value) — missing bound at a trust boundary is **Must Fix**; missing bound on internal input is **Should Fix**
+- [ ] Non-trivial function (>10 lines or with a non-obvious invariant) carries at least one `assert` on parameters/invariants and assertions are side-effect-free — assertion with a side effect is **Should Fix**; absence is **Consider** unless a plausible caller mistake would slip through, then **Should Fix**. Invariants that must survive `python -O` use an explicit `raise`, not `assert` — misuse is **Should Fix**
+- [ ] Silently-discarded error returns: `subprocess.run(...)` without `check=True` and no `returncode` branch is **Must Fix**; a bare non-void call on a line by itself with no `_ =` and no comment is **Should Fix**
+- [ ] Every `# noqa`, `# type: ignore`, and `# pyright: ignore` carries a rule code and an inline reason — bare form is **Must Fix**; code-without-reason is **Should Fix**
+
 ## Output format
 
 Use the three buckets and per-finding shape from `rules/findings-format.md` — **Must Fix → Should Fix → Consider**. Do not restate the bucket definitions inline; the rule is authoritative.

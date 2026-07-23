@@ -105,6 +105,7 @@
       "mcp__jenkins__*",
       "mcp__jenkins-useast1__*",
       "mcp__context7__*",
+      "mcp__claude_ai_Jedi-Knights_NWSL__*",
       "WebFetch",
       "Skill(update-config)"
     ],
@@ -218,6 +219,10 @@
           {
             "type": "command",
             "command": "echo \"If there is remaining work, keep going. Check your task list.\""
+          },
+          {
+            "type": "command",
+            "command": "echo \"If this session involved a correction or a repeated mistake, capture the guard before ending: update the relevant rule/skill/CLAUDE.md, and record repo-committed insights in LEARNINGS.md (per CLAUDE.md # Self-Improvement).\""
           }
         ]
       }
@@ -229,6 +234,7 @@
     "pyright-lsp@claude-plugins-official": true,
     "stripe@claude-plugins-official": true,
     "typescript-lsp@claude-plugins-official": true,
+    "rust-analyzer-lsp@claude-plugins-official": true,
     "clangd-lsp@claude-plugins-official": true
   },
   "tui": "fullscreen",

@@ -1,5 +1,5 @@
 ---
-description: Skill-system maintenance dispatcher — author (interactive new-skill workflow), gaps (find repeating tasks with no skill coverage), usage (count invocations and recommend retirement). The first word of $ARGUMENTS selects the subcommand. For per-SKILL.md structural quality, use /audit skill.
+description: Use when creating a new skill (author), finding recurring tasks that no existing skill covers (gaps), or reporting skill invocation counts and retirement candidates (usage). Invoke as /skill <author|gaps|usage>. For per-SKILL.md structural quality, use /audit skill.
 argument-hint: "<subcommand> [arguments]"
 aliases: skill-author, skill-audit, skill-gaps, skill-usage
 ---
@@ -34,7 +34,7 @@ Split `$ARGUMENTS` on the first space. The first word is the subcommand.
 
 ### 2. Dispatch — `author`
 
-Replicates the prior `/skill-author` skill. Guides creation of a new skill with frontmatter, workflow, language audit, conflict check, and review.
+Guides creation of a new skill with frontmatter, workflow, language audit, conflict check, and review.
 
 1. **Define purpose and scope.**
    - What does this skill do? One sentence, specific enough to distinguish from existing skills.
@@ -91,7 +91,7 @@ Replicates the prior `/skill-author` skill. Guides creation of a new skill with 
 
 7. **Audit the language.** Apply the advisory-vs-mandatory filter defined in `~/.claude/skills/CLAUDE.md` (Language section). Rewrite every advisory phrase as a mandatory directive, or move it to an explicit "optional" callout. Do not duplicate the filter table here — `skills/CLAUDE.md` is authoritative and any divergence is drift.
 
-8. **Review with the skill-reviewer agent.** Invoke `skill-reviewer` on the finished file. Address all **Must Fix** and **Should Fix** findings before committing; **Consider**-level findings are optional. See `rules/findings-format.md`.
+8. **Review with the skill-reviewer agent.** Invoke `skill-reviewer` on the finished file. **If any Must Fix or Should Fix finding is reported: stop and do not proceed.** Resolve all Must Fix and Should Fix findings, then re-run `skill-reviewer` to confirm they are cleared. Consider-level findings are optional. See `rules/findings-format.md`.
 
 9. **Commit.**
    ```bash
@@ -104,7 +104,7 @@ Replicates the prior `/skill-author` skill. Guides creation of a new skill with 
 
 ### 3. Dispatch — `gaps`
 
-Replicates the prior `/skill-gaps` skill. Scans `~/.claude/history.jsonl` for repeating tasks that no existing skill covers.
+Scans `~/.claude/history.jsonl` for repeating tasks that no existing skill covers.
 
 1. **Tally history.**
    ```bash
@@ -119,7 +119,7 @@ Replicates the prior `/skill-gaps` skill. Scans `~/.claude/history.jsonl` for re
    ls ~/.claude/skills/
    ```
 
-3. **Identify gaps.** For each pattern that appears ≥5 times in the natural-language section, check the existing catalog. A pattern is a **gap** if: no skill description matches the intent, the user is typing freeform what a skill could automate, and the pattern is mechanical enough to be a workflow (not a one-off question).
+3. **Identify gaps.** For each pattern that appears ≥5 times in the natural-language section, check the existing catalog. A pattern is a **gap** if: no skill description matches the intent, the user is typing freeform what a skill could automate, and each occurrence could have been completed by a numbered workflow (not a one-off conversational question or an ad-hoc research query).
 
    Skip patterns that are: conversational (`thanks`, `ok`, `continue`), already covered by an existing skill (just rare invocation), or personal/contextual (not portable to a skill).
 
@@ -137,7 +137,7 @@ Replicates the prior `/skill-gaps` skill. Scans `~/.claude/history.jsonl` for re
 
 ### 4. Dispatch — `usage`
 
-Replicates the prior `/skill-usage` skill. Invocation counts and retirement recommendations.
+Invocation counts and retirement recommendations.
 
 1. **Confirm inputs exist.**
    ```bash

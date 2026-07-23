@@ -1,5 +1,5 @@
 ---
-description: Benchmarking dispatcher — auto-detects language (go, py, nvim) from cwd and routes to the matching write/run/analyze workflow. Override with /bench <language>.
+description: Use when writing, running, or analyzing benchmarks in a Go, Python, or Neovim/Lua codebase. Auto-detects language from cwd; override with /bench <go|py|nvim> [description].
 argument-hint: "[language] [description]"
 aliases: go-bench, py-bench, nvim-bench
 allowed-tools: Read, Grep, Glob, Edit, Write, Bash(go test *), Bash(go tool *), Bash(benchstat *), Bash(pytest *), Bash(python *), Bash(py-spy *), Bash(nvim *), Bash(uv *)
@@ -7,7 +7,7 @@ allowed-tools: Read, Grep, Glob, Edit, Write, Bash(go test *), Bash(go tool *), 
 
 # Bench: Language-Aware Benchmarking
 
-Use this skill to write, run, or analyze benchmarks. The dispatcher detects the language from cwd and applies the matching tools and patterns.
+Use this skill when writing, running, or analyzing benchmarks in a Go, Python, or Neovim codebase. The dispatcher detects the language from cwd and applies the matching tools and patterns.
 
 ## Usage
 
@@ -23,14 +23,13 @@ Use this skill to write, run, or analyze benchmarks. The dispatcher detects the 
 ### 1. Detect the language
 
 ```bash
+set -- $ARGUMENTS
 bash ~/.claude/scripts/detect_language.sh "${1-}"
 ```
 
-Returns `go`, `py`, `nvim`, `gherkin`, `rest`, or `unknown`. `gherkin` and `rest` are not supported by `bench` — stop and tell the user. `unknown` → stop and ask. Otherwise drop the consumed override token and dispatch.
+`set --` populates shell positional params from `$ARGUMENTS` so `${1-}` resolves to the first token (the explicit override, possibly empty). **If the script is not found or exits non-zero: stop and do not proceed. Tell the user to reinstall via `stow -t ~/.claude -d ~/src/github.com/ocrosby claude-config`.** Returns `go`, `py`, `nvim`, `gherkin`, `rest`, or `unknown`. `gherkin` and `rest` are not supported by `bench` — **stop and do not proceed**. On `unknown`: **stop and do not proceed** — ask the user. Otherwise drop the consumed override token and dispatch.
 
 ### 2. Dispatch — `go`
-
-Replicates the prior `/go-bench` skill.
 
 1. **Read the code under test.** Target function signatures, hot paths, allocations, data structures. **If the target is ambiguous: stop and ask which function or package.**
 2. **Check existing benchmarks.** Grep for existing `Benchmark*` functions covering the target. **If a comparable benchmark already exists: stop and report it.** Do not duplicate.
@@ -104,10 +103,8 @@ Available: `-cpuprofile`, `-memprofile`, `-blockprofile`, `-mutexprofile`.
 
 ### 3. Dispatch — `py`
 
-Replicates the prior `/py-bench` skill.
-
 1. **Identify what to benchmark.** Functions called frequently, processing large inputs, or on latency-sensitive paths. One benchmark function per distinct operation or input class. If no benchmarks exist, write them before optimizing (measure first, optimize second).
-2. **Write the benchmark.** Prefer `pytest-benchmark`:
+2. **Write the benchmark.** Always use `pytest-benchmark`:
    ```python
    def test_foo_benchmark(benchmark):
        input_data = prepare_input()
@@ -145,8 +142,6 @@ Replicates the prior `/py-bench` skill.
 **Rules for `py`.** Never optimize without a benchmark showing the problem — measure first. A benchmark that passes instantly may be testing nothing; verify with `--benchmark-verbose`. Do not commit benchmarks requiring network or large fixtures without a `pytest.mark.slow` guard. Always assert a result in pytest-benchmark tests.
 
 ### 4. Dispatch — `nvim`
-
-Replicates the prior `/nvim-bench` skill.
 
 1. **Identify what to benchmark.** Target exactly one category per timed block: startup cost (`--startuptime`), hot-path callbacks (autocmds, keymaps, LSP handlers), expensive operations (treesitter queries, file reads, API batching loops), or comparison (two implementations). **If the target spans multiple categories: stop and split into separate benchmarks.**
 2. **Write the benchmark.**

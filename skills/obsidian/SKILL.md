@@ -1,7 +1,17 @@
 ---
-description: Find, navigate, read, and edit notes in Omar's PARA-organized Obsidian vault at ~/src/github.com/ocrosby/obsidian (git-tracked, not iCloud). Use whenever the user mentions "the vault", "my notes", "Obsidian", a daily note, an inbox capture, or asks to look up / jot down anything that sounds like personal knowledge management — even if they don't say the word "Obsidian".
+description: Use whenever the user mentions "the vault", "my notes", "Obsidian", a daily note, an inbox capture, or asks to look up or jot down anything that sounds like personal knowledge management — even if they do not say the word "Obsidian". Reads, writes, and navigates Omar's PARA-organized vault at ~/src/github.com/ocrosby/obsidian (git-tracked, not iCloud).
 when_to_use: User wants to read, create, or edit a note. Examples — "add a daily note", "what did I write about X", "jot this down in my inbox", "save this to the vault", "open today's note", "find my Postgres notes", "add to my scout-sleuth project", "what's in my vault about Y".
+allowed-tools: Bash(rg *) Bash(fd *) Bash(find *) Bash(grep *) Bash(mkdir *) Bash(touch *) Bash(cat *) Bash(date *) Bash(stat *) Bash(wc *) Bash(sort *) Bash(xargs *) Bash(cut *) Read Edit Write
 ---
+
+## When NOT to use
+
+This skill targets **only** the primary vault at `~/src/github.com/ocrosby/obsidian`. Do not use it for:
+
+- `~/src/github.com/ocrosby/notes` — the larger reference collection (adr/, algorithms/, architecture/). Ask which vault the user means if ambiguous.
+- `~/notes/notes` — the second registered vault; targeted only if the user names it explicitly.
+- AI-generated indexes over a pile of assets (raw/ + wiki/) → use `/knowledge-base` instead — `wiki/` is regenerable and must not be hand-edited.
+- Code-adjacent documentation (README.md, docs/) → use `/docs write` instead.
 
 # Obsidian vault
 
@@ -24,6 +34,66 @@ VAULT="$HOME/src/github.com/ocrosby/obsidian"
 **Two other vaults are registered** with Obsidian.app: `~/notes/notes` and `~/src/github.com/ocrosby/notes`. This skill targets the primary vault above; if a question seems to belong to one of the others (e.g. `~/src/github.com/ocrosby/notes` has a much larger reference collection — `adr/`, `algorithms/`, `architecture/`, etc.), ask before assuming.
 
 If `$VAULT` doesn't exist, stop and tell the user — don't fabricate notes.
+
+## Workflow
+
+### 1. Resolve the vault
+
+```bash
+VAULT="$HOME/src/github.com/ocrosby/obsidian"
+```
+
+**If `$VAULT` does not exist: stop and do not proceed.** Tell the user which path is missing. Never fabricate notes into a non-existent tree.
+
+**If the user's request seems to belong to the two other registered vaults (`~/notes/notes`, `~/src/github.com/ocrosby/notes`): stop and ask** which vault they mean before reading or writing.
+
+### 2. Identify the intent
+
+Route based on what the user asked for:
+
+| Intent | Go to |
+|---|---|
+| Read / find an existing note | step 3 |
+| Create a new note (non-daily) | step 4 |
+| Edit / append to an existing note | step 5 |
+| Daily-note operations (today's, yesterday's, or a specific date) | step 6 |
+| Quick-capture into `Inbox/` | step 4 (folder = `Inbox/`) |
+
+**If the intent is ambiguous between "find X" and "create X": stop and do not proceed.** Ask the user to clarify.
+
+### 3. Find or read a note
+
+Apply the recipes in the "Finding things" section below. Always exclude `.obsidian/` and `.trash/`.
+
+**If more than one candidate matches the query: stop and list them; ask which one.** Do not pick silently.
+
+### 4. Create a note
+
+Follow the "Creating notes" section below for folder choice, template application, snake_case filename, and wikilink style.
+
+**If the target PARA folder does not exist under `$VAULT`: run the "Setup checklist" first.** Never create ad-hoc top-level folders outside the documented PARA layout.
+
+### 5. Edit a note
+
+Follow the "Editing notes" section below. Preserve existing frontmatter, wikilink style, and surrounding formatting. Do not reformat content the user did not ask about.
+
+### 6. Daily-note operations
+
+Apply the recipes in the "Daily notes workflow" section below. The create-or-open shell block is idempotent — always append under `## Notes` rather than overwrite when the file exists.
+
+**If the user asked to backfill a past daily note: stop and confirm** — backfilling is usually not what they want.
+
+### 7. Verify the outcome
+
+Confirm the resulting path exists and print it so the user can open it in Obsidian.app:
+
+```bash
+[ -f "$RESULT" ] && echo "wrote: $RESULT" || { echo "FAILED: $RESULT"; exit 1; }
+```
+
+**If the write did not land where expected: stop and do not report success.** Return to the failing step and re-check the folder/filename derivation.
+
+Committing is the user's job — surface the change set per the "Git discipline" section, but do not run `git add`/`git commit` from this skill.
 
 ## Setup checklist (one-time bootstrap)
 

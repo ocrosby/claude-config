@@ -1,5 +1,5 @@
 ---
-description: Systematically triages and diagnoses bugs across Go, Python, Neovim, and Gherkin. Detects language from cwd, emits a minimal-repro artifact, delegates to a language debugger agent. Override with /debug <language>.
+description: Use when the user reports a bug, panic, crash, failing test, race condition, or unexpected behavior in Go, Python, Neovim/Lua, or Gherkin. Auto-detects language from cwd, emits a minimal-repro artifact, delegates to a language debugger agent. Override with /debug <language> [description].
 argument-hint: "[language] [description]"
 aliases: bug-triage
 ---
@@ -23,10 +23,11 @@ Use this skill when a reported bug needs reproduction, isolation, and root-cause
 ### 1. Detect the language
 
 ```bash
+set -- $ARGUMENTS
 bash ~/.claude/scripts/detect_language.sh "${1-}"
 ```
 
-The first token of `$ARGUMENTS` is an explicit override. Returns `go`, `py`, `nvim`, `gherkin`, `rest`, or `unknown`. `rest` is not supported — recommend `/code review --rest` instead. `unknown` → stop and ask. Otherwise drop the consumed override token from `$ARGUMENTS` and continue.
+`set --` populates shell positional params from `$ARGUMENTS` so `${1-}` resolves to the first token (the explicit override, possibly empty). Returns `go`, `py`, `nvim`, `gherkin`, `rest`, or `unknown`. `rest` is not supported — **always** route the user to `/code review --rest`. On `unknown`: **stop and do not proceed** — ask which language to apply. On any other return: **always** strip the consumed override token from `$ARGUMENTS` before passing the remainder to downstream steps as the bug description.
 
 ### 2. Reproduce
 
@@ -135,12 +136,12 @@ Apply the agent's proposed fix and re-run the **same minimal-repro artifact** fr
 
 ### 6. Decide the artifact's fate
 
-The minimal-repro artifact is now a regression test that proves the fix. Choose one:
+The minimal-repro artifact is now a regression test that proves the fix. The artifact **must** land as one of exactly two outcomes — orphaned `repro_*` files are never permitted:
 
-- **Keep it as a regression test** — rename from `repro_*` / `tests/repro/*` to a conventional name in the matching test directory. This is the default.
-- **Delete it** — only if the behavior is already covered by an existing higher-level test and the artifact adds no signal.
+- **Keep it as a regression test (default)** — rename from `repro_*` / `tests/repro/*` to a conventional name in the matching test directory.
+- **Delete it** — only when the behavior is already covered by an existing higher-level test and the artifact adds no signal.
 
-**If neither option applies: stop and ask the user.** Never leave an orphaned `repro_*` file in the tree.
+**If the artifact cannot be renamed to a conventional test path AND no existing higher-level test already covers the same code path: stop and do not proceed** — ask the user before touching the file. Never leave an orphaned `repro_*` file in the tree.
 
 ## Rules
 

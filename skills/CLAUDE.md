@@ -154,7 +154,7 @@ Every skill must be composable, portable, efficient, and powerful. Apply these c
 
 ### Composable — does one thing, works with others
 
-- Single, nameable purpose. If the description needs "and", split into two skills.
+- Single, nameable purpose. If the description needs "and", split into two skills. The skill must fit cleanly into one of the four scope buckets (Utility / Verification / Data Enrichment / Orchestration) in `rules/skill-conventions.md` — straddling two is a signal to split.
 - Delegates to existing skills and agents instead of reimplementing their behavior — name them explicitly (e.g. `Use the skill-reviewer agent`, `Invoke /code review`).
 - Outputs are usable by another skill or by the user without post-processing — structured findings, predictable file paths, predictable exit conditions.
 - No silent overlap with another skill. If two skills cover the same trigger, one must be removed or refactored.
