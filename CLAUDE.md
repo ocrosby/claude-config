@@ -69,7 +69,20 @@ One PR = one `type(scope)` pair. Before creating a branch, committing, or pushin
 
 **Before pushing:** run `git fetch origin main` and check whether the files you changed also changed on main since the branch diverged. If they did, rebase before opening the PR: `git rebase origin/main`.
 
-**Before pushing to any protected branch (main/master/etc.):** check branch protection first — `gh api repos/{owner}/{repo}/branches/{branch}/protection --jq '.required_pull_request_reviews // .required_status_checks // "protected"' 2>/dev/null`. A 404 means unprotected — direct push is fine. Any other result means protection is in place — do not `git push` to that branch, even if it would succeed via an admin bypass. Instead branch, commit, push the branch, and open a PR (`gh pr create`) targeting it. A successful bypass is not permission to bypass; it means the credential *can*, not that it *should*.
+**Before pushing to any protected branch (main/master/etc.):** check **both** legacy branch protection **and** rulesets — they are separate GitHub features and one can require a PR while the other is empty. A 404 from the protection endpoint alone is not proof of "unprotected."
+
+```bash
+owner=... repo=... branch=main
+# Legacy branch protection — 404 means none configured
+gh api "repos/$owner/$repo/branches/$branch/protection" \
+  --jq '.required_pull_request_reviews // .required_status_checks // "protected"' 2>/dev/null
+
+# Rulesets — returns an array of rule objects; 0 means no gating rules apply
+gh api "repos/$owner/$repo/rules/branches/$branch" \
+  --jq '[.[] | select(.type == "pull_request" or .type == "required_status_checks" or .type == "required_signatures" or .type == "required_deployments")] | length'
+```
+
+Direct push is fine **only if BOTH** are clear: the protection endpoint returns 404 (`gh: Branch not protected`) *and* the rulesets query returns `0`. Any other result means gating is in place — do not `git push` to that branch, even if it would succeed via an admin bypass. Instead branch, commit, push the branch, and open a PR (`gh pr create`) targeting it. A successful bypass is not permission to bypass; it means the credential *can*, not that it *should*. **If the remote reports `Bypassed rule violations` after a push, that IS a bypass** — surface it to the user immediately, do not treat the successful exit code as success.
 
 # Installing this configuration
 
