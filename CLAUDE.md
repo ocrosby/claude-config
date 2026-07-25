@@ -59,6 +59,8 @@ One PR = one `type(scope)` pair. Before creating a branch, committing, or pushin
 
 **Before pushing:** run `git fetch origin main` and check whether the files you changed also changed on main since the branch diverged. If they did, rebase before opening the PR: `git rebase origin/main`.
 
+**Before pushing to any protected branch (main/master/etc.):** check branch protection first — `gh api repos/{owner}/{repo}/branches/{branch}/protection --jq '.required_pull_request_reviews // .required_status_checks // "protected"' 2>/dev/null`. A 404 means unprotected — direct push is fine. Any other result means protection is in place — do not `git push` to that branch, even if it would succeed via an admin bypass. Instead branch, commit, push the branch, and open a PR (`gh pr create`) targeting it. A successful bypass is not permission to bypass; it means the credential *can*, not that it *should*.
+
 # Installing this configuration
 
 This repository (`ocrosby/claude-config`) is a GNU Stow package. Its contents are linked directly into `~/.claude/`. To (re)install or re-link, run from the repo root:
