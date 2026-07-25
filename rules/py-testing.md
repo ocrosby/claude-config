@@ -7,6 +7,8 @@ paths:
 
 # Python Testing
 
+For the behavior-vs-implementation stance that governs *what* to test, see `rules/black-box-testing.md`. For how to grade the assertions once tests exist, see `rules/mutation-testing.md` (`mutmut`).
+
 ## Framework
 
 - pytest for all tests

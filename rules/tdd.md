@@ -18,9 +18,10 @@ When writing or modifying any production code in Go, Python, Lua, or Gherkin, yo
 ### Step 1 — Write the failing test (RED)
 
 1. Write the test in the corresponding test file BEFORE touching any production file
-2. Run the test suite and **show the failure output** to the user
-3. Confirm the failure is for the right reason (not a syntax error or missing import)
-4. Do NOT edit any production file until this step is complete and verified
+2. **Write it black-box** — through the public surface, asserting on the observable outcome. Do not spy on internal collaborators, mock same-team classes, or reach into private state to arrange or assert. See `rules/black-box-testing.md` — the shape of this first test sets the shape of every test that follows it.
+3. Run the test suite and **show the failure output** to the user
+4. Confirm the failure is for the right reason (not a syntax error or missing import)
+5. Do NOT edit any production file until this step is complete and verified
 
 ### Step 2 — Write minimal implementation (GREEN)
 
@@ -32,6 +33,7 @@ When writing or modifying any production code in Go, Python, Lua, or Gherkin, yo
 
 1. Clean up structure, naming, and duplication while keeping all tests green
 2. Run all tests after every refactor step to confirm nothing broke
+3. If coverage reveals an untested behavior after the cycle, close the gap with **another red-green cycle for that behavior** — write the failing black-box test first, then implement. Never patch coverage by adding a white-box test (spy, internal mock, private-field reach-in) after the fact. If a line cannot be reached from the outside, that is a design signal (dead branch, misplaced seam, or genuinely unreachable), not licence to reach in. See the priority order in `rules/black-box-testing.md`.
 
 ## What "No production code first" means in practice
 
@@ -58,6 +60,8 @@ Replacing a deprecated API with its modern equivalent is the only situation wher
 Refactoring does not use the red-green-refactor cycle (no new failing test is written), but it **does** require tests written first. Before touching any code, write characterization tests that document current behavior. These are not new tests for new behavior — they are a safety net that proves the refactor didn't break anything.
 
 The `/code refactor` subcommand handles this automatically. Do not start a refactor without characterization test coverage in place.
+
+**Characterization tests codify *current* behavior, not *intended* behavior.** If the current code contains a bug, a characterization test enshrines the bug as spec. Before pinning a surprising behavior, check the ticket / contract / domain rule — if the code and the spec disagree, that is a bug find, not a test to write. Write characterization tests through the widest available public API (see `rules/black-box-testing.md`) so the refactor is not constrained by internal shape you did not intend to freeze.
 
 ### Purely mechanical changes — no logic change whatsoever
 

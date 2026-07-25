@@ -6,6 +6,8 @@ paths:
 
 # Go Testing
 
+For the behavior-vs-implementation stance that governs *what* to test, see `rules/black-box-testing.md` — the `_test` package suffix below is the mechanical form of that preference. For how to grade the assertions once tests exist, see `rules/mutation-testing.md` (`gremlins`).
+
 ## Framework
 
 - Use the stdlib `testing` package — no external test frameworks

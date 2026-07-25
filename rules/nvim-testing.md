@@ -7,6 +7,8 @@ paths:
 
 # Neovim Plugin Testing
 
+For the behavior-vs-implementation stance that governs *what* to test, see `rules/black-box-testing.md` — "Test the public API, not internal helpers" below is that rule applied to Lua modules.
+
 ## Framework
 
 - Use plenary.busted (`require("plenary.busted")`) as the default test framework for plugins
