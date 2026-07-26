@@ -1,18 +1,5 @@
 ---
-description: OWASP Top 10 recognition signals and mandatory behaviors. Apply to all code that handles untrusted input, authentication, authorization, secrets, persistence, network I/O, or deployment configuration.
-paths:
-  - "**/*.go"
-  - "**/*.py"
-  - "**/*.lua"
-  - "**/*.ts"
-  - "**/*.tsx"
-  - "**/*.js"
-  - "**/*.jsx"
-  - "**/*.rb"
-  - "**/*.rs"
-  - "**/*.java"
-  - "**/*.kt"
-  - "**/*.cs"
+description: OWASP Top 10 recognition signals and mandatory behaviors. Consultation-only — no `paths` glob. Reviewer agents (go-reviewer, py-reviewer, nvim-reviewer, rest-reviewer) reference this rule and load it on demand when the code under review touches auth, input parsing, deserialization, secrets, or network I/O. Also loaded when the user invokes `/security-review` or asks for a security-oriented review explicitly.
   - "**/*.c"
   - "**/*.cpp"
   - "**/*.h"

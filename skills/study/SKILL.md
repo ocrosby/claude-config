@@ -286,3 +286,13 @@ Write a structured entry to `.claude/learnings/study/${CLAUDE_SESSION_ID}.md`:
 ```
 
 If the user declines, end the session without writing anything.
+
+## Step 8: Verify
+
+Before the skill exits, confirm:
+
+1. `.claude/study/${CLAUDE_SESSION_ID}/report.md` exists and is non-empty.
+2. If Step 5 published to a vault, the note is present at `research/<YYYY-MM>/<note_slug>.md` in the vault repo — either by checking the commit that landed or by re-cloning and reading the path. **If vault publish was attempted but no note is present: report the failure to the user and offer to retry.**
+3. Step 6's inline summary was shown to the user (not just the file path).
+
+If any check fails, report which one and what to do — do not exit silently.

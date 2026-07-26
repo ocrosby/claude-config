@@ -60,3 +60,5 @@ Use this prompt to create a role-based reviewer agent:
 | `py-reviewer` | Reviews Python code for correctness, architecture, type safety, and idiomatic patterns |
 | `rest-reviewer` | Reviews HTTP handler and route code for REST API convention compliance |
 | `skill-reviewer` | Reviews Claude skill files (SKILL.md) for structural quality and consistency |
+
+**Note on the REST asymmetry:** REST has only `rest-reviewer` — no `rest-architect` or `rest-debugger` — because REST is a discipline layered over a language, not a language itself. Design work for REST APIs is handled by `/architect spec` (OpenAPI-first design); debugging surfaces as language-level bugs and uses the underlying language debugger (`go-debugger`, `py-debugger`, etc.).

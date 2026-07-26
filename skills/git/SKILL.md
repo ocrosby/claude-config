@@ -66,7 +66,7 @@ Read `~/.claude/skills/git/ship.md` and follow it. Handles flag parsing, pre-fli
 
 ### 3. Dispatch — `sync`
 
-Replicates the prior `/git-sync` skill. Rebases the current branch onto main without merging.
+Rebases the current branch onto main without merging.
 
 1. **Check state.** `git status` and `git branch --show-current`.
    - **If on `main`/`master`: stop and tell the user to use `/git main` instead.**
@@ -93,7 +93,7 @@ Replicates the prior `/git-sync` skill. Rebases the current branch onto main wit
 
 ### 4. Dispatch — `main`
 
-Replicates the prior `/git-main` skill. Switch to main and sync.
+Switch to main and sync.
 
 1. **Check for uncommitted changes.** Run `git status --porcelain`. **If any uncommitted changes are present: stop and ask the user to choose — stash, commit, or abort. Do not switch branches until the choice is made.**
 2. `git checkout main` (or `master` if no `main`).
@@ -111,7 +111,7 @@ Replicates the prior `/git-main` skill. Switch to main and sync.
 
 ### 5. Dispatch — `worktree`
 
-Replicates the prior `/worktree` skill. Create a parallel checkout.
+Create a parallel checkout.
 
 1. **Name.** Use the user's argument or generate `YYYY-MM-DD-descriptor`.
 2. **Create:**
@@ -128,7 +128,7 @@ Replicates the prior `/worktree` skill. Create a parallel checkout.
 
 ### 6. Dispatch — `release-notes`
 
-Replicates the prior `/release-notes` skill. Argument is an optional commit range.
+Argument is an optional commit range.
 
 1. **Determine the range.**
    - If `$ARGUMENTS` after `release-notes` specifies a range (e.g. `v1.2.0..HEAD`), use it.

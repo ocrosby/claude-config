@@ -1,3 +1,7 @@
+---
+description: Opt-in guidance for reading project markdown (README, CONTRIBUTING, ARCHITECTURE, docs/) at session start. Consultation-only — no paths glob. Referenced from CLAUDE.md under "Skip discovery when not needed".
+---
+
 # Session Startup: Project Markdown (opt-in)
 
 **Default: do not read project markdown at session start.** Most turns are narrow — a single-file edit, a config tweak, a targeted question — and do not need broad context. Reading four files unconditionally wastes tokens and slows the first response.

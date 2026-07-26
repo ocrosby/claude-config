@@ -339,3 +339,13 @@ For broad questions ("what notes do I have about Postgres?"), search both filena
 The vault is git-tracked with remote `github.com/ocrosby/obsidian`. This skill does **not** commit on your behalf. After a session of edits, surface the change set and let your normal `/git ship` flow handle the commit — that keeps note edits auditable in the same way as code changes.
 
 If a session creates multiple notes, group them into one logical commit (e.g. `docs(daily): 2026-06-03 + linked project updates`) rather than one commit per file.
+
+## Verify
+
+Before the skill exits, confirm the outcome of what was actually done:
+
+- **Read** requests — the surfaced content is from the vault at `~/src/github.com/ocrosby/obsidian` (not the other registered vaults, unless the user named one explicitly). Cite each hit as `path:line`.
+- **Write/edit** requests — the file exists and contains the intended change. Re-`cat` the modified section (or the whole file if short) so the user can visually confirm.
+- **Directory or search** requests — the result set is scoped to the vault (excluded `.obsidian/`, `.trash/`), and count/summary is shown.
+
+If any check fails, name the failure — do not exit as if the request succeeded.

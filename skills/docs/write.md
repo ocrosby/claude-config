@@ -14,8 +14,6 @@ Returns `go`, `py`, `nvim`, `gherkin`, `rest`, or `unknown`. If `unknown`: stop 
 
 ## write go — godoc
 
-Replicates the prior `/go-docs` skill.
-
 1. **Scan for missing docs.** Find exported symbols without preceding doc comments:
    ```bash
    grep -n "^func [A-Z]\|^type [A-Z]\|^var [A-Z]\|^const [A-Z]" **/*.go
@@ -55,8 +53,6 @@ Replicates the prior `/go-docs` skill.
 **Checklist:** every exported type's doc starts with its name; functions document error returns; package-level comment exists; concurrency safety stated on shared types; `[SymbolName]` cross-references used; no placeholder `// TODO: document this` comments.
 
 ## write py — Google-style docstrings
-
-Replicates the prior `/py-docs` skill.
 
 1. **Scan for missing docstrings.** `grep -n "^def [a-z]\|^class [A-Z]" **/*.py`. Report public symbols missing docstrings (skip `_private` and `__dunder__` unless non-obvious).
 
@@ -100,7 +96,7 @@ Replicates the prior `/py-docs` skill.
 
 ## write nvim — vimdoc
 
-Replicates the prior `/nvim-docs` skill. Format conventions are authoritative in `rules/nvim-docs.md`.
+Format conventions are authoritative in `rules/nvim-docs.md`.
 
 **When NOT to use.** Personal Neovim config (`~/.config/nvim/`) — vimdoc is overkill. Doc already current — use `/code migrate` for deprecated pattern updates.
 
@@ -161,8 +157,6 @@ Replicates the prior `/nvim-docs` skill. Format conventions are authoritative in
    ```
 
 ## write gherkin — living documentation from feature files
-
-Replicates the prior `/gherkin-docs` skill.
 
 1. **Parse feature files** via the shared script:
    ```bash
