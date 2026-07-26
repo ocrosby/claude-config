@@ -48,8 +48,6 @@ Split `$ARGUMENTS` on the first space. The first word is the subcommand.
 
 ### 2. Dispatch — `review`
 
-Replicates the prior `/code-review` skill.
-
 **Identify scope.** If no path/ref argument: `git diff --name-only HEAD`. If an argument: use it as the file list or as a git ref. Group files by language.
 
 **Run linters per file.** Lint failures are **Must Fix** — do not proceed without reporting them.
@@ -167,7 +165,7 @@ Adversarial review. Same pipeline as `review` but the reviewer agents are instru
 
 ### 4. Dispatch — `refactor`
 
-Replicates the prior `/refactor` skill. Structural improvement without behavior change. Distinct from `migrate` (which replaces deprecated patterns).
+Structural improvement without behavior change. Distinct from `migrate` (which replaces deprecated patterns).
 
 1. **Understand before changing.** Read target file(s). Answer: what is this responsible for? Why was it written this way (`git log --follow -p <file>`)? What constraints drove the current design? Do not refactor what you do not yet understand.
 
@@ -213,7 +211,7 @@ Replicates the prior `/refactor` skill. Structural improvement without behavior 
 
 ### 5. Dispatch — `migrate`
 
-Replicates the prior `/migrate` skill. Replaces deprecated APIs/idioms with current equivalents. Behavior must be identical before and after.
+Replaces deprecated APIs/idioms with current equivalents. Behavior must be identical before and after.
 
 **Scope.** File-level when invoked mid-task on a specific file (replace patterns in that file only, verify, do not expand without asking). Codebase-level when invoked standalone.
 
@@ -251,7 +249,7 @@ Replicates the prior `/migrate` skill. Replaces deprecated APIs/idioms with curr
 
 ### 6. Dispatch — `techdebt`
 
-Replicates the prior `/techdebt` skill. End-of-session sweep for duplicated and dead code.
+End-of-session sweep for duplicated and dead code.
 
 1. **Scan** the codebase for:
    - Duplicated code blocks — three or more similar lines appearing in two or more places

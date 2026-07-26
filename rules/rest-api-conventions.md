@@ -1,9 +1,11 @@
 ---
+description: REST API conventions per restfulapi.net — resource naming, HTTP method semantics, status codes, statelessness, caching. Narrow paths glob: fires on directories that typically hold HTTP handler/route code. For code outside these paths, the rest-reviewer agent loads this rule on demand when reviewing endpoint code.
 paths:
-  - "**/*.go"
-  - "**/*.py"
-  - "**/*.ts"
-  - "**/*.js"
+  - "**/handlers/**"
+  - "**/routes/**"
+  - "**/api/**"
+  - "**/controllers/**"
+  - "**/endpoints/**"
 ---
 
 # REST API Conventions
