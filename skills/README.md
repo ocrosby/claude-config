@@ -86,7 +86,7 @@ These live in `commands/` rather than `skills/` because they are single focused 
 
 ## Authoring reference
 
-The rest of this document is for writing or modifying a skill. The full conventions live in `skills/CLAUDE.md`.
+The rest of this document is for writing or modifying a skill. The full conventions live in `rules/skill-conventions.md`.
 
 ### Skills vs. rules vs. commands
 
@@ -135,14 +135,14 @@ Prose and workflow steps here.
 
 The directory name **is** the slash command — `skills/git/` automatically registers as `/git`. There is no `triggers:` field; do not add one.
 
-The full field reference and the `disable-model-invocation` vs `user-invocable` decision matrix live in `skills/CLAUDE.md`.
+The full field reference and the `disable-model-invocation` vs `user-invocable` decision matrix live in `rules/skill-conventions.md`.
 
 ### Authoring a new skill
 
-Use `/skill author` to create a new skill interactively — it walks through purpose definition, frontmatter, workflow authoring, and consistency checks. See `skills/CLAUDE.md` for the full conventions.
+Use `/skill author` to create a new skill interactively — it walks through purpose definition, frontmatter, workflow authoring, and consistency checks. See `rules/skill-conventions.md` for the full conventions.
 
 ### Reusable scripts over inline logic
 
 Workflow steps that do parsing, scanning, validating, or transforming data must be extracted into a script under `~/.claude/scripts/`. Inline code is only allowed when the logic is under 20 lines AND will not be regenerated across invocations.
 
-See `skills/CLAUDE.md` for the recognition signals and the full token-economics rationale. The canonical exemplar is `scripts/tally_invocations.py` — standard library only, argparse CLI, structured stdout. `/skill author` walks through this decision when authoring new skills.
+See `rules/skill-conventions.md` for the recognition signals and the full token-economics rationale. The canonical exemplar is `scripts/tally_invocations.py` — standard library only, argparse CLI, structured stdout. `/skill author` walks through this decision when authoring new skills.

@@ -42,7 +42,7 @@ You are a Claude configuration specialist reviewing a skill file for quality. Yo
 
 ### Mechanics
 
-- [ ] No deterministic parsing/scanning/validating/transforming logic is inlined that should be an extracted script — enforce the "Prefer extracted scripts over inline logic" mandate and the 20-line rule in `skills/CLAUDE.md`
+- [ ] No deterministic parsing/scanning/validating/transforming logic is inlined that should be an extracted script — enforce the "Extract scripts over inline logic" mandate and the 20-line rule in `rules/skill-conventions.md`
 - [ ] Format-stable or templated output lives in an `assets/` file, not inline in the body
 - [ ] Re-entered config values live in a `config.json`, not retyped each invocation
 - [ ] Multiple-choice setup uses `AskUserQuestion` rather than free-form prompting

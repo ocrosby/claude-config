@@ -1,6 +1,6 @@
 # Skill File Audit (Structural Quality)
 
-Health-check individual `SKILL.md` files against the skill-authoring conventions in `skills/CLAUDE.md` and `rules/skill-conventions.md`. Delegates to the `skill-reviewer` agent.
+Health-check individual `SKILL.md` files against the skill-authoring conventions in `rules/skill-conventions.md`. Delegates to the `skill-reviewer` agent.
 
 For a system-wide audit of how all components (hooks, rules, agents, skills, settings) integrate, use `/audit system` — it covers inter-component correctness, not individual file quality.
 

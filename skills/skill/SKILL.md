@@ -50,7 +50,7 @@ Guides creation of a new skill with frontmatter, workflow, language audit, confl
    ```
    If a rule already enforces the behavior, the skill must reference the rule, not repeat it. Repeating creates drift.
 
-3. **Write the frontmatter.** Read `~/.claude/skills/CLAUDE.md` (Frontmatter section) before adding any field. That file is authoritative — do not duplicate the field reference here. Only `description` is recommended for Claude to know when to invoke the skill.
+3. **Write the frontmatter.** Read `~/.claude/rules/skill-conventions.md` (Frontmatter section) before adding any field. That file is authoritative — do not duplicate the field reference here. Only `description` is recommended for Claude to know when to invoke the skill.
 
 4. **Write the title and scope section.**
    ```markdown
@@ -89,7 +89,7 @@ Guides creation of a new skill with frontmatter, workflow, language audit, confl
 
    Never write: "except for mechanical changes". Always write: "except for renaming an identifier, moving a file, or updating an import path with no logic change".
 
-7. **Audit the language.** Apply the advisory-vs-mandatory filter defined in `~/.claude/skills/CLAUDE.md` (Language section). Rewrite every advisory phrase as a mandatory directive, or move it to an explicit "optional" callout. Do not duplicate the filter table here — `skills/CLAUDE.md` is authoritative and any divergence is drift.
+7. **Audit the language.** Apply the advisory-vs-mandatory filter defined in `~/.claude/rules/skill-conventions.md` (Language section). Rewrite every advisory phrase as a mandatory directive, or move it to an explicit "optional" callout. Do not duplicate the filter table here — `rules/skill-conventions.md` is authoritative and any divergence is drift.
 
 8. **Review with the skill-reviewer agent.** Invoke `skill-reviewer` on the finished file. **If any Must Fix or Should Fix finding is reported: stop and do not proceed.** Resolve all Must Fix and Should Fix findings, then re-run `skill-reviewer` to confirm they are cleared. Consider-level findings are optional. See `rules/findings-format.md`.
 
