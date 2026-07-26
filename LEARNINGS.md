@@ -280,6 +280,23 @@ Enabling `gopls-lsp`, `pyright-lsp`, and `lua-lsp` in the global `~/.claude/sett
 
 ---
 
+### `settings.json`: a `Bash(*)` wildcard shadows every `Bash(x:*)` allow entry
+
+If `settings.json` `permissions.allow` contains the `Bash(*)` wildcard, every specific `Bash(x:*)` entry below it (`Bash(awk:*)`, `Bash(git:*)`, …) is redundant — the wildcard already permits them all. The specific list is not enforced; it is decorative.
+
+Two valid stances:
+
+- **Concise:** keep only `Bash(*)` and let it stand alone. Small settings.json, one line of intent.
+- **Defense-in-depth:** remove `Bash(*)` and keep the specific allowlist as the only permission surface. Larger settings.json, tighter effective scope.
+
+Do not do both — the combination is pure clutter and misleads a reader trying to understand what's actually approved.
+
+**Known example (now resolved):** `settings.json` had `Bash(*)` plus 94 specific `Bash(x:*)` entries. Fix (PR #76): removed the 94 specifics, kept the wildcard. Effective permission set unchanged; -94 lines from the file. If the wildcard is ever tightened, `git log -p settings.json` shows the removed list for reference.
+
+**Detector for future audits:** any `settings.json` with both a wildcard tool permission (`Bash(*)`, `Read(**)`, `Edit(**)`, `Write(**)`, `mcp__*`) AND narrower entries of the same tool — flag as redundant, ask which stance the owner wants.
+
+---
+
 ## Concurrency (Go)
 
 ### Key patterns that prevent goroutine leaks
