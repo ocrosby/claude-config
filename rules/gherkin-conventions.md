@@ -1,4 +1,5 @@
 ---
+description: Gherkin feature-file style: declarative not imperative steps, one behavior per scenario, Given/When/Then discipline, one action per scenario. Fires on `.feature` files.
 paths:
   - "**/*.feature"
 ---

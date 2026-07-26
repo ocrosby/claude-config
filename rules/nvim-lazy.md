@@ -1,4 +1,5 @@
 ---
+description: lazy.nvim plugin-manager conventions: one file per plugin under `lua/plugins/`, `opts` vs `config` choice, lazy-loading triggers (cmd/ft/keys/event) ordered from most-specific, `dependencies:` graph.
 paths:
   - "lua/plugins/**/*.lua"
   - "**/lazy/**/*.lua"

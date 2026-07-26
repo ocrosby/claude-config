@@ -1,3 +1,7 @@
+---
+description: Recognition signals and mandatory behaviors for the 22 GoF design patterns across Go/Python/Lua/TS. Consultation-only — no `paths` glob; referenced by architect and reviewer agents when a code-shape signal fires (telescoping constructor, large type-switch, scattered cross-cutting logic).
+---
+
 # Design Patterns Application
 
 > **Reference catalog**: `skills/architect/design-patterns.md` — all 22 GoF patterns with intent, applicability, structure, and trade-offs. Loaded on demand by the `/architect patterns` subcommand, not always-on.

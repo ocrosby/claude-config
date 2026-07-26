@@ -1,4 +1,5 @@
 ---
+description: Neovim LSP configuration: prefer native `vim.lsp.config` and `vim.lsp.enable` (0.11+) over `nvim-lspconfig`, capabilities merged from editor + completion plugin, `LspAttach` autocmd for buffer-local setup, per-server config in `lsp/<name>.lua`.
 paths:
   - "**/*.lua"
 ---

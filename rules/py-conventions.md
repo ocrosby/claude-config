@@ -1,4 +1,5 @@
 ---
+description: Python language conventions: type hints on all public signatures, `X | Y` over `Union[X, Y]`, Pydantic at API boundaries, `pathlib.Path` over `os.path`, dataclasses/Pydantic over plain dicts, context managers for resources, and Python-specific security tactics. Fires on `**/*.py`.
 paths:
   - "**/*.py"
   - "**/pyproject.toml"

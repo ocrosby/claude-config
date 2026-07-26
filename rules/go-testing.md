@@ -1,4 +1,5 @@
 ---
+description: Go test conventions: stdlib `testing`, `_test` package suffix for black-box tests, table-driven tests with `t.Run`, `t.Helper()` in helpers, `t.Cleanup()` for teardown, `httptest` for HTTP, fakes over mocks, race detector on. Fires on `**/*_test.go`.
 paths:
   - "**/*_test.go"
   - "**/testdata/**"

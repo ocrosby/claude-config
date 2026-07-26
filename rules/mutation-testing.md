@@ -1,3 +1,7 @@
+---
+description: Grades assertion strength by seeding small faults and counting surviving mutants — a killed mutant means the tests would catch the bug. Gate CI on 'no new survivors in the diff', never a percentage floor. Tools: mutmut (Python), gremlins (Go), cargo-mutants (Rust).
+---
+
 # Mutation Testing
 
 Line coverage tells you where tests have not been. It does not tell you whether tests would catch a bug if the code were wrong. Mutation testing closes that gap by **grading the tests, not the code**: seed small, syntactically-valid faults into the source, run the suite, and count how many faults survive. A surviving mutant is a specific counter-example — a version of the code the suite would ship without noticing.

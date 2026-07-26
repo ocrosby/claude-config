@@ -1,4 +1,5 @@
 ---
+description: Python test conventions: pytest with pytest-mock and pytest-asyncio, fixtures over setUp/tearDown, Arrange/Act/Assert comments, fakes/in-memory over mocks, mock only at boundaries, `pytest.raises` with `match=` for exception assertions.
 paths:
   - "**/tests/**/*.py"
   - "**/test_*.py"

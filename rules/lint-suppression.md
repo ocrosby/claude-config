@@ -1,3 +1,7 @@
+---
+description: Every `# noqa`, `//nolint`, `# type: ignore`, `eslint-disable`, `-- luacheck: ignore` must have an inline reason on the same line — the specific rule code AND why the code is correct despite the warning. Bare or unjustified suppression is a Must Fix finding.
+---
+
 # Lint Suppression
 
 Every lint or type-checker suppression is a documented deviation from the coding standard. NASA SWE-061 requires that deviations from the chosen standard be documented; this rule adapts that principle to the per-line suppressions that appear in every real codebase. A suppression without a reason is worse than the original warning — it hides the defect *and* the intent behind hiding it, so no future reader can decide whether the deviation still applies.

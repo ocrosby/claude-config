@@ -1,3 +1,7 @@
+---
+description: Enforces lowest time/space complexity that solves the problem. Signals: nested loops over the same collection, `in list` inside a loop, recomputed subproblems, wrong container choice, unbounded loops on external input. Every user-controlled loop must reference a named cap.
+---
+
 # Algorithmic Complexity
 
 Code that works on small input often fails on real input. Time and space complexity are properties of the *algorithm*, not the language — a quadratic Python loop and a quadratic Go loop both melt at the same N. Default to the lowest time and space complexity that solves the problem at hand, regardless of language.

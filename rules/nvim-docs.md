@@ -1,4 +1,5 @@
 ---
+description: Neovim plugin documentation in vimdoc format: `doc/<plugin>.txt` structure, tags (`*plugin-section*`), references (`|plugin-section|`), 78-col width, `helptags` regeneration, required sections. Fires on `doc/*.txt`.
 paths:
   - "**/doc/*.txt"
 ---

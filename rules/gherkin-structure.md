@@ -1,4 +1,5 @@
 ---
+description: Gherkin project structure: one behavior per feature file, group by domain not by type, step definitions in `steps/`, shared context in `support/world.py`, feature files capped at ~10 scenarios. Fires on `.feature` files and step-definition trees.
 paths:
   - "**/*.feature"
   - "**/steps/**"

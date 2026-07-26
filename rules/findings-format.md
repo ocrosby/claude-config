@@ -1,3 +1,7 @@
+---
+description: The canonical three-bucket structured-review format (Must Fix / Should Fix / Consider) used by every reviewer agent, audit skill, and grill workflow. Forbids synonyms (Critical/Warning/Suggestion, Blocker/Major/Minor, Error/Warning/Info) — the three terms are authoritative.
+---
+
 # Findings Format
 
 When a skill or agent produces a structured review report (e.g. `/audit skill`, `/code review`, `/code grill`, `/docs review`, `skill-reviewer`, `go-reviewer`, `py-reviewer`, `nvim-reviewer`, `rest-reviewer`, `gherkin-reviewer`), it must use these three severity buckets and no others.

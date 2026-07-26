@@ -1,4 +1,5 @@
 ---
+description: Lua patterns specific to Neovim plugin authoring: `vim.api` vs `vim.fn`, `vim.schedule` for main-thread work, `vim.notify` for user messages, buffer/window handles, autocommand groups, plugin state discipline.
 paths:
   - "**/*.lua"
 ---

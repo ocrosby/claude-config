@@ -1,4 +1,5 @@
 ---
+description: Neovim plugin tests: plenary.busted by default, mini.test for mini.nvim ecosystem, neotest for in-editor runs, `minimal_init.lua` for isolation, Arrange/Act/Assert structure.
 paths:
   - "**/tests/**/*.lua"
   - "**/*_spec.lua"

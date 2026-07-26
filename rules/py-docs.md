@@ -1,4 +1,5 @@
 ---
+description: Python documentation: Google-style docstrings on all modules/classes/functions, `Args`/`Returns`/`Raises` sections (omit empties), FastAPI route `summary` and `description` for non-obvious endpoints. Fires on `**/*.py`.
 paths:
   - "**/*.py"
   - "**/docs/**/*.md"
