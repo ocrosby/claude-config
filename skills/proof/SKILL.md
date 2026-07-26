@@ -46,6 +46,16 @@ Source: adapted from [fredrikaverpil/dotfiles](https://github.com/fredrikaverpil
 
 When the user says "prove all of that," always process claims sequentially, one per turn block. Never emit a wall of citations. Each claim gets its own line: claim, citation, confidence.
 
+## Verify
+
+Before exiting, confirm the output landed in exactly one of the three acceptable shapes:
+
+1. **Real citation** — a file path with line number, a version-pinned URL, or a commit SHA + subject — that the user can independently open or click.
+2. **Downgrade** — the claim was reframed as an opinion/experience note, explicitly labeled as such.
+3. **Retraction** — the claim was withdrawn with "please disregard".
+
+**If the output is none of those** (e.g., a plausible-looking but unverified URL, a line number that was not actually opened, a SHA that was not confirmed via `git log`): stop and re-run Step 3 or Step 4. A fabricated citation is worse than no citation.
+
 ## Rules
 
 - Citations **must** be independently verifiable — if the user cannot click the link or open the file, it does not count

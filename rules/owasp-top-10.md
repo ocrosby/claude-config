@@ -1,18 +1,5 @@
 ---
 description: OWASP Top 10 recognition signals and mandatory behaviors. Consultation-only — no `paths` glob. Reviewer agents (go-reviewer, py-reviewer, nvim-reviewer, rest-reviewer) reference this rule and load it on demand when the code under review touches auth, input parsing, deserialization, secrets, or network I/O. Also loaded when the user invokes `/security-review` or asks for a security-oriented review explicitly.
-  - "**/*.c"
-  - "**/*.cpp"
-  - "**/*.h"
-  - "**/*.hpp"
-  - "**/*.php"
-  - "**/*.sh"
-  - "**/*.bash"
-  - "**/*.zsh"
-  - "**/*.sql"
-  - "**/*.tf"
-  - "**/Dockerfile*"
-  - "**/docker-compose*.y*ml"
-  - "**/.github/workflows/*.y*ml"
 ---
 
 # OWASP Top 10 Application Security
