@@ -59,6 +59,82 @@ If a rule suggests a skill for a narrow task (e.g., a single deprecated pattern 
 
 ---
 
+### Two files that point at each other as source of truth guarantee drift
+
+When file A says "the full X is in file B" and file B says "the full X is in file A", neither is authoritative and both grow overlapping content that drifts apart. Consolidate into one file; the other becomes a one-line pointer.
+
+**Known example (now resolved):** `skills/CLAUDE.md` said `rules/skill-conventions.md` was authoritative; `rules/skill-conventions.md` said `skills/CLAUDE.md` was authoritative. Frontmatter, structure, language, and invocation-control sections appeared in both with different depth. Fix (PR #70): consolidated authoring content into `rules/skill-conventions.md`; `skills/CLAUDE.md` became a 5-line pointer.
+
+---
+
+### paths glob must match the files where the rule actually applies
+
+A rule with a `paths` glob whose body starts with "ignore this rule unless…" loads and self-cancels on every non-matching file — wasting context on every trigger. The `paths` glob is the enforcement mechanism; do not double-check inside the body. If the body has to filter, the glob is wrong.
+
+**Known example (now resolved):** `rules/readme-standard.md` had `paths: ["**/README.md"]` (matches every README at any depth) but its first paragraph said "This rule applies only to the `README.md` at the repository root." 6 of 7 READMEs in this repo triggered the rule only to be told to ignore it. Fix (PR #71): `paths` changed to `README.md` (bare = repo-root anchored, matching the `go.work` convention in `rules/go-workspace.md`).
+
+---
+
+### Do not paraphrase a referenced rule inside CLAUDE.md
+
+CLAUDE.md is always-loaded every session. If a rule is both paragraph-summarized in CLAUDE.md **and** linked to its file, both load into context and hold identical content twice. Replace the paraphrase with a one-line pointer plus the trigger signals only — the rule body owns the tables.
+
+**Known example (now resolved):** CLAUDE.md had ~1,200 tokens across 6 rule sections (algorithmic-complexity, defensive-assertions, lint-suppression, black-box-testing, mutation-testing, tool-language-selection) that both paraphrased content **and** linked to the rule files. Fix (PR #68): collapsed to one-line pointers with trigger signals; CLAUDE.md 14.4 KB → 7.6 KB.
+
+---
+
+### Stapling secondary guidance onto the wrong file trigger fires nowhere useful
+
+If rule R has `paths: ["A.md"]` but half its body is about maintaining `B.md`, that half fires on every A.md edit (unnecessary weight) and never fires on B.md edits (missing when needed). Split the concerns into two rules with matching `paths`.
+
+**Known example (now resolved):** `rules/readme-standard.md` had 50 lines about how to maintain `LEARNINGS.md` — but the `paths` glob only matched README.md. Learnings guidance loaded on README edits (waste) and never on LEARNINGS.md edits (silent gap). Fix (PR #71): extracted to `rules/learnings-standard.md` with `paths: ["LEARNINGS.md"]`.
+
+---
+
+## Skill Structure
+
+### Level 2 SKILL.md body persists in session context after invocation
+
+Every line in the body of a `SKILL.md` loads into context on invocation AND persists for the rest of the session — not just the current task. A 500-line dispatcher that inlines every subcommand means `/git sync` (a rebase) pays for the full `/git reviewer` parallel-fanout prose it will never execute. Extract per-subcommand dispatchers into Level 3 files the workflow reads only when that subcommand fires.
+
+**Known example (now resolved):** `skills/git/SKILL.md` (465 lines) and `skills/docs/SKILL.md` (454 lines) inlined every subcommand. Fix (PR #69): extracted per-subcommand dispatchers to sibling files (`ship.md`, `reviewer.md`, `merge.md`, `write.md`, `review.md`, `research.md`); `SKILL.md` files dropped to 201 and 56 lines. Per-subcommand invocations dropped 36-88%.
+
+---
+
+### Project-level CLAUDE.md files load on every file under the directory
+
+`skills/CLAUDE.md` (a project-level `CLAUDE.md`) loads whenever the active file lives anywhere under `skills/` — including Level 3 files like `ship.md`, `review.md`, and Level 3 scripts. Content targeted at only SKILL.md authoring is dead weight on every Level 3 edit. Keep the project CLAUDE.md tiny (a pointer); put authoring conventions in a rule whose `paths` glob only matches SKILL.md.
+
+**Known example (now resolved):** editing a newly-extracted Level 3 file loaded the full 195-line `skills/CLAUDE.md`. Fix (PR #70): consolidated authoring content into `rules/skill-conventions.md` (`paths: ["skills/*/SKILL.md"]`); `skills/CLAUDE.md` became 5 lines. Level 3 edits load 5 lines instead of 195 (-97%).
+
+---
+
+## Hooks
+
+### Extract JSON fields with bash regex before spawning jq
+
+Hooks that fire on every tool call typically extract a value from the harness's JSON payload with `jq -r '.tool_input.field // empty'`. On macOS jq startup is ~10-15 ms per spawn — for a session with 30-50 tool calls, hundreds of milliseconds of blocking hook latency for a value bash can extract natively. Use `[[ $INPUT =~ \"field\"[[:space:]]*:[[:space:]]*\"([^\"]+)\" ]]` and fall back to jq only when the regex misses (embedded quotes). Applied in PRs #68 and #70 across `sensitive-file-warn.sh`, `tdd-remind.sh`, `conflict-check.sh`, `secret-scan.sh`, `lint.sh`.
+
+---
+
+### Debounce lint hooks that fire per-Edit on multi-Edit bursts
+
+`hooks/lint.sh` fires on every PostToolUse Edit/Write. A common pattern — 5-10 sequential Edits to the same file in one message — triggers 5-10 lint runs that see nearly-identical file state. On slow linters (Go modules, complex ruff configs), this adds seconds per burst. Debounce per-file via a `$TMPDIR/claude-lint-$USER/<file>.ts` timestamp: on entry, skip if the same file was linted within 2 s. Applied in PR #68.
+
+---
+
+### Rate-limit hooks that run network commands, and background them
+
+Any hook that invokes `git fetch`, `curl`, or similar network commands should not run synchronously on every trigger — the round-trip adds visible seconds to every user action on slow networks. Store the last-run timestamp per repo (`$GIT_DIR/*.ts`), skip if within N seconds (300 s / 5 min is a good balance), and background the actual command with a short cap (2 s) so slow networks never block the user path. Surface warnings only on refreshed data. Applied in PR #68 for `hooks/conflict-check.sh`.
+
+---
+
+### Matcher-narrow hooks with combined grep alternation before per-pattern greps
+
+`hooks/secret-scan.sh` originally ran 6 sequential `grep -qE` calls unconditionally on every prompt submit to check for 6 different secret patterns. 6 subprocess spawns per prompt for the 99% of prompts that contain no secrets. Combine the patterns into one alternation grep as a reject filter (`grep -qE 'sk-...|gh[poas]_...|AKIA...'`); only if that hits, run the per-pattern greps to label which one matched. Applied in PR #68.
+
+---
+
 ## TDD Enforcement
 
 ### "Invoke the skill" is not the same as "follow the cycle"
