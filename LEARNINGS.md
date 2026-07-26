@@ -91,6 +91,41 @@ If rule R has `paths: ["A.md"]` but half its body is about maintaining `B.md`, t
 
 ---
 
+### When editing YAML frontmatter, `Read` to the closing `---` — not an arbitrary line count
+
+`Edit`'s `old_string` must be complete for the replacement to be complete. If the initial `Read` used `limit: N` and `N` fell inside the frontmatter block, the caller sees only part of the frontmatter and any `Edit` built from that Read leaves the rest untouched — including entries the caller believed were removed. The correct Read target is the closing `---` delimiter, not a line count.
+
+**Known example (now resolved):** PR #74 claimed to remove the `paths` block from `rules/owasp-top-10.md`. The initial `Read(limit: 15)` only surfaced the description + first 12 language globs, so the Edit deleted those 12 lines but left 13 more (`.c`, `.cpp`, `.h`, `.hpp`, `.php`, `.sh`, `.bash`, `.zsh`, `.sql`, `.tf`, `Dockerfile*`, `docker-compose*.y*ml`, `.github/workflows/*.y*ml`) in place — the rule still auto-loaded on every C/C++/PHP/shell/SQL/Terraform/Docker/GH-workflow edit. Discovered by audit pass 3; fixed in PR #78.
+
+**Rule of thumb:** for any YAML frontmatter Edit, either `Read` the file with no `limit`, or use `Read` with a limit large enough that the closing `---` appears in the output. If the closing `---` isn't in your Read output, do not Edit — read more first.
+
+---
+
+### Automated frontmatter parsers must anchor to file start, not naïvely split on `---`
+
+Markdown bodies often use `---` as a horizontal rule (thematic break) between sections. A script that separates frontmatter from body with `text.split("---", 2)` silently mis-detects the first two body-level HRs as frontmatter delimiters, then inserts or edits "frontmatter" content in the middle of the body — corrupting the file.
+
+The correct pattern is an anchored regex that matches only at file start and requires a proper closing delimiter:
+
+```python
+import re
+FRONTMATTER = re.compile(r"^---\n(.*?)\n---\n", re.DOTALL)
+m = FRONTMATTER.match(text)
+if m:
+    fm_body = m.group(1)
+    rest = text[m.end():]
+    # ... safely edit fm_body, then reassemble as: f"---\n{new_fm_body}\n---\n{rest}"
+else:
+    # File has no frontmatter — prepend a fresh one, don't try to split
+    text = f"---\n{new_fm_body}\n---\n\n{text}"
+```
+
+**Known example (now resolved):** the first attempt of PR #79 (add `description` to 26 rules) used naive `split("---", 2)` and corrupted 10 rule files — e.g. `docs-principles.md` has 6 body-level `---` HRs; the split treated one as a frontmatter delimiter and stuffed the new description into the middle of the doc while dropping the closing `---`. Reverted with `git checkout rules/` and rewrote using the anchored regex above; second attempt landed cleanly.
+
+Applies to any script that reads or edits frontmatter across many files — audit tooling, migration scripts, batch renames.
+
+---
+
 ### Large reference rules should not have broad `paths` globs
 
 A rule whose own opening line describes it as "a recognition list, not an implementation guide" is reference material — it should be consulted deliberately by reviewer agents, not auto-loaded on every code edit. Broad language-extension globs (`**/*.go`, `**/*.py`, etc.) on rules >150 lines are a per-edit token drain most edits never benefit from.
