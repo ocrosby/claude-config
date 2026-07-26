@@ -4,155 +4,83 @@ Run `/workflow` to see the complete development workflow reference (architect �
 
 ---
 
+# Token Efficiency & Speed (mandatory)
+
+Every token loaded costs latency **and** compounds across every turn until compaction. Optimize aggressively — my time is worth more than context breadth.
+
+**Defaults that must always apply:**
+
+- **Offload to scripts/CLIs first.** Any deterministic parsing, scanning, classifying, aggregating, or format-checking work goes into a `scripts/*.py` (or `.sh`) that returns structured output. Do not reason through it in chat. Signals to extract: multi-step sed/awk/jq pipelines, repeated parsing across invocations, format-stable output, >20 lines of logic, work that would be re-derived on the next invocation. Exemplar: `scripts/tally_invocations.py`.
+- **Prefer one-shot CLIs over multi-step tool loops.** `rg -l pattern` beats N Grep calls. `git diff --stat main...HEAD` beats iterating files. `gh pr list --json ...` with `jq` beats a subagent. `find -printf` with `sort -rn` beats a bespoke walker. If a single shell pipeline can answer the question, run it — do not delegate.
+- **Batch parallel tool calls.** Independent Reads/Bashes/Greps in one message, never serialized. Serialize only on genuine data dependency.
+- **Skip discovery when not needed.** Do not read README/CONTRIBUTING/ARCHITECTURE/docs unless the current task requires that context. `rules/session-startup.md` is opt-in — override the default for narrow tasks (single-file edits, quick lookups, config tweaks).
+- **Use subagents surgically, not reflexively.** Spawn `Explore` / `general-purpose` only when the answer takes >3 tool calls **and** the output pollutes the main context. A one-line `grep` or `rg` is faster and cheaper than any agent.
+- **Never restate a referenced rule.** If a section links to `rules/foo.md`, the linking file gets a one-line pointer and (optionally) the trigger signals — never a paragraph paraphrase. Duplicated rule content in `CLAUDE.md`, skills, or agents is a Must Fix at review time.
+- **Keep Level 2 tight.** Any `SKILL.md` over ~200 lines needs justification; move reference material to Level 3 files the workflow reads only when needed. Same for `agents/*.md` — descriptions load every session.
+- **Prefer terse, action-first responses.** No preamble, no recap. State results and next step; skip narration of tool calls the user can already see.
+
+**Self-improvement loop:** when a task felt slow or context-heavy, name the culprit before ending the turn (which file, which extra load, which redundant tool call) and either fix it now or add a follow-up. Do not let heavy patterns re-appear.
+
 # Context-First Development
 
-The mark of a high-quality codebase is that it explains its *reasoning*, not just its behavior — it communicates **why**, not just **what**.
+High-quality code communicates **why**, not just **what**. Before changing code, understand why it's written that way. When writing new code, make the reasoning evident. When something is unclear, ask about purpose, not mechanics. Preserve business rules, architectural constraints, and prior decisions rather than optimizing them away.
 
-Apply this principle consistently in every session:
+# Always-on rule references (pointer only — do not paraphrase)
 
-- **Before making changes**: Understand why the existing code is written the way it is. Read surrounding context, related files, and patterns before proposing modifications. Don't change what you don't yet understand.
-- **When writing or suggesting code**: Make the reasoning behind decisions evident. Don't just implement mechanically — surface the intent so that future readers (human or AI) understand why a choice was made.
-- **When exploring unfamiliar code**: Identify the *why* behind design choices, constraints, and patterns — not just the *what*. Architectural decisions, naming conventions, and structure all carry meaning.
-- **When something is unclear**: Ask about purpose and context, not just mechanics. "Why does this need to work this way?" is often more important than "How does this work?"
-- **Treat context as first-class information**: Business rules, architectural constraints, prior decisions, and team conventions are as important as the code itself. Surface and preserve this reasoning rather than optimizing it away.
-
-Code that loses its reasoning becomes legacy code. Every interaction should add clarity about *why*, not just *what*.
-
-# Algorithmic Complexity
-
-Default to the lowest time and space complexity that solves the problem, in every language. Recognize the signals in `rules/algorithmic-complexity.md` (nested loops over the same collection, `in list` checks inside a loop, recomputed subproblems, intermediate lists for single aggregates, wrong-container choices, **unbounded loops on external input**) and apply the lower-complexity alternative as the default form — not as a follow-up "optimization." When the higher-complexity form is intentional (small bounded N, one-shot script, dramatically clearer at a single-use call site), say so explicitly. Every loop that iterates over user-controlled or externally-supplied input must reference a named cap — see the Bounded Loops subsection of the same rule.
-
-# Defensive Assertions
-
-Explicit runtime checks catch a class of defects unit tests routinely miss: silent state corruption, unexpected input at internal boundaries, and post-condition violations that surface far from the failure site. See `rules/defensive-assertions.md` for the full recognition table. In short: every non-trivial function should carry at least one precondition, postcondition, or invariant check; assertions must be side-effect-free; every non-void return value must be either used or explicitly discarded with a one-line reason. Never silently discard an error return (Go `_ = fn()`, Python `subprocess.run(...)` without `check=True`, Lua unchecked `pcall`, unhandled floating promise in TS).
-
-# Lint Suppression
-
-Every `# noqa`, `//nolint`, `# type: ignore`, `eslint-disable`, `-- luacheck: ignore`, and similar suppression must have an inline reason on the same line — naming the specific rule *and* stating why the code is correct despite the warning. See `rules/lint-suppression.md`. A bare or unjustified suppression is worse than the original warning: it hides both the defect and the intent behind hiding it. If a warning is annoying globally, disable it in the linter config — do not sprinkle per-line suppressions.
-
-# Unit Testing
-
-When writing or reviewing unit tests, work through these concerns **in this order** — do not raise a later concern by compromising an earlier one:
-
-1. **Shape and seams (non-negotiable)** — the test is black-box: behavior through the public surface, real collaborators inside your own module, mocks only at system edges (database, HTTP, message queue, clock, filesystem). If a behavior is hard to reach from the outside, the seam is drawn in the wrong place — redraw the seam, do not drill into internals. Diagnostic question: *"If I change how this code is written without changing what it does, will the test still pass?"* If not, the test measures implementation. See `rules/black-box-testing.md`.
-2. **Coverage (secondary optimization)** — once shape is right, treat coverage as a **detector** of untested behaviors, not as a target. For each gap, ask "what behavior isn't exercised?" and add or extend a **black-box** test that covers it through the public surface. Never add a white-box test — spy, internal mock, private-field reach-in — to raise a coverage number. If a line cannot be reached from the outside, that is a design signal (dead branch, misplaced seam, or genuinely unreachable), not a licence to reach in.
-3. **Assertion strength (diagnostic on load-bearing code)** — on business logic, pure-logic modules, and state machines with boundaries, use **mutation testing** to grade whether the assertions catch anything. See `rules/mutation-testing.md`. Tools: `mutmut` (Python), `gremlins` (Go), `cargo-mutants` (Rust). Gate CI on "no surviving mutants in the diff", never on a repo-wide percentage floor. Fix survivors from the outside — strengthen the black-box assertion, add the missing boundary case — never by pinning internals to raise the score.
-
-**Failure mode to watch for**: coverage-chasing and mutation-score-chasing both push tests toward white-box shape if the ordering is violated. The order above is what keeps optimization work net-positive.
-
-# Tool Language Selection
-
-When scoping a *new* standalone tool (CLI, linter, formatter, code generator, editor-adjacent binary), pick the implementation language against the signal tables in `rules/tool-language-selection.md` — do not default to whichever language you last used. In short: **Rust** for tree-sitter parsing, AST-heavy scans over many files, or ecosystem-consistency with the stylua/selene/ruff/biome shelf. **Go** for CI plumbing (HTTP downloads, subprocess orchestration, cross-platform binary distribution), code-sharing with an existing Go tool, or cloud-native/Kubernetes tooling. Always name the signal that drove the pick. When path-dependence (extending a Go tool) disagrees with first-principles fit (Rust would be idiomatic), state both explicitly and choose consciously.
+- **Algorithmic complexity** → `rules/algorithmic-complexity.md`. Triggers: nested loops over the same collection, `in list` inside a loop, recomputed subproblems, wrong-container choice, unbounded loop on external input (every such loop must name a cap).
+- **Defensive assertions** → `rules/defensive-assertions.md`. Every non-trivial function carries at least one pre/post-condition or invariant; assertions are side-effect-free; every non-void return is used or explicitly discarded with a one-line reason. Never silently discard an error return.
+- **Lint suppression** → `rules/lint-suppression.md`. Every `# noqa` / `//nolint` / `# type: ignore` / `eslint-disable` needs the rule code **and** an inline reason. Disable globally if annoying; do not sprinkle.
+- **Unit testing (in order)** → `rules/black-box-testing.md` (shape, non-negotiable) → coverage as detector → `rules/mutation-testing.md` (assertion strength). Never invert the order.
+- **Tool language selection** → `rules/tool-language-selection.md`. Rust for tree-sitter / AST-heavy scans / stylua-shelf ecosystem; Go for CI plumbing / cloud-native / existing-Go-tool code-sharing. Name the signal that drove the pick.
 
 # Task Tracking
 
-When working on complex tasks (multi-step implementations, multi-file changes, bug hunts, refactors — anything where tracking progress adds value), create a `TODO.md` file at the root of the current git repo with a checklist of planned steps. Check off items as they are completed.
-
-Always ensure `TODO.md` is listed in the repo's `.gitignore`. If it isn't, add it as part of the first write.
+For multi-step work, create `TODO.md` at the repo root with a checklist; add to `.gitignore` on first write.
 
 # Commit Messages
 
-Always use Conventional Commits: `<type>(<scope>): <description>` — lowercase, imperative mood, no period.
-Types: `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `build`, `ci`, `chore`. Breaking changes use `!` and a `BREAKING CHANGE:` footer.
+Conventional Commits: `<type>(<scope>): <description>` — lowercase, imperative, no period. Types: `feat|fix|docs|style|refactor|perf|test|build|ci|chore`. Breaking = `!` + `BREAKING CHANGE:` footer.
 
 # PR Discipline
 
-One PR = one `type(scope)` pair. Before creating a branch, committing, or pushing, ask: "Can I describe all of these changes with a single conventional commit subject line?" If the answer contains "and" — there are mixed concerns that must be split.
+One PR = one `type(scope)` pair. If the description contains "and", split the concerns. Name the branch after the intended commit before touching files.
 
-**When starting work:** name the branch after the intended commit (e.g. `chore/remove-junitxml`, `test/bdd-v2-steps`) before touching any files. Don't let unrelated changes accumulate on the same branch.
+**Mixed concerns mid-stream:** `git stash push -u -m "split: <desc>"` → one branch from main per concern → apply relevant files → PR each targeting main.
 
-**When mixed concerns are detected mid-stream:**
-1. Stash all uncommitted changes: `git stash push -u -m "split: <description>"`
-2. Create one branch from `main` per concern
-3. Apply only the relevant files to each branch from the stash
-4. Each branch gets its own PR targeting `main`
+**Before pushing:** `git fetch origin main` and rebase if branch's changed files also changed on main.
 
-**Before pushing:** run `git fetch origin main` and check whether the files you changed also changed on main since the branch diverged. If they did, rebase before opening the PR: `git rebase origin/main`.
-
-**Before pushing to any protected branch (main/master/etc.):** check **both** legacy branch protection **and** rulesets — they are separate GitHub features and one can require a PR while the other is empty. A 404 from the protection endpoint alone is not proof of "unprotected."
+**Before pushing to any protected branch (main/master/etc.):** check **both** legacy branch protection **and** rulesets — separate GitHub features; a 404 from one is not proof of "unprotected."
 
 ```bash
 owner=... repo=... branch=main
-# Legacy branch protection — 404 means none configured
 gh api "repos/$owner/$repo/branches/$branch/protection" \
   --jq '.required_pull_request_reviews // .required_status_checks // "protected"' 2>/dev/null
-
-# Rulesets — returns an array of rule objects; 0 means no gating rules apply
 gh api "repos/$owner/$repo/rules/branches/$branch" \
   --jq '[.[] | select(.type == "pull_request" or .type == "required_status_checks" or .type == "required_signatures" or .type == "required_deployments")] | length'
 ```
 
-Direct push is fine **only if BOTH** are clear: the protection endpoint returns 404 (`gh: Branch not protected`) *and* the rulesets query returns `0`. Any other result means gating is in place — do not `git push` to that branch, even if it would succeed via an admin bypass. Instead branch, commit, push the branch, and open a PR (`gh pr create`) targeting it. A successful bypass is not permission to bypass; it means the credential *can*, not that it *should*. **If the remote reports `Bypassed rule violations` after a push, that IS a bypass** — surface it to the user immediately, do not treat the successful exit code as success.
-
-# Installing this configuration
-
-This repository (`ocrosby/claude-config`) is a GNU Stow package. Its contents are linked directly into `~/.claude/`. To (re)install or re-link, run from the repo root:
-
-```bash
-mkdir -p ~/.claude
-stow -t ~/.claude -d "$(dirname "$PWD")" "$(basename "$PWD")"
-```
-
-Equivalent absolute form, works from anywhere:
-
-```bash
-stow -t ~/.claude -d ~/src/github.com/ocrosby claude-config
-```
-
-Never add a `.claude/` wrapper directory inside this repo. The repo root *is* the stow package; its top-level items (`agents/`, `skills/`, `rules/`, `commands/`, `hooks/`, `output-styles/`, `CLAUDE.md`, `settings.json`, …) are what get linked into `~/.claude/`. **This is an intentional design decision — do not simplify it away.** Stow's default ignore list excludes `README.*`, `LICENSE.*`, `.git`, and `.gitignore`, so those stay in the repo only.
+Direct push is fine **only if BOTH** clear (protection 404 *and* rulesets `0`). Otherwise open a PR. A successful bypass is not permission to bypass. **If the remote reports `Bypassed rule violations`, surface it immediately — do not treat exit 0 as success.**
 
 # Self-Improvement
 
-After every correction or mistake, update the relevant rule, skill, or `CLAUDE.md` itself with a guard to prevent repeating it. Claude is good at writing rules for itself.
+After every correction or mistake, update the relevant rule/skill/`CLAUDE.md` with a guard. Prompt ending a correction: "Now update the relevant rule/skill/CLAUDE.md so you don't make that mistake again."
 
-When ending a correction, prompt with: "Now update the relevant rule/skill/CLAUDE.md so you don't make that mistake again."
-
-Iterate until the mistake rate measurably drops.
-
-Each learning has exactly one home — route it, do not duplicate it:
-- **A rule / skill / `CLAUDE.md` guard** — when the fix is an enforceable behavior change. This is the default.
-- **`LEARNINGS.md`** (repo root) — repo-committed insights about how these rules/skills/hooks/agents behave (drift patterns, tooling gotchas). See `rules/readme-standard.md`. Do not put these in `README.md`.
-- **The memory system** — cross-project, user-specific behavioral preferences and feedback (e.g. the "ship it" vs "push it" wording), not tied to this repo.
-
-# Working with Plan Mode
-
-- Start every complex task in plan mode (shift+tab to cycle).
-- Pour energy into the plan so Claude can 1-shot the implementation.
-- When something goes sideways, switch back to plan mode and re-plan. Don't keep pushing.
-- Use plan mode for verification steps too, not just for the build.
-
-# Parallel Work
-
-- For tasks that need more compute, use subagents to work in parallel.
-- Offload individual tasks to subagents to keep the main context window clean and focused.
-- When working in parallel, only one agent should edit a given file at a time.
-- For fully parallel workstreams, use git worktrees: `git worktree add .claude/worktrees/<name> origin/main`.
-
-# Session Management
-
-- `/branch` forks a session (or `claude --resume <session-id> --fork-session` from CLI).
-- `/btw` answers quick side queries without interrupting the agent's current work.
-- `/teleport` continues a cloud session on your local machine.
-- `/remote-control` controls a local session from your phone or browser.
-- `/voice` (CLI) or the voice button (Desktop) enables voice input.
+Each learning has exactly one home:
+- **Rule / skill / `CLAUDE.md` guard** — enforceable behavior change (default).
+- **`LEARNINGS.md`** — repo-committed insights about how rules/skills/hooks/agents behave (drift, gotchas). See `rules/readme-standard.md`.
+- **Memory system** — cross-project, user-specific behavioral preferences.
 
 # Neovim Integration
 
-When `$NVIM` is set in the environment, Claude Code is running inside a Neovim terminal and can communicate with the parent Neovim instance over msgpack-RPC. Treat `skills/nvim/rpc.md` as **auto-applicable reference material** in this case — do not wait for the user to invoke `/nvim rpc` before using its patterns.
+When `$NVIM` is set, Claude Code runs inside a Neovim terminal and can talk to the parent via msgpack-RPC. Treat `skills/nvim/rpc.md` as **auto-applicable reference** — do not wait for `/nvim rpc`.
 
-- Apply RPC proactively when the question is about the live editor: current buffer, window, cursor, options, LSP clients, attached diagnostics, runtime files, or plugin install paths.
-- When opening a file at the user's request and `$NVIM` is set, use `nvim --server "$NVIM" --remote <path>` (or `--remote-tab`) rather than just printing the path — the user is already in the editor.
-- After editing files externally, refresh stale LSP diagnostics via the reload/`:LspRestart` sequence in `skills/nvim/rpc.md` rather than reasoning from stale lines.
-- The safety rules in `skills/nvim/rpc.md` still apply: prefer `--remote-expr` (read-only) over `--remote-send` (simulates typing); never send `:q` / `:qa` / `:bdelete` without explicit confirmation; never modify buffer contents via RPC without asking first.
+- Apply RPC when the question is about the live editor (buffer, cursor, LSP, runtime files).
+- Opening a user-requested file: `nvim --server "$NVIM" --remote <path>` (or `--remote-tab`).
+- After external edits, refresh LSP via the reload/`:LspRestart` sequence in `skills/nvim/rpc.md`.
+- Safety: prefer `--remote-expr` (read-only) over `--remote-send`; never send `:q`/`:qa`/`:bdelete` or modify buffer contents without explicit confirmation.
 
-# Multi-Repo Work
+# Reference
 
-- Use `--add-dir` (or `/add-dir`) to give Claude access to additional repositories.
-- Add `"additionalDirectories"` to `settings.json` to always load extra folders on startup (this repo's `settings.json` already has `/tmp` here).
-
-# Reference Repositories
-
-Standing external references. When a task resembles something they cover — designing a skill, agent, hook, or workflow — consult them for prior art before inventing a new pattern. They are references to read and adapt, not dependencies: never copy wholesale, and rework anything borrowed to this repo's conventions.
-
-- **everything-claude-code** — https://github.com/worldflowai/everything-claude-code
-- **superpowers** (obra) — https://github.com/obra/superpowers — brainstorming, subagent-driven development with built-in code review, systematic debugging, red/green TDD, and skill authoring/testing.
+- **Install/reinstall (stow):** see `README.md`. Never add a `.claude/` wrapper inside this repo — the repo root *is* the stow package.
+- **Plan mode / session mgmt / parallel work (worktrees, subagents) / multi-repo (`--add-dir`, `additionalDirectories`):** see `docs/OPERATING.md`.
+- **External references for prior-art lookup:** `worldflowai/everything-claude-code`, `obra/superpowers`.
