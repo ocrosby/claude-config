@@ -1,4 +1,5 @@
 ---
+description: Database normalization discipline: 3NF minimum unless a documented denormalization reason exists, no repeating groups, no derivable columns, no encoded meaning in identifiers, foreign keys not string-matched. Fires on `**/*.sql`.
 paths:
   - "**/*.sql"
   - "**/migrations/**/*.py"

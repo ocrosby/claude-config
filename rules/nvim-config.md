@@ -1,4 +1,5 @@
 ---
+description: Personal Neovim config conventions: layout under `~/.config/nvim/lua/`, `config/` vs `plugins/` separation, `vim.pack` or lazy.nvim, keymap organization, autocommand groups. Fires on Lua files inside a Neovim config tree.
 paths:
   - "lua/config/**/*.lua"
   - "init.lua"

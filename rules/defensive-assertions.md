@@ -1,3 +1,7 @@
+---
+description: Every non-trivial function carries at least one precondition, postcondition, or invariant check. Assertions must be side-effect-free. Every non-void return value must be used or explicitly discarded with a one-line reason. Never silently discard an error return.
+---
+
 # Defensive Assertions
 
 Explicit runtime checks are cheaper than exhaustive testing and catch a class of defects unit tests routinely miss: silent state corruption, unexpected input at internal boundaries, and post-condition violations that don't surface until far from the failure site. This is the portable core of Holzmann's *Power of Ten* Rules 5 (assertion density) and 7 (check every return value).

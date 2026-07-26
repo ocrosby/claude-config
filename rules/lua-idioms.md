@@ -1,4 +1,5 @@
 ---
+description: General Lua language idioms independent of Neovim: local-by-default, colon-vs-dot method call semantics, closure capture, table constructors, string library. Fires on all `**/*.lua` files.
 paths:
   - "**/*.lua"
 ---

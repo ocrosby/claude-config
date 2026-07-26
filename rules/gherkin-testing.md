@@ -1,4 +1,5 @@
 ---
+description: Step definitions are thin glue — parse parameters, delegate to page objects or API clients, assert outcomes. No business logic in steps. Reset state between scenarios via World/context.
 paths:
   - "**/steps/**"
   - "**/step_definitions/**"

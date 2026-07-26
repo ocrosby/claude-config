@@ -1,3 +1,7 @@
+---
+description: When scoping a new standalone tool (CLI, linter, formatter, code generator), name the signal that drove the language pick. Rust for tree-sitter/AST-heavy work or stylua-shelf ecosystem-consistency; Go for CI plumbing/cloud-native or existing-Go-tool code-sharing. Consultation-only — no `paths` glob.
+---
+
 # Tool Language Selection
 
 Choosing the implementation language for a new CLI, developer tool, or editor-adjacent binary is a routine decision that has long-lived consequences: distribution model, contributor pool, ecosystem-consistency signal to the target audience, and how much of the tool's stated goal the language actively helps or fights.

@@ -1,4 +1,5 @@
 ---
+description: nvim-treesitter conventions: `ensure_installed` parser lists, `TSUpdate` post-install hook, queries under `queries/<lang>/`, incremental selection keymaps, folding/highlight/indent module configuration.
 paths:
   - "**/*.lua"
   - "**/queries/**/*.scm"

@@ -1,4 +1,5 @@
 ---
+description: Go language conventions: error wrapping, interface placement (at the consumer), naming and stuttering, `context.Context` as first parameter, doc comments starting with the symbol name, and language-specific security tactics. Fires on `**/*.go`.
 paths:
   - "**/*.go"
   - "**/go.mod"

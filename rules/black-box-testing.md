@@ -1,3 +1,7 @@
+---
+description: Unit tests verify behavior through the public surface, not implementation. Diagnostic: if refactoring internals breaks the test, the test measures shape not behavior. Mocks live at system edges (DB, HTTP, filesystem, clock), not at class edges inside your own module.
+---
+
 # Black-Box Unit Testing
 
 Unit tests should verify **behavior through the public surface**, not the implementation underneath. A suite that couples to internal collaborators, private state, or method-level decomposition breaks on every refactor even when the code under test still does the right thing. The suite stops being a safety net and starts being an obstacle.
