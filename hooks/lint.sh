@@ -21,7 +21,14 @@
 set -uo pipefail
 
 INPUT=$(cat)
-FILE=$(printf '%s' "$INPUT" | jq -r '.tool_input.file_path // empty' 2>/dev/null)
+
+# Extract file_path via bash regex; skip jq for the common case. Fall back to
+# jq only if the regex misses (payload has embedded quotes or unusual shape).
+if [[ "$INPUT" =~ \"file_path\"[[:space:]]*:[[:space:]]*\"([^\"\\]+)\" ]]; then
+  FILE="${BASH_REMATCH[1]}"
+else
+  FILE=$(printf '%s' "$INPUT" | jq -r '.tool_input.file_path // empty' 2>/dev/null)
+fi
 
 # Exit silently if no file path or file doesn't exist
 [[ -z "$FILE" ]] && exit 0
@@ -29,6 +36,25 @@ FILE=$(printf '%s' "$INPUT" | jq -r '.tool_input.file_path // empty' 2>/dev/null
 
 HOOK="[hook: lint]"
 LOG="$HOME/.claude/hooks/hook-debug.log"
+
+# Debounce: skip re-lint of the same file within DEBOUNCE_SECONDS.
+# Multi-Edit sessions commonly touch the same file 3–5 times in rapid
+# succession; re-running ruff/golangci-lint/stylua on each keystroke burns
+# seconds on identical output. Debounce collapses the burst into one lint.
+LINT_DEBOUNCE_SECONDS=2
+LINT_STAMP_DIR="${TMPDIR:-/tmp}/claude-lint-$USER"
+mkdir -p "$LINT_STAMP_DIR" 2>/dev/null || true
+STAMP_KEY=$(printf '%s' "$FILE" | tr '/' '_')
+STAMP="$LINT_STAMP_DIR/${STAMP_KEY}.ts"
+if [[ -f "$STAMP" ]]; then
+  now=$(date +%s)
+  last=$(cat "$STAMP" 2>/dev/null || echo 0)
+  if (( now - last < LINT_DEBOUNCE_SECONDS )); then
+    echo "$(date -u +%FT%TZ) $HOOK debounced: $FILE" >> "$LOG"
+    exit 0
+  fi
+fi
+date +%s > "$STAMP" 2>/dev/null || true
 
 # Exit code 2 is the ONLY PostToolUse exit code that feeds stderr back into
 # Claude's context. Exit 1 shows stderr to the user's UI but the model never
@@ -104,8 +130,7 @@ case "${FILE##*.}" in
     run_ruff check --fix --quiet "$FILE" >/dev/null 2>&1
     run_ruff format --quiet "$FILE" >/dev/null 2>&1
 
-    RUFF_OUT=$(run_ruff check --quiet "$FILE" 2>&1)
-    if [[ $? -ne 0 ]]; then
+    if ! RUFF_OUT=$(run_ruff check --quiet "$FILE" 2>&1); then
       echo "$HOOK ruff: auto-fixed what it could in $FILE; issue(s) below need a manual call:" >&2
       echo "$RUFF_OUT" >&2
       exit 2
@@ -121,8 +146,7 @@ case "${FILE##*.}" in
     MAX_C="${MAX_C:-7}"
     FILE_DIR="$(dirname "$FILE")"
     REL_DIR="${FILE_DIR#"${PROJ_DIR}"/}"
-    CYCLO_OUT=$(cd "$PROJ_DIR" && uv run cyclo -m "$MAX_C" "$FILE_DIR" 2>&1)
-    if [[ $? -ne 0 ]]; then
+    if ! CYCLO_OUT=$(cd "$PROJ_DIR" && uv run cyclo -m "$MAX_C" "$FILE_DIR" 2>&1); then
       echo "$HOOK cyclo: complexity exceeds max $MAX_C in $REL_DIR — not auto-fixable, needs a refactor:" >&2
       echo "$CYCLO_OUT" >&2
       exit 2
@@ -161,8 +185,7 @@ case "${FILE##*.}" in
     # per-edit path because we keep per-package scoping. --fix applies
     # whatever the enabled linters can auto-fix; whatever's left is reported.
     if (cd "$MODULE_ROOT" && go tool 2>/dev/null | grep -qE '(^|/)golangci-lint$'); then
-      LINT_OUT=$(cd "$MODULE_ROOT" && go tool golangci-lint run --fix "./$REL_PKG" 2>&1)
-      if [[ $? -ne 0 ]]; then
+      if ! LINT_OUT=$(cd "$MODULE_ROOT" && go tool golangci-lint run --fix "./$REL_PKG" 2>&1); then
         echo "$HOOK go tool golangci-lint: auto-fixed what it could in ./$REL_PKG; issue(s) below need a manual call:" >&2
         echo "$LINT_OUT" >&2
         exit 2
@@ -177,8 +200,7 @@ case "${FILE##*.}" in
     if command -v task &>/dev/null; then
       for tf in "$MODULE_ROOT/Taskfile.yml" "$MODULE_ROOT/Taskfile.yaml"; do
         if [[ -f "$tf" ]] && grep -qE '^[[:space:]]+lint:' "$tf"; then
-          LINT_OUT=$(cd "$MODULE_ROOT" && task lint 2>&1)
-          if [[ $? -ne 0 ]]; then
+          if ! LINT_OUT=$(cd "$MODULE_ROOT" && task lint 2>&1); then
             echo "$HOOK task lint: issue(s) in $MODULE_ROOT (no auto-fix — repo-defined task):" >&2
             echo "$LINT_OUT" >&2
             exit 2
@@ -216,8 +238,7 @@ case "${FILE##*.}" in
       # Lint only the package containing the changed file, not the whole
       # module. Faster per-edit; run golangci-lint ./... manually for a full
       # module check. --fix applies whatever the enabled linters can rewrite.
-      LINT_OUT=$(cd "$MODULE_ROOT" && golangci-lint run --fix "./$REL_PKG" 2>&1)
-      if [[ $? -ne 0 ]]; then
+      if ! LINT_OUT=$(cd "$MODULE_ROOT" && golangci-lint run --fix "./$REL_PKG" 2>&1); then
         CONFIG_FILE=$(find "$MODULE_ROOT" -maxdepth 1 -name ".golangci*" | head -1)
         CONFIG_FILE="${CONFIG_FILE:-$MODULE_ROOT/.golangci.yml}"
         # Detect golangci-lint v2 config error: formatter listed under linters
@@ -241,8 +262,7 @@ case "${FILE##*.}" in
 
     echo "$HOOK WARNING: golangci-lint not found — install it to catch lint issues before CI:" >&2
     echo "  go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest" >&2
-    VET_OUT=$(cd "$MODULE_ROOT" && go vet ./... 2>&1)
-    if [[ $? -ne 0 ]]; then
+    if ! VET_OUT=$(cd "$MODULE_ROOT" && go vet ./... 2>&1); then
       echo "$HOOK go vet: issue(s) found (best-effort fallback since golangci-lint is missing — not auto-fixable):" >&2
       echo "$VET_OUT" >&2
       exit 2
@@ -252,16 +272,14 @@ case "${FILE##*.}" in
   lua)
     echo "$(date -u +%FT%TZ) $HOOK lua: $FILE" >> "$LOG"
     if command -v stylua &>/dev/null; then
-      STYLUA_OUT=$(stylua "$FILE" 2>&1)
-      if [[ $? -ne 0 ]]; then
+      if ! STYLUA_OUT=$(stylua "$FILE" 2>&1); then
         echo "$HOOK stylua: could not auto-format $FILE — likely a syntax error:" >&2
         echo "$STYLUA_OUT" >&2
         exit 2
       fi
     fi
     if command -v luacheck &>/dev/null; then
-      LUACHECK_OUT=$(luacheck --quiet "$FILE" 2>&1)
-      if [[ $? -ne 0 ]]; then
+      if ! LUACHECK_OUT=$(luacheck --quiet "$FILE" 2>&1); then
         echo "$HOOK luacheck: issue(s) in $FILE (not auto-fixable — luacheck doesn't rewrite code):" >&2
         echo "$LUACHECK_OUT" >&2
         exit 2
@@ -271,8 +289,7 @@ case "${FILE##*.}" in
     ;;
   feature)
     command -v gherkin-lint &>/dev/null || exit 0
-    GL_OUT=$(gherkin-lint "$FILE" 2>&1)
-    if [[ $? -ne 0 ]]; then
+    if ! GL_OUT=$(gherkin-lint "$FILE" 2>&1); then
       echo "$HOOK gherkin-lint: issue(s) in $FILE (no auto-fix available):" >&2
       echo "$GL_OUT" >&2
       exit 2
@@ -286,8 +303,7 @@ case "${FILE##*.}" in
       [[ -f "$PROJ_DIR/uv.lock" ]] || exit 0
       if ! (cd "$PROJ_DIR" && uv lock --check) >/dev/null 2>&1; then
         # Auto-fixable: relock in place rather than just reporting drift.
-        LOCK_OUT=$(cd "$PROJ_DIR" && uv lock 2>&1)
-        if [[ $? -ne 0 ]]; then
+        if ! LOCK_OUT=$(cd "$PROJ_DIR" && uv lock 2>&1); then
           echo "$HOOK uv lock: pyproject.toml changed but relocking failed — needs a manual look:" >&2
           echo "$LOCK_OUT" >&2
           exit 2
@@ -302,8 +318,7 @@ case "${FILE##*.}" in
     case "$FILE" in
       */.github/workflows/*)
         if command -v actionlint &>/dev/null; then
-          AL_OUT=$(actionlint "$FILE" 2>&1)
-          if [[ $? -ne 0 ]]; then
+          if ! AL_OUT=$(actionlint "$FILE" 2>&1); then
             echo "$HOOK actionlint: issue(s) in $FILE (no auto-fix available):" >&2
             echo "$AL_OUT" >&2
             exit 2
@@ -312,8 +327,7 @@ case "${FILE##*.}" in
         ;;
       *)
         if command -v yamllint &>/dev/null; then
-          YL_OUT=$(yamllint -d '{extends: relaxed, rules: {line-length: {max: 120}}}' "$FILE" 2>&1)
-          if [[ $? -ne 0 ]]; then
+          if ! YL_OUT=$(yamllint -d '{extends: relaxed, rules: {line-length: {max: 120}}}' "$FILE" 2>&1); then
             echo "$HOOK yamllint: issue(s) in $FILE (no auto-fix available):" >&2
             echo "$YL_OUT" >&2
             exit 2
@@ -326,8 +340,7 @@ case "${FILE##*.}" in
   sh)
     echo "$(date -u +%FT%TZ) $HOOK sh: $FILE" >> "$LOG"
     command -v shellcheck &>/dev/null || exit 0
-    SC_OUT=$(shellcheck "$FILE" 2>&1)
-    if [[ $? -ne 0 ]]; then
+    if ! SC_OUT=$(shellcheck "$FILE" 2>&1); then
       echo "$HOOK shellcheck: issue(s) in $FILE (no auto-fix available):" >&2
       echo "$SC_OUT" >&2
       exit 2

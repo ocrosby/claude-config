@@ -4,10 +4,21 @@
 # before the push, so a rebase can happen first.
 #
 # Outputs additionalContext JSON (non-blocking) when overlap is found.
+#
+# Performance: `git fetch origin main` is a network round-trip. On slow links
+# it adds seconds directly to the user's push. We rate-limit fetches to once
+# per FETCH_MAX_AGE_SECONDS via a per-repo timestamp file; if the last fetch
+# was recent enough, we reuse the current origin/main ref and skip the fetch.
 set -uo pipefail
 
 INPUT=$(cat)
-COMMAND=$(echo "$INPUT" | jq -r '.tool_input.command // empty' 2>/dev/null)
+
+# Extract command via bash regex; skip if absent (no jq subprocess cost).
+if [[ "$INPUT" =~ \"command\"[[:space:]]*:[[:space:]]*\"([^\"]+)\" ]]; then
+  COMMAND="${BASH_REMATCH[1]}"
+else
+  exit 0
+fi
 
 # Only relevant for git push
 [[ "$COMMAND" != *"git push"* ]] && exit 0
@@ -18,8 +29,35 @@ BRANCH=$(cd "${CLAUDE_PROJECT_DIR:-.}" && git branch --show-current 2>/dev/null)
 
 cd "${CLAUDE_PROJECT_DIR:-.}" || exit 0
 
-# Fetch silently — a stale origin/main is a false negative
-git fetch origin main --quiet 2>/dev/null || exit 0
+# Rate-limit fetch: skip if origin/main was updated within the last N seconds.
+# 300s (5m) is a reasonable freshness ceiling — long enough to make fetching
+# during a burst of pushes free, short enough to catch same-session collisions.
+FETCH_MAX_AGE_SECONDS=300
+GIT_DIR=$(git rev-parse --git-dir 2>/dev/null) || exit 0
+STAMP="$GIT_DIR/.claude-conflict-check-fetch-ts"
+
+should_fetch=1
+if [[ -f "$STAMP" ]]; then
+  now=$(date +%s)
+  last=$(cat "$STAMP" 2>/dev/null || echo 0)
+  age=$((now - last))
+  if (( age < FETCH_MAX_AGE_SECONDS )); then
+    should_fetch=0
+  fi
+fi
+
+if (( should_fetch )); then
+  # Kick fetch off in the background so it does not block the push.
+  # Give it a short window; if it doesn't finish, exit without warning —
+  # surface only actual conflicts, never false positives from stale refs.
+  ( git fetch origin main --quiet 2>/dev/null && date +%s > "$STAMP" ) &
+  FETCH_PID=$!
+  wait_deadline=$(( $(date +%s) + 2 ))
+  while kill -0 "$FETCH_PID" 2>/dev/null; do
+    (( $(date +%s) >= wait_deadline )) && exit 0
+    sleep 0.1
+  done
+fi
 
 MERGE_BASE=$(git merge-base HEAD origin/main 2>/dev/null) || exit 0
 [[ -z "$MERGE_BASE" ]] && exit 0
@@ -36,6 +74,6 @@ OVERLAP=$(comm -12 <(echo "$BRANCH_FILES") <(echo "$MAIN_FILES") 2>/dev/null)
 [[ -z "$OVERLAP" ]] && exit 0
 
 FILES_LIST=$(echo "$OVERLAP" | tr '\n' ' ' | sed 's/[[:space:]]*$//')
-echo "{\"hookSpecificOutput\": {\"hookEventName\": \"PreToolUse\", \"additionalContext\": \"Conflict warning: the following files were also modified on origin/main since this branch diverged — $FILES_LIST — rebase before opening the PR to avoid merge conflicts: git rebase origin/main\"}}"
+printf '{"hookSpecificOutput": {"hookEventName": "PreToolUse", "additionalContext": "Conflict warning: the following files were also modified on origin/main since this branch diverged — %s — rebase before opening the PR to avoid merge conflicts: git rebase origin/main"}}\n' "$FILES_LIST"
 
 exit 0

@@ -20,7 +20,7 @@ mkdir -p ~/.claude
 stow -t ~/.claude -d ~/src/github.com/ocrosby claude-config
 ```
 
-This symlinks every top-level item (`agents/`, `skills/`, `rules/`, `commands/`, `hooks/`, `output-styles/`, `CLAUDE.md`, `settings.json`, …) directly into `~/.claude/`. Stow's default ignore list keeps `README.md`, `LEARNINGS.md`, `SKILLS.md`, `.git`, and `.gitignore` in the repo only — they are not linked into `~/.claude/`.
+This symlinks every top-level item (`agents/`, `skills/`, `rules/`, `commands/`, `hooks/`, `output-styles/`, `CLAUDE.md`, `settings.json`, …) directly into `~/.claude/`. Stow's default ignore list keeps `README.md`, `LEARNINGS.md`, `.git`, and `.gitignore` in the repo only — they are not linked into `~/.claude/`.
 
 **Re-stow after adding any new top-level item or new skill.** Because `~/.claude/skills/` also holds Claude-Code-created directories, stow unfolds it and links each skill *individually* rather than linking the whole `skills/` directory. A newly added skill (e.g. `skills/neovim/`) therefore has no symlink until you re-run the stow command above — and Claude will not see it. After adding a skill, agent, command, or any other top-level entry, re-run the stow command and verify with `readlink ~/.claude/skills/<name>`.
 
@@ -43,7 +43,6 @@ The repo root *is* the stow package. **Never wrap contents in a `.claude/` direc
 claude-config/                ← the stow package; repo root
 ├── README.md
 ├── LEARNINGS.md
-├── SKILLS.md
 ├── CLAUDE.md                 ← global user instructions, loaded every session
 ├── settings.json
 ├── agents/
@@ -338,8 +337,7 @@ Each rule's `description:` frontmatter explains what it enforces.
 
 - `CLAUDE.md` — global instructions loaded into every Claude Code session
 - `LEARNINGS.md` — accumulating notes on what makes Claude rules, skills, hooks, and agents work reliably
-- `SKILLS.md` — catalog of the skills bundled in `skills/`
-- Per-directory `README.md` files inside `skills/`, `agents/`, `commands/`, `hooks/`, `output-styles/`
+- Per-directory `README.md` files inside `skills/`, `agents/`, `commands/`, `hooks/`, `output-styles/` (each `SKILL.md`'s `description:` frontmatter is the source of truth for what a skill does; no separate catalog to keep in sync)
 
 ## References
 
