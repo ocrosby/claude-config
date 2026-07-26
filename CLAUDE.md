@@ -21,6 +21,18 @@ Every token loaded costs latency **and** compounds across every turn until compa
 
 **Self-improvement loop:** when a task felt slow or context-heavy, name the culprit before ending the turn (which file, which extra load, which redundant tool call) and either fix it now or add a follow-up. Do not let heavy patterns re-appear.
 
+# Prior study awareness (`.claude/study/INDEX.md`)
+
+The `/study` skill writes summaries to `.claude/study/INDEX.md` in the working repo. Before answering a **substantive** question — design decision, "how should we X", architectural approach, best-practice comparison, or any research query — check whether `.claude/study/INDEX.md` exists in the working repo. If it does, read it. If any entry's question or `Topics:` line overlaps with the current question, read the linked `.claude/study/<session>/report.md` before answering. Prior research often already answers the question or narrows its scope.
+
+**Do NOT trigger this check for:**
+- Single-file edits, typos, formatting
+- Running a command or script
+- Answering a factual question that grep/git resolve
+- Tasks the user has already scoped precisely
+
+**Scale note:** `INDEX.md` grows O(N) with study count; the full reports are Level-3 knowledge loaded only when the index hits a topical match. This keeps always-loaded cost at O(1) — the pointer above — while making N years of study accumulate into a searchable knowledge base rather than a write-only archive.
+
 # Context-First Development
 
 High-quality code communicates **why**, not just **what**. Before changing code, understand why it's written that way. When writing new code, make the reasoning evident. When something is unclear, ask about purpose, not mechanics. Preserve business rules, architectural constraints, and prior decisions rather than optimizing them away.

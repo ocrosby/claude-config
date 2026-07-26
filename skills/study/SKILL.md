@@ -225,6 +225,38 @@ Write `.claude/study/${CLAUDE_SESSION_ID}/report.md`:
 [Numbered list of all referenced URLs, repos, files, and issues.]
 ```
 
+### 4a. Update the study index
+
+After writing the report, append (or create) an entry in `.claude/study/INDEX.md`. This index is what future Claude sessions read to become aware of prior research in this repo — without it, every future prompt starts from scratch even if we've already researched the topic.
+
+**If `.claude/study/INDEX.md` does not exist**, create it with this header block first:
+
+```markdown
+# Study Index
+
+Prior research in this repo. Read this before answering substantive design/architecture/best-practice questions — a prior study may already have covered the topic.
+
+Format: one entry per study, newest first. Each entry has the primary question, a 2-3 line summary of key findings, and a path to the full report.
+
+---
+```
+
+**Append the current study's entry at the top of the list (below the `---`)**, using this shape:
+
+```markdown
+## <YYYY-MM-DD> — <primary question>
+
+**Report:** `.claude/study/${CLAUDE_SESSION_ID}/report.md`
+**Key findings:** <2-3 line summary of the most important takeaways — the answer to the question, not the process>
+**Topics:** <3-5 keywords, comma-separated, for future keyword matching>
+
+---
+```
+
+The `Topics:` line matters — future sessions will grep the index for keywords in the current question. Choose keywords a future substantive question is likely to contain (e.g. `caching`, `rate-limiting`, `authentication`, `error-handling`).
+
+**Never overwrite existing entries** — always append at the top. The full history is the value; an index that only holds the latest run is nearly worthless.
+
 Clean up the research team.
 
 ## Step 5: Publish to Shared Vault
@@ -292,7 +324,8 @@ If the user declines, end the session without writing anything.
 Before the skill exits, confirm:
 
 1. `.claude/study/${CLAUDE_SESSION_ID}/report.md` exists and is non-empty.
-2. If Step 5 published to a vault, the note is present at `research/<YYYY-MM>/<note_slug>.md` in the vault repo — either by checking the commit that landed or by re-cloning and reading the path. **If vault publish was attempted but no note is present: report the failure to the user and offer to retry.**
-3. Step 6's inline summary was shown to the user (not just the file path).
+2. `.claude/study/INDEX.md` exists and contains this session's entry (grep for `${CLAUDE_SESSION_ID}`). **If missing: re-run Step 4a — without this, future sessions will not benefit from this research.**
+3. If Step 5 published to a vault, the note is present at `research/<YYYY-MM>/<note_slug>.md` in the vault repo — either by checking the commit that landed or by re-cloning and reading the path. **If vault publish was attempted but no note is present: report the failure to the user and offer to retry.**
+4. Step 6's inline summary was shown to the user (not just the file path).
 
 If any check fails, report which one and what to do — do not exit silently.
