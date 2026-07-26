@@ -67,7 +67,7 @@ After every correction or mistake, update the relevant rule/skill/`CLAUDE.md` wi
 
 Each learning has exactly one home:
 - **Rule / skill / `CLAUDE.md` guard** — enforceable behavior change (default).
-- **`LEARNINGS.md`** — repo-committed insights about how rules/skills/hooks/agents behave (drift, gotchas). See `rules/readme-standard.md`.
+- **`LEARNINGS.md`** — repo-committed insights about how rules/skills/hooks/agents behave (drift, gotchas). See `rules/learnings-standard.md`.
 - **Memory system** — cross-project, user-specific behavioral preferences.
 
 # Neovim Integration
