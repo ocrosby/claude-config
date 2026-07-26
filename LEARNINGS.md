@@ -91,6 +91,24 @@ If rule R has `paths: ["A.md"]` but half its body is about maintaining `B.md`, t
 
 ---
 
+### Large reference rules should not have broad `paths` globs
+
+A rule whose own opening line describes it as "a recognition list, not an implementation guide" is reference material — it should be consulted deliberately by reviewer agents, not auto-loaded on every code edit. Broad language-extension globs (`**/*.go`, `**/*.py`, etc.) on rules >150 lines are a per-edit token drain most edits never benefit from.
+
+**Known example (now resolved):** `rules/owasp-top-10.md` (303 lines / 20.8 KB) auto-loaded on every code edit in 12 language extensions. The rule's own preamble explicitly framed it as reference. Most edits don't touch a trust boundary, so 90% of loads were dead weight. Fix (PR #74): removed the `paths` glob entirely; extended each language reviewer agent's Standards-reference line to load `owasp-top-10.md` on demand when the code under review touches auth, input parsing, deserialization, secrets, or network I/O. `rest-reviewer` treats OWASP as always-load since HTTP endpoints are trust boundaries by default.
+
+**Rule of thumb:** rules over ~150 lines with `**/*.<lang>`-shaped globs deserve scrutiny. Either narrow the glob to the actual scope (see next entry) or remove it entirely and route through a reviewer agent.
+
+---
+
+### Narrow `paths` globs to actual scope, not lowest-common-denominator language extension
+
+A rule that applies only to a specific code pattern (HTTP handlers, database migrations, etc.) should not glob on the language extension — it forces the rule to load on every file in the language even when the pattern is absent. Narrow to directory or filename conventions the pattern actually lives in.
+
+**Known example (now resolved):** `rules/rest-api-conventions.md` (120 lines) had `paths: ["**/*.go", "**/*.py", "**/*.ts", "**/*.js"]` — fired on every language file even though 90% aren't REST handlers. Fix (PR #74): narrowed to `["**/handlers/**", "**/routes/**", "**/api/**", "**/controllers/**", "**/endpoints/**"]`. For code outside those paths, the `rest-reviewer` agent loads the rule on demand when reviewing endpoint code.
+
+---
+
 ## Skill Structure
 
 ### Level 2 SKILL.md body persists in session context after invocation
@@ -106,6 +124,16 @@ Every line in the body of a `SKILL.md` loads into context on invocation AND pers
 `skills/CLAUDE.md` (a project-level `CLAUDE.md`) loads whenever the active file lives anywhere under `skills/` — including Level 3 files like `ship.md`, `review.md`, and Level 3 scripts. Content targeted at only SKILL.md authoring is dead weight on every Level 3 edit. Keep the project CLAUDE.md tiny (a pointer); put authoring conventions in a rule whose `paths` glob only matches SKILL.md.
 
 **Known example (now resolved):** editing a newly-extracted Level 3 file loaded the full 195-line `skills/CLAUDE.md`. Fix (PR #70): consolidated authoring content into `rules/skill-conventions.md` (`paths: ["skills/*/SKILL.md"]`); `skills/CLAUDE.md` became 5 lines. Level 3 edits load 5 lines instead of 195 (-97%).
+
+---
+
+### After consolidating N skills into one dispatcher, sweep vestigial "Replicates the prior /X" prose
+
+When a family of skills is merged into one dispatcher (e.g. `/go-docs`, `/py-docs`, `/nvim-docs`, `/gherkin-docs` → `/docs write`), the natural first cut labels each subcommand with "Replicates the prior `/X` skill." The `aliases:` frontmatter already handles historical invocation attribution — the prose in the body serves no ongoing purpose and pays 1-2 lines per subcommand on every invocation.
+
+**Known example (now resolved):** 12 "Replicates the prior /X skill" sentences remained across `skills/code/SKILL.md`, `skills/git/SKILL.md`, `skills/docs/write.md` months after the underlying consolidations. Fix (PR #74): removed via python regex — single-sentence lines deleted entirely; multi-sentence lines had just the prefix stripped, preserving the substantive follow-on context.
+
+**Rule of thumb:** the aliases: frontmatter is the discovery mechanism; body prose is not. After a consolidation, grep for `"Replicates the prior"` and remove.
 
 ---
 
