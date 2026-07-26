@@ -42,7 +42,20 @@ Do not pad entries. If the lesson can be stated in one sentence, use one sentenc
 
 1. Read the current `LEARNINGS.md`
 2. Add the new entry under the appropriate section (or create a new section if none fits)
-3. Run `/git ship -m` to commit directly to main and push without a PR — use commit message `docs(claude): add learning — <one-line summary>`
+3. Ship the change:
+   - **Default:** run `/git ship -m` to commit directly to main and push without a PR. Use commit message `docs(claude): add learning — <one-line summary>`.
+   - **If branch protection or a ruleset blocks direct push to main:** fall back to a normal PR (`/git ship` without `-m` — feature branch → commit → push → PR → merge on green). This is expected — do not `--force` or try to bypass. Use the same commit-message prefix; the PR title mirrors it.
+   - Check both surfaces before assuming main is unprotected:
+     ```bash
+     owner=... repo=... branch=main
+     # Legacy branch protection — 404 means none configured
+     gh api "repos/$owner/$repo/branches/$branch/protection" \
+       --jq '.required_pull_request_reviews // .required_status_checks // "protected"' 2>/dev/null
+     # Rulesets — returns 0 if no gating rules apply
+     gh api "repos/$owner/$repo/rules/branches/$branch" \
+       --jq '[.[] | select(.type == "pull_request" or .type == "required_status_checks" or .type == "required_signatures" or .type == "required_deployments")] | length'
+     ```
+     Direct push is fine **only if both** clear: protection endpoint 404 **and** rulesets query returns `0`.
 4. Do not batch learnings across sessions — ship immediately after each session that produced a new learning
 
 ## Sections in LEARNINGS.md
