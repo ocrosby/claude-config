@@ -204,6 +204,12 @@ The PostToolUse `ruff format` hook reformats any file it touches to match the pr
 
 ---
 
+### Add-import + first-use must land in one Edit — ruff `--fix` strips the import between two Edits
+
+`hooks/lint.sh` runs `ruff check --fix` after every Edit/Write. Between Edit #1 (adds `import X`) and Edit #2 (adds the first `X.foo` reference) — even inside the same message — ruff sees `X` imported but not used and autoremoves it. Edit #2 then lands against a file where `import X` no longer exists; the script raises `NameError: name 'X' is not defined` at runtime. Hit in PR #89 when `import argparse` was added ahead of an `argparse.BooleanOptionalAction` usage. Fix: fold the import and its first usage into a **single** Edit `new_string` so ruff sees the pair together, or Read the file between the two Edits to verify the import survived before firing the next one.
+
+---
+
 ## TDD Enforcement
 
 ### "Invoke the skill" is not the same as "follow the cycle"
