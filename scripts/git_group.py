@@ -17,6 +17,7 @@ overrides when the heuristic is wrong.
 
 from __future__ import annotations
 
+import argparse
 import json
 import re
 import sys
@@ -67,16 +68,11 @@ SCOPE_PREFIXES = (
 def parse_args():
     p = _cli.make_parser(__doc__)
     p.add_argument(
-        "--include-untracked",
-        action="store_true",
-        default=True,
-        help="Include untracked files in the analysis (default: on)",
-    )
-    p.add_argument(
-        "--no-untracked",
+        "--untracked",
         dest="include_untracked",
-        action="store_false",
-        help="Exclude untracked files",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Include untracked files in the analysis (default: on; use --no-untracked to exclude)",
     )
     p.add_argument(
         "--from",

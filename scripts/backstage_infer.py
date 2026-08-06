@@ -249,7 +249,11 @@ def main() -> int:
         "errors": errors,
     }
     print(json.dumps(result, indent=2))
-    return 0 if not errors else 1
+    # Always exit 0 when JSON is emitted — soft warnings (no origin remote,
+    # non-GitHub URL, etc.) travel in the `errors` list where callers can
+    # inspect them. Reserving non-zero for hard failures (unreadable repo,
+    # bad flag) matches the blog CLI convention on meaningful exit codes.
+    return 0
 
 
 if __name__ == "__main__":

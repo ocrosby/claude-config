@@ -167,8 +167,11 @@ def main() -> int:
     args = parse_args()
     commits = git_log(args.range)
     if not commits:
-        print("error: no commits in range", file=sys.stderr)
-        return 1
+        # Exit 2 = "condition met but no action needed" (blog CLI convention).
+        # A valid range with zero commits is not a failure — distinguishing it
+        # from exit 1 (git failure) lets /git ship branch cleanly.
+        print(f"note: no commits in range '{args.range}'", file=sys.stderr)
+        return 2
     classified = [classify(c, args.include_chores) for c in commits]
     if args.format == "json":
         sections: dict[str, list[dict]] = {}
