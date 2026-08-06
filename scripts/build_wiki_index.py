@@ -10,11 +10,13 @@ one-line summary of each asset is left as a placeholder for the model to fill in
 (the `/knowledge-base` skill does that) — this script only produces the stable,
 regenerable structure so the skill body carries no directory-walking logic.
 
-Output is Markdown to stdout; exit 0 on success, 1 on a bad path.
+Output is Markdown by default; `--json` emits `{root, groups: {name: [...]}, total}`
+for machine consumers. Exit 0 on success, 1 on a bad path.
 """
 
 from __future__ import annotations
 
+import json
 import sys
 from pathlib import Path
 
@@ -94,9 +96,32 @@ def render(raw_root: Path, groups: dict[str, list[Path]]) -> str:
     return "\n".join(lines) + "\n"
 
 
+def _json_payload(raw_root: Path, groups: dict[str, list[Path]]) -> dict:
+    """Structured shape of collected assets — mirror of `render()` for machine consumers."""
+    return {
+        "root": str(raw_root),
+        "groups": {
+            group: [
+                {
+                    "name": p.name,
+                    "path": str(p.relative_to(raw_root.parent)),
+                    "ext": p.suffix.lstrip(".").lower(),
+                    "size_bytes": p.stat().st_size,
+                }
+                for p in files
+            ]
+            for group, files in groups.items()
+        },
+        "total": sum(len(v) for v in groups.values()),
+    }
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = _cli.make_parser(__doc__)
     parser.add_argument("raw", help="Path to the knowledge base's raw/ directory")
+    _cli.add_json_flag(
+        parser, help_text="Emit collected assets as JSON instead of Markdown"
+    )
     args = parser.parse_args(argv)
 
     raw_root = Path(args.raw).expanduser()
@@ -106,7 +131,12 @@ def main(argv: list[str] | None = None) -> int:
         # Guard against pointing the walker at the wrong tree — the KB contract is raw/.
         return _cli.die(f"expected a directory named 'raw', got '{raw_root.name}'")
 
-    print(render(raw_root, collect(raw_root)), end="")
+    groups = collect(raw_root)
+    if args.json:
+        print(json.dumps(_json_payload(raw_root, groups), indent=2))
+        return 0
+
+    print(render(raw_root, groups), end="")
     return 0
 
 
