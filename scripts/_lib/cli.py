@@ -7,6 +7,7 @@ expansion follows one of a handful of conventions (file / dir-with-globs /
 relative-glob fallback). Centralising these keeps the CLI surface consistent
 and prevents drift when a new script is added.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -25,7 +26,9 @@ def make_parser(module_doc: str | None) -> argparse.ArgumentParser:
     return argparse.ArgumentParser(description=description)
 
 
-def add_severity_flag(parser: argparse.ArgumentParser, help_text: str | None = None) -> None:
+def add_severity_flag(
+    parser: argparse.ArgumentParser, help_text: str | None = None
+) -> None:
     """Add `--severity {must,should,consider,all}` with default `all`.
 
     `help_text` is passed straight to argparse — leave it None to omit the
@@ -38,7 +41,9 @@ def add_severity_flag(parser: argparse.ArgumentParser, help_text: str | None = N
     parser.add_argument("--severity", **kwargs)
 
 
-def add_json_flag(parser: argparse.ArgumentParser, help_text: str = "Emit findings as JSON") -> None:
+def add_json_flag(
+    parser: argparse.ArgumentParser, help_text: str = "Emit findings as JSON"
+) -> None:
     """Add the standard `--json` boolean flag."""
     parser.add_argument("--json", action="store_true", help=help_text)
 
@@ -76,7 +81,8 @@ def expand_paths(
             glob_method = "rglob" if recursive else "glob"
             for g in dir_globs:
                 out.extend(
-                    q for q in getattr(p, glob_method)(g)
+                    q
+                    for q in getattr(p, glob_method)(g)
                     if q.is_file() and accept_file(q)
                 )
             continue

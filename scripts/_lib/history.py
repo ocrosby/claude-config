@@ -5,6 +5,7 @@ with identical timestamp coercion, JSONL error handling, and `--since=Nd|Nh`
 window parsing. Centralising these keeps the time math consistent — a bug in
 one was always silently a bug in the other.
 """
+
 from __future__ import annotations
 
 import argparse

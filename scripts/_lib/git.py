@@ -5,13 +5,16 @@ return empty strings; classify_commits.py and tally_invocations.py need the
 returncode to distinguish "no commits" from "git failed". `run` matches the
 former; `run_checked` matches the latter.
 """
+
 from __future__ import annotations
 
 import subprocess
 from pathlib import Path
 
 
-def run(args: list[str], *, cwd: Path | None = None, timeout: float | None = None) -> str:
+def run(
+    args: list[str], *, cwd: Path | None = None, timeout: float | None = None
+) -> str:
     """Run `git <args>` and return stdout.
 
     Returns an empty string on any non-zero exit code or subprocess failure —
@@ -34,7 +37,9 @@ def run(args: list[str], *, cwd: Path | None = None, timeout: float | None = Non
     return out.stdout
 
 
-def run_checked(args: list[str], *, cwd: Path | None = None, timeout: float | None = None) -> subprocess.CompletedProcess:
+def run_checked(
+    args: list[str], *, cwd: Path | None = None, timeout: float | None = None
+) -> subprocess.CompletedProcess:
     """Run `git <args>` and return the full CompletedProcess.
 
     Use when the caller needs to distinguish failure modes (e.g. non-zero exit
