@@ -198,6 +198,12 @@ Any hook that invokes `git fetch`, `curl`, or similar network commands should no
 
 ---
 
+### Pre-normalize files under a PostToolUse formatter — otherwise per-file Edits leak a whole-file reformat into every commit
+
+The PostToolUse `ruff format` hook reformats any file it touches to match the project's style. On a file that doesn't already match, a small Edit produces a diff of *every* non-conforming block plus the intended change — in PR #82, a 4-line-per-file shebang change across 14 `scripts/*.py` files ballooned to 1018 insertions / 203 deletions because every wide dict literal got wrapped in the same commit. Fix: when a formatter hook is added (or a file has drifted from its config), run the formatter once across the affected set as a standalone `style(scope): reformat` PR *before* the first content edit. Every subsequent Edit then produces a clean +N/-N diff and can't couple "one commit, two concerns."
+
+---
+
 ## TDD Enforcement
 
 ### "Invoke the skill" is not the same as "follow the cycle"
