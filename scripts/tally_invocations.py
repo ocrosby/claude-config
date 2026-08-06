@@ -182,11 +182,22 @@ def print_bucket(title: str, items: list[tuple[int, str]]) -> None:
     print()
 
 
+EXAMPLES = """\
+Examples:
+  tally_invocations.py                       # All-time Markdown report
+  tally_invocations.py --since=30d --json    # Last 30 days as JSON
+"""
+
+
 def main() -> int:
     # NOTE: pass __doc__ verbatim (not just the first line) so the argparse
     # description matches the prior `description=__doc__` behavior — the
     # baseline --help snapshot reflects that.
-    parser = argparse.ArgumentParser(description=__doc__)
+    parser = argparse.ArgumentParser(
+        description=__doc__,
+        epilog=EXAMPLES,
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
     parser.add_argument("--since", type=_history.parse_since, default=None)
     parser.add_argument(
         "--json",

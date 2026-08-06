@@ -242,8 +242,16 @@ IGNORE_DIRS = {
 }
 
 
+EXAMPLES = """\
+Examples:
+  migrate_scan.py                           # Scan cwd for all languages
+  migrate_scan.py --language=py --root=src  # Python only, under src/
+  migrate_scan.py --json --root=..          # JSON output from parent dir
+"""
+
+
 def parse_args():
-    p = _cli.make_parser(__doc__)
+    p = _cli.make_parser(__doc__, examples=EXAMPLES)
     p.add_argument(
         "--language",
         choices=["go", "py", "lua", "gherkin", "all"],

@@ -65,8 +65,16 @@ SCOPE_PREFIXES = (
 )
 
 
+EXAMPLES = """\
+Examples:
+  git_group.py                 # Group current working-tree changes (default)
+  git_group.py --no-untracked  # Only tracked-file changes
+  git_group.py --from=main     # Compare against a ref instead of working tree
+"""
+
+
 def parse_args():
-    p = _cli.make_parser(__doc__)
+    p = _cli.make_parser(__doc__, examples=EXAMPLES)
     p.add_argument(
         "--untracked",
         dest="include_untracked",

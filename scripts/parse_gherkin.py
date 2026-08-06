@@ -176,8 +176,15 @@ def summarize(features: list[dict]) -> None:
         )
 
 
+EXAMPLES = """\
+Examples:
+  parse_gherkin.py features/                       # JSON tree of every .feature
+  parse_gherkin.py features/*.feature --summary    # One-line-per-file overview
+"""
+
+
 def main() -> int:
-    parser = _cli.make_parser(__doc__)
+    parser = _cli.make_parser(__doc__, examples=EXAMPLES)
     parser.add_argument("paths", nargs="+", help="Feature files, directories, or globs")
     parser.add_argument(
         "--summary",

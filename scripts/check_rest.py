@@ -80,8 +80,17 @@ ROUTE_PATTERNS: dict[str, list[re.Pattern]] = {
 }
 
 
+EXAMPLES = """\
+Examples:
+  check_rest.py handlers/                                    # Markdown findings
+  check_rest.py handlers/ --json                             # JSON for tooling
+  check_rest.py handlers/ --fail-on=must                     # CI gate on Must Fix
+  check_rest.py handlers/ --severity=must --fail-on=should   # Show Must; fail on Should+
+"""
+
+
 def parse_args():
-    p = _cli.make_parser(__doc__)
+    p = _cli.make_parser(__doc__, examples=EXAMPLES)
     p.add_argument("paths", nargs="+", help="Handler files, directories, or globs")
     _cli.add_json_flag(p)
     _cli.add_severity_flag(p)

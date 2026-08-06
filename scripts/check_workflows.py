@@ -38,8 +38,17 @@ CANCEL_IN_PROGRESS_FALSE_RE = re.compile(r"cancel-in-progress:\s*false")
 GO_VERSION_RE = re.compile(r"\bgo-version:\s*['\"]?([0-9][0-9.]+)['\"]?")
 
 
+EXAMPLES = """\
+Examples:
+  check_workflows.py .github/workflows/                 # Markdown findings
+  check_workflows.py .github/workflows/ --json          # JSON for tooling
+  check_workflows.py .github/workflows/ --fail-on=must  # CI gate on Must Fix
+  check_workflows.py .github/workflows/ --repo-root=..  # Different repo root
+"""
+
+
 def parse_args():
-    p = _cli.make_parser(__doc__)
+    p = _cli.make_parser(__doc__, examples=EXAMPLES)
     p.add_argument(
         "paths", nargs="+", help="Workflow files or globs (.github/workflows/*.yml)"
     )

@@ -214,8 +214,16 @@ def check_file(path: Path) -> list[tuple[int, str, str, str]]:
     return sorted(findings, key=lambda f: (f[0], f[1]))
 
 
+EXAMPLES = """\
+Examples:
+  check_docs.py README.md CHANGELOG.md   # Markdown findings across multiple files
+  check_docs.py docs/ --json             # JSON for tooling
+  check_docs.py docs/ --fail-on=must     # CI gate on Must Fix findings
+"""
+
+
 def parse_args():
-    p = _cli.make_parser(__doc__)
+    p = _cli.make_parser(__doc__, examples=EXAMPLES)
     p.add_argument("paths", nargs="+", help="Files or globs to check")
     _cli.add_json_flag(p)
     _cli.add_severity_flag(p, help_text="Filter by severity level")

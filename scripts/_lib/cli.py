@@ -16,14 +16,21 @@ from pathlib import Path
 from typing import Callable
 
 
-def make_parser(module_doc: str | None) -> argparse.ArgumentParser:
+def make_parser(
+    module_doc: str | None, examples: str | None = None
+) -> argparse.ArgumentParser:
     """Build an ArgumentParser whose description is the first line of `module_doc`.
 
     Pass the caller's `__doc__` directly. Falls back to an empty description if
-    the module has no docstring.
+    the module has no docstring. `examples` (when given) becomes the `--help`
+    epilog with raw formatting so worked-invocation blocks render verbatim.
     """
     description = (module_doc or "").splitlines()[0] if module_doc else ""
-    return argparse.ArgumentParser(description=description)
+    kwargs: dict = {"description": description}
+    if examples is not None:
+        kwargs["epilog"] = examples
+        kwargs["formatter_class"] = argparse.RawDescriptionHelpFormatter
+    return argparse.ArgumentParser(**kwargs)
 
 
 def add_severity_flag(

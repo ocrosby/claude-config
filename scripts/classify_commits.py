@@ -48,8 +48,16 @@ CHANGED_HINTS = re.compile(
 )
 
 
+EXAMPLES = """\
+Examples:
+  classify_commits.py v1.0.0..HEAD                        # Markdown release notes
+  classify_commits.py HEAD~20..HEAD --format=json          # JSON payload
+  classify_commits.py main..HEAD --include-chores          # Include refactor/test/etc.
+"""
+
+
 def parse_args():
-    p = _cli.make_parser(__doc__)
+    p = _cli.make_parser(__doc__, examples=EXAMPLES)
     p.add_argument(
         "range",
         help="Commit range (e.g. v1.0.0..HEAD, HEAD~20..HEAD). Use '..' to separate base..head.",
