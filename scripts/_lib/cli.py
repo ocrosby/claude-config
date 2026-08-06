@@ -48,6 +48,24 @@ def add_json_flag(
     parser.add_argument("--json", action="store_true", help=help_text)
 
 
+def add_fail_on_flag(
+    parser: argparse.ArgumentParser,
+    help_text: str = "Exit 3 when any finding meets or exceeds this severity (default: none — always exit 0)",
+) -> None:
+    """Add the standard `--fail-on {must,should,consider,none}` flag.
+
+    Default is `none` so adding the flag to a script does not change existing
+    caller behavior. CI opts in by passing `--fail-on=must` (or a lower
+    threshold) to turn findings into build failures.
+    """
+    parser.add_argument(
+        "--fail-on",
+        choices=["must", "should", "consider", "none"],
+        default="none",
+        help=help_text,
+    )
+
+
 def expand_paths(
     patterns: list[str],
     *,

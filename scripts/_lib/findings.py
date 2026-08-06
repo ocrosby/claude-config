@@ -30,6 +30,25 @@ def filter_by_severity(findings: list[Finding], wanted: str) -> list[Finding]:
     return [f for f in findings if f[1] == keep]
 
 
+# Severity rank — higher = more severe. Used by `triggers_fail` to decide when
+# `--fail-on=<severity>` should push the process exit code to 3.
+_SEVERITY_RANK = {MUST: 3, SHOULD: 2, CONSIDER: 1}
+_THRESHOLD = {"must": 3, "should": 2, "consider": 1}
+
+
+def triggers_fail(findings: list[Finding], fail_on: str) -> bool:
+    """True when any finding meets or exceeds the `fail_on` threshold.
+
+    `fail_on` is one of 'must', 'should', 'consider', or 'none' (never triggers).
+    Callers pass the *unfiltered* finding list — `--severity` is a display filter,
+    the gate should not be affected by what the user asked to see.
+    """
+    if fail_on == "none":
+        return False
+    threshold = _THRESHOLD[fail_on]
+    return any(_SEVERITY_RANK.get(f[1], 0) >= threshold for f in findings)
+
+
 def format_json(by_file: dict[str, list[Finding]]) -> str:
     """Render findings as the canonical {path: [{line, severity, rule_id, message}, ...]} JSON."""
     payload = {

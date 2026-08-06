@@ -50,6 +50,7 @@ def parse_args():
     )
     _cli.add_json_flag(p)
     _cli.add_severity_flag(p)
+    _cli.add_fail_on_flag(p)
     return p.parse_args()
 
 
@@ -278,27 +279,34 @@ def main() -> int:
         return _cli.die("no workflow files matched")
     state = detect_repo_state(Path(args.repo_root).resolve())
 
+    raw_by_file: dict[str, list[tuple[int, str, str, str]]] = {}
     by_file: dict[str, list[tuple[int, str, str, str]]] = {}
     for path in files:
-        findings = _findings.filter_by_severity(check_file(path, state), args.severity)
-        if findings:
-            by_file[str(path)] = findings
+        raw = check_file(path, state)
+        if not raw:
+            continue
+        raw_by_file[str(path)] = raw
+        filtered = _findings.filter_by_severity(raw, args.severity)
+        if filtered:
+            by_file[str(path)] = filtered
 
     if args.json:
         print(_findings.format_json(by_file))
-        return 0
+    else:
+        total = sum(len(v) for v in by_file.values())
+        print(
+            f"# GitHub Actions workflow checks\n\nFiles scanned: **{len(files)}** — findings: **{total}**\n"
+        )
+        if state["has_go_work"]:
+            print("_Repo has go.work — workspace-mode rules active._\n")
+        if not by_file:
+            print("_No mechanical violations detected._")
+        else:
+            _findings.print_markdown(by_file)
 
-    total = sum(len(v) for v in by_file.values())
-    print(
-        f"# GitHub Actions workflow checks\n\nFiles scanned: **{len(files)}** — findings: **{total}**\n"
-    )
-    if state["has_go_work"]:
-        print("_Repo has go.work — workspace-mode rules active._\n")
-    if not by_file:
-        print("_No mechanical violations detected._")
-        return 0
-
-    _findings.print_markdown(by_file)
+    all_raw = [f for lst in raw_by_file.values() for f in lst]
+    if _findings.triggers_fail(all_raw, args.fail_on):
+        return 3
     return 0
 
 

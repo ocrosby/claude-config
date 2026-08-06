@@ -85,6 +85,7 @@ def parse_args():
     p.add_argument("paths", nargs="+", help="Handler files, directories, or globs")
     _cli.add_json_flag(p)
     _cli.add_severity_flag(p)
+    _cli.add_fail_on_flag(p)
     return p.parse_args()
 
 
@@ -308,27 +309,34 @@ def main() -> int:
     if not files:
         return _cli.die("no HTTP handler files matched")
 
+    raw_by_file: dict[str, list[tuple[int, str, str, str]]] = {}
     by_file: dict[str, list[tuple[int, str, str, str]]] = {}
     for path in files:
-        findings = _findings.filter_by_severity(check_file(path), args.severity)
-        if findings:
-            by_file[str(path)] = findings
+        raw = check_file(path)
+        if not raw:
+            continue
+        raw_by_file[str(path)] = raw
+        filtered = _findings.filter_by_severity(raw, args.severity)
+        if filtered:
+            by_file[str(path)] = filtered
 
     if args.json:
         print(_findings.format_json(by_file))
-        return 0
-
-    total = sum(len(v) for v in by_file.values())
-    print(
-        f"# REST convention pre-check\n\nFiles scanned: **{len(files)}** — findings: **{total}**\n"
-    )
-    if not by_file:
+    else:
+        total = sum(len(v) for v in by_file.values())
         print(
-            "_No mechanical REST violations detected. The /rest-review skill will still delegate to the rest-reviewer agent for cross-cutting concerns._"
+            f"# REST convention pre-check\n\nFiles scanned: **{len(files)}** — findings: **{total}**\n"
         )
-        return 0
+        if not by_file:
+            print(
+                "_No mechanical REST violations detected. The /rest-review skill will still delegate to the rest-reviewer agent for cross-cutting concerns._"
+            )
+        else:
+            _findings.print_markdown(by_file, line_label=lambda n: f"line {n}")
 
-    _findings.print_markdown(by_file, line_label=lambda n: f"line {n}")
+    all_raw = [f for lst in raw_by_file.values() for f in lst]
+    if _findings.triggers_fail(all_raw, args.fail_on):
+        return 3
     return 0
 
 
