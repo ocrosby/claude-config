@@ -1,9 +1,13 @@
-#!/usr/bin/env python3
+#!/usr/bin/env -S uv run --script
+# /// script
+# requires-python = ">=3.11"
+# ///
 """Tally explicit /command invocations from ~/.claude/history.jsonl.
 
 Cross-references against ~/.claude/skills/ to find unused skills, then
 emits a ranked retirement recommendation as the final section.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -73,7 +77,8 @@ def first_added_timestamp(skill_md: Path) -> float | None:
     repo_dir = real.parent
     out = _git.run_checked(
         [
-            "-C", str(repo_dir),
+            "-C",
+            str(repo_dir),
             "log",
             "--diff-filter=A",
             "--follow",
@@ -136,7 +141,9 @@ def build_alias_map(skills: dict[str, dict]) -> dict[str, str]:
     return out
 
 
-def tally(since: timedelta | None, name_to_canonical: dict[str, str]) -> tuple[Counter, int, int]:
+def tally(
+    since: timedelta | None, name_to_canonical: dict[str, str]
+) -> tuple[Counter, int, int]:
     """Tally invocations under the canonical skill name. `name_to_canonical` maps both
     current names and aliases (old names from before a rename) to the canonical name."""
     counts: Counter = Counter()
@@ -213,7 +220,8 @@ def main() -> int:
     # Zero-invocation skills annotated with age + frontmatter signals
     zero = [name for name in skills if name not in counts]
     zero_with_meta = sorted(
-        zero, key=lambda n: -skills[n]["age_days"]  # oldest first
+        zero,
+        key=lambda n: -skills[n]["age_days"],  # oldest first
     )
 
     print("### Zero invocations")
@@ -235,9 +243,7 @@ def main() -> int:
 
     # Retirement recommendation: zero invocations AND not new
     retire = [
-        name
-        for name in zero_with_meta
-        if skills[name]["age_days"] >= NEW_SKILL_DAYS
+        name for name in zero_with_meta if skills[name]["age_days"] >= NEW_SKILL_DAYS
     ]
 
     print("### Retire (recommended)")

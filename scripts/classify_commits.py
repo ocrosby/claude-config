@@ -1,4 +1,7 @@
-#!/usr/bin/env python3
+#!/usr/bin/env -S uv run --script
+# /// script
+# requires-python = ">=3.11"
+# ///
 """Classify conventional commits into release-notes categories.
 
 Replaces the inline category mapping in skills/release-notes/SKILL.md. The
@@ -7,6 +10,7 @@ breaking-change markers, group into Added/Changed/Fixed/Removed/Security/Other).
 Range derivation and prose synthesis stay in the skill body because they
 require conditional logic and judgment.
 """
+
 from __future__ import annotations
 
 import json
@@ -28,7 +32,7 @@ CONV_RE = re.compile(
 
 # Map conventional-commit type → release-notes category.
 TYPE_TO_CATEGORY = {
-    "feat": "Added",          # default for feat; "Changed" is a possibility but the user picks
+    "feat": "Added",  # default for feat; "Changed" is a possibility but the user picks
     "fix": "Fixed",
     "security": "Security",
     "revert": "Changed",
@@ -38,7 +42,10 @@ TYPE_TO_CATEGORY = {
 EXCLUDED_TYPES = {"docs", "style", "refactor", "perf", "test", "build", "ci", "chore"}
 
 # Heuristic: a feat commit that uses "update" / "change" / "modify" / "rename" in the subject is "Changed", not "Added"
-CHANGED_HINTS = re.compile(r"\b(update|change|modify|rename|tweak|adjust|improve|enhance|expand)\b", re.IGNORECASE)
+CHANGED_HINTS = re.compile(
+    r"\b(update|change|modify|rename|tweak|adjust|improve|enhance|expand)\b",
+    re.IGNORECASE,
+)
 
 
 def parse_args():
@@ -111,7 +118,9 @@ def classify(commit: dict, include_chores: bool) -> dict:
         return out
 
     if out["type"] == "feat":
-        out["category"] = "Changed" if CHANGED_HINTS.search(m.group("subject")) else "Added"
+        out["category"] = (
+            "Changed" if CHANGED_HINTS.search(m.group("subject")) else "Added"
+        )
     elif out["type"] in EXCLUDED_TYPES and include_chores:
         out["category"] = "Changed"
     else:
@@ -122,7 +131,14 @@ def classify(commit: dict, include_chores: bool) -> dict:
 def format_markdown(classified: list[dict]) -> str:
     breaking = [c for c in classified if c["breaking"]]
     excluded = sum(1 for c in classified if c["excluded"])
-    sections: dict[str, list[dict]] = {"Added": [], "Changed": [], "Fixed": [], "Removed": [], "Security": [], "Other": []}
+    sections: dict[str, list[dict]] = {
+        "Added": [],
+        "Changed": [],
+        "Fixed": [],
+        "Removed": [],
+        "Security": [],
+        "Other": [],
+    }
     for c in classified:
         if c["excluded"]:
             continue
@@ -141,7 +157,9 @@ def format_markdown(classified: list[dict]) -> str:
             lines.append(f"- {c['subject']} ({c['hash']})")
         lines.append("")
     if excluded:
-        lines.append(f"_Excluded: {excluded} chore/refactor/style/test/build/ci commits. Use --include-chores to surface them._")
+        lines.append(
+            f"_Excluded: {excluded} chore/refactor/style/test/build/ci commits. Use --include-chores to surface them._"
+        )
     return "\n".join(lines).rstrip() + "\n"
 
 
@@ -158,12 +176,17 @@ def main() -> int:
             if c["excluded"]:
                 continue
             sections.setdefault(c["category"], []).append(c)
-        print(json.dumps({
-            "categories": sections,
-            "breaking": [c for c in classified if c["breaking"]],
-            "excluded_count": sum(1 for c in classified if c["excluded"]),
-            "total": len(classified),
-        }, indent=2))
+        print(
+            json.dumps(
+                {
+                    "categories": sections,
+                    "breaking": [c for c in classified if c["breaking"]],
+                    "excluded_count": sum(1 for c in classified if c["excluded"]),
+                    "total": len(classified),
+                },
+                indent=2,
+            )
+        )
     else:
         print(format_markdown(classified))
     return 0

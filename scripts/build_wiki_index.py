@@ -1,4 +1,7 @@
-#!/usr/bin/env python3
+#!/usr/bin/env -S uv run --script
+# /// script
+# requires-python = ">=3.11"
+# ///
 """Build the deterministic skeleton of a knowledge-base wiki index from a raw/ tree.
 
 Walks a `raw/` directory and emits a Markdown table of contents that links every
@@ -9,6 +12,7 @@ regenerable structure so the skill body carries no directory-walking logic.
 
 Output is Markdown to stdout; exit 0 on success, 1 on a bad path.
 """
+
 from __future__ import annotations
 
 import sys
@@ -77,10 +81,14 @@ def render(raw_root: Path, groups: dict[str, list[Path]]) -> str:
         lines.append("| Asset | Type | Size | Summary |")
         lines.append("|---|---|---|---|")
         for path in groups[group]:
-            rel = path.relative_to(raw_root.parent)  # link relative to KB root (wiki/ sibling of raw/)
+            rel = path.relative_to(
+                raw_root.parent
+            )  # link relative to KB root (wiki/ sibling of raw/)
             ext = path.suffix.lstrip(".").lower() or "—"
             size = human_size(path.stat().st_size)
-            lines.append(f"| [{path.name}](../{rel.as_posix()}) | {ext} | {size} | {SUMMARY_PLACEHOLDER} |")
+            lines.append(
+                f"| [{path.name}](../{rel.as_posix()}) | {ext} | {size} | {SUMMARY_PLACEHOLDER} |"
+            )
         lines.append("")
     lines.append(f"_Total: {total} asset(s)._")
     return "\n".join(lines) + "\n"

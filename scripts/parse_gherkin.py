@@ -1,4 +1,7 @@
-#!/usr/bin/env python3
+#!/usr/bin/env -S uv run --script
+# /// script
+# requires-python = ">=3.11"
+# ///
 """Parse Gherkin .feature files into structured data for documentation generation.
 
 Replaces the inline parsing instructions in skills/gherkin-docs/SKILL.md.
@@ -7,6 +10,7 @@ Examples tables. Outputs JSON (default) or a one-line-per-feature summary.
 
 Claude consumes the JSON and renders the final Markdown documentation.
 """
+
 from __future__ import annotations
 
 import json
@@ -18,7 +22,15 @@ sys.path.insert(0, str(Path(__file__).parent))
 from _lib import cli as _cli  # noqa: E402  # type: ignore[import-not-found]
 
 TAG_RE = re.compile(r"^\s*(@\S+(?:\s+@\S+)*)\s*$")
-KEYWORDS = ("Feature:", "Background:", "Scenario:", "Scenario Outline:", "Example:", "Examples:", "Rule:")
+KEYWORDS = (
+    "Feature:",
+    "Background:",
+    "Scenario:",
+    "Scenario Outline:",
+    "Example:",
+    "Examples:",
+    "Rule:",
+)
 STEP_KEYWORDS = ("Given ", "When ", "Then ", "And ", "But ", "* ")
 
 
@@ -56,7 +68,7 @@ def parse_feature(path: Path) -> dict:
 
         # Feature header
         if stripped.startswith("Feature:"):
-            out["feature_name"] = stripped[len("Feature:"):].strip()
+            out["feature_name"] = stripped[len("Feature:") :].strip()
             out["tags"] = current_tags[:]
             current_tags = []
             description_open = True
@@ -66,7 +78,11 @@ def parse_feature(path: Path) -> dict:
         # Rule (Gherkin 6+)
         if stripped.startswith("Rule:"):
             description_open = False
-            rule = {"name": stripped[len("Rule:"):].strip(), "tags": current_tags[:], "scenarios": []}
+            rule = {
+                "name": stripped[len("Rule:") :].strip(),
+                "tags": current_tags[:],
+                "scenarios": [],
+            }
             out["rules"].append(rule)
             current_tags = []
             current_block = rule  # subsequent scenarios attach here
@@ -84,7 +100,7 @@ def parse_feature(path: Path) -> dict:
             if stripped.startswith(kw):
                 description_open = False
                 scenario = {
-                    "name": stripped[len(kw):].strip(),
+                    "name": stripped[len(kw) :].strip(),
                     "tags": current_tags[:],
                     "steps": [],
                     "examples": [] if kw == "Scenario Outline:" else None,
@@ -120,7 +136,11 @@ def parse_feature(path: Path) -> dict:
             continue
 
         # Examples table rows
-        if stripped.startswith("|") and current_block is not None and current_block.get("outline"):
+        if (
+            stripped.startswith("|")
+            and current_block is not None
+            and current_block.get("outline")
+        ):
             cells = [c.strip() for c in stripped.strip("|").split("|")]
             current_block.setdefault("examples", []).append(cells)
             continue
@@ -142,19 +162,28 @@ def expand(patterns: list[str]) -> list[Path]:
 
 
 def summarize(features: list[dict]) -> None:
-    total_scenarios = sum(len(f["scenarios"]) + sum(len(r["scenarios"]) for r in f["rules"]) for f in features)
-    print(f"# Feature summary\n")
+    total_scenarios = sum(
+        len(f["scenarios"]) + sum(len(r["scenarios"]) for r in f["rules"])
+        for f in features
+    )
+    print("# Feature summary\n")
     print(f"Files: **{len(features)}** — scenarios: **{total_scenarios}**\n")
     for f in features:
         n = len(f["scenarios"]) + sum(len(r["scenarios"]) for r in f["rules"])
         tags = " ".join(f["tags"]) or "—"
-        print(f"- `{f['file']}` — **{f['feature_name'] or '(no name)'}** — {n} scenarios — tags: {tags}")
+        print(
+            f"- `{f['file']}` — **{f['feature_name'] or '(no name)'}** — {n} scenarios — tags: {tags}"
+        )
 
 
 def main() -> int:
     parser = _cli.make_parser(__doc__)
     parser.add_argument("paths", nargs="+", help="Feature files, directories, or globs")
-    parser.add_argument("--summary", action="store_true", help="One-line-per-file summary instead of full JSON")
+    parser.add_argument(
+        "--summary",
+        action="store_true",
+        help="One-line-per-file summary instead of full JSON",
+    )
     args = parser.parse_args()
 
     files = expand(args.paths)

@@ -1,4 +1,7 @@
-#!/usr/bin/env python3
+#!/usr/bin/env -S uv run --script
+# /// script
+# requires-python = ">=3.11"
+# ///
 """Apply deterministic Write-the-Docs rules to documentation files.
 
 Replaces the inline rule checklists in skills/doc-review/SKILL.md. The script
@@ -8,6 +11,7 @@ accuracy, missing examples, voice) remain with Claude.
 Output: Markdown findings grouped per file by severity (Must Fix / Should Fix
 / Consider). Use --json for machine-consumable output.
 """
+
 from __future__ import annotations
 
 import re
@@ -49,10 +53,19 @@ def check_links(lines: list[str]) -> list[tuple[int, str, str, str]]:
         for m in LINK_RE.finditer(line):
             text = m.group(1).strip().lower()
             if text in VAGUE_LINK_TEXTS:
-                findings.append((i, MUST, "vague-link-text", f"Link text '{m.group(1)}' is vague — describe the destination"))
+                findings.append(
+                    (
+                        i,
+                        MUST,
+                        "vague-link-text",
+                        f"Link text '{m.group(1)}' is vague — describe the destination",
+                    )
+                )
         for m in RAW_URL_RE.finditer(line):
             # Skip URLs that are inside a Markdown link target — already matched above
-            findings.append((i, CONSIDER, "raw-url", f"Raw URL in prose: {m.group(1)[:60]}"))
+            findings.append(
+                (i, CONSIDER, "raw-url", f"Raw URL in prose: {m.group(1)[:60]}")
+            )
     return findings
 
 
@@ -72,14 +85,33 @@ def check_headings(lines: list[str]) -> list[tuple[int, str, str, str]]:
         # Hierarchy: jumping more than one level deeper is broken
         if prev_level > 0 and level > prev_level + 1:
             findings.append(
-                (i, SHOULD, "heading-hierarchy", f"Heading jumps from H{prev_level} to H{level} (skips a level)")
+                (
+                    i,
+                    SHOULD,
+                    "heading-hierarchy",
+                    f"Heading jumps from H{prev_level} to H{level} (skips a level)",
+                )
             )
         # Title case
         if TITLE_CASE_RE.match(text) and level > 1:
-            findings.append((i, CONSIDER, "heading-title-case", f"Heading uses title case: '{text}' — prefer sentence case"))
+            findings.append(
+                (
+                    i,
+                    CONSIDER,
+                    "heading-title-case",
+                    f"Heading uses title case: '{text}' — prefer sentence case",
+                )
+            )
         # FAQ heading
         if FAQ_HEADING_RE.match(line):
-            findings.append((i, SHOULD, "faq-section", "FAQ section present — replace with structured content per docs-principles"))
+            findings.append(
+                (
+                    i,
+                    SHOULD,
+                    "faq-section",
+                    "FAQ section present — replace with structured content per docs-principles",
+                )
+            )
         prev_level = level
     return findings
 
@@ -94,7 +126,14 @@ def check_images(lines: list[str]) -> list[tuple[int, str, str, str]]:
             if not alt:
                 findings.append((i, MUST, "image-no-alt", "Image has no alt text"))
             elif alt.count(".") > 2:
-                findings.append((i, CONSIDER, "alt-text-long", f"Alt text is more than two sentences: '{alt[:60]}...'"))
+                findings.append(
+                    (
+                        i,
+                        CONSIDER,
+                        "alt-text-long",
+                        f"Alt text is more than two sentences: '{alt[:60]}...'",
+                    )
+                )
     return findings
 
 
@@ -110,7 +149,12 @@ def check_code_blocks(lines: list[str]) -> list[tuple[int, str, str, str]]:
         # An unlabelled fence is the opener if the *previous* line is not inside a block
         if not in_code_block(lines, i - 2) and not lang:
             findings.append(
-                (i, CONSIDER, "code-block-no-lang", f"Code block opens without a language hint (`{opener}` — add `{opener}bash` or similar)")
+                (
+                    i,
+                    CONSIDER,
+                    "code-block-no-lang",
+                    f"Code block opens without a language hint (`{opener}` — add `{opener}bash` or similar)",
+                )
             )
     return findings
 
@@ -132,12 +176,25 @@ def check_readme(text: str) -> list[tuple[int, str, str, str]]:
     """README-specific checks (only run when classified as README)."""
     findings: list[tuple[int, str, str, str]] = []
     body = text.lower()
-    if "## install" not in body and "## usage" not in body and "## getting started" not in body:
-        findings.append((0, MUST, "readme-no-install", "README has no installation or usage section"))
+    if (
+        "## install" not in body
+        and "## usage" not in body
+        and "## getting started" not in body
+    ):
+        findings.append(
+            (
+                0,
+                MUST,
+                "readme-no-install",
+                "README has no installation or usage section",
+            )
+        )
     if "```" not in body:
         findings.append((0, MUST, "readme-no-example", "README has no code example"))
     if "license" not in body:
-        findings.append((0, SHOULD, "readme-no-license", "README does not mention a license"))
+        findings.append(
+            (0, SHOULD, "readme-no-license", "README does not mention a license")
+        )
     return findings
 
 
@@ -190,7 +247,9 @@ def main() -> int:
         return 0
 
     total = sum(len(v) for v in by_file.values())
-    print(f"# Documentation review\n\nFiles scanned: **{len(files)}** — findings: **{total}**\n")
+    print(
+        f"# Documentation review\n\nFiles scanned: **{len(files)}** — findings: **{total}**\n"
+    )
     if not by_file:
         print("_All files clean._")
         return 0
