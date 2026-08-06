@@ -188,6 +188,11 @@ def main() -> int:
     # baseline --help snapshot reflects that.
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--since", type=_history.parse_since, default=None)
+    parser.add_argument(
+        "--json",
+        action="store_true",
+        help="Emit as JSON instead of Markdown",
+    )
     args = parser.parse_args()
 
     if not HISTORY.exists():
@@ -201,21 +206,18 @@ def main() -> int:
     counts, total_lines, matched = tally(args.since, name_to_canonical)
 
     window = f"last {args.since.days}d" if args.since else "all time"
-    print(f"## Skill usage ({window})")
-    print()
-    print(f"History records scanned: {total_lines}")
-    print(f"Skill invocations matched: {matched}")
-    print(f"Skills in catalog: {len(skills)}")
-    print()
+    if not args.json:
+        print(f"## Skill usage ({window})")
+        print()
+        print(f"History records scanned: {total_lines}")
+        print(f"Skill invocations matched: {matched}")
+        print(f"Skills in catalog: {len(skills)}")
+        print()
 
     sorted_counts = sorted(counts.items(), key=lambda kv: (-kv[1], kv[0]))
     heavy = [(c, n) for n, c in sorted_counts if c >= 10]
     moderate = [(c, n) for n, c in sorted_counts if 3 <= c < 10]
     light = [(c, n) for n, c in sorted_counts if 1 <= c < 3]
-
-    print_bucket("Heavily used (>=10)", heavy)
-    print_bucket("Moderately used (3-9)", moderate)
-    print_bucket("Lightly used (1-2)", light)
 
     # Zero-invocation skills annotated with age + frontmatter signals
     zero = [name for name in skills if name not in counts]
@@ -223,6 +225,49 @@ def main() -> int:
         zero,
         key=lambda n: -skills[n]["age_days"],  # oldest first
     )
+    retire = [
+        name for name in zero_with_meta if skills[name]["age_days"] >= NEW_SKILL_DAYS
+    ]
+    consider = [(c, n) for n, c in sorted_counts if 1 <= c <= 2]
+
+    if args.json:
+        payload = {
+            "window": window,
+            "scanned": total_lines,
+            "matched": matched,
+            "catalog_size": len(skills),
+            "buckets": {
+                "heavy": [{"name": n, "count": c} for c, n in heavy],
+                "moderate": [{"name": n, "count": c} for c, n in moderate],
+                "light": [{"name": n, "count": c} for c, n in light],
+                "zero": [
+                    {
+                        "name": n,
+                        "age_days": skills[n]["age_days"],
+                        "user_only": skills[n]["user_only"],
+                        "paths_scoped": skills[n]["paths_scoped"],
+                        "new": skills[n]["age_days"] < NEW_SKILL_DAYS,
+                    }
+                    for n in zero_with_meta
+                ],
+                "retire": [
+                    {
+                        "name": n,
+                        "age_days": skills[n]["age_days"],
+                        "user_only": skills[n]["user_only"],
+                        "paths_scoped": skills[n]["paths_scoped"],
+                    }
+                    for n in retire
+                ],
+                "consider_retiring": [{"name": n, "count": c} for c, n in consider],
+            },
+        }
+        print(json.dumps(payload, indent=2))
+        return 0
+
+    print_bucket("Heavily used (>=10)", heavy)
+    print_bucket("Moderately used (3-9)", moderate)
+    print_bucket("Lightly used (1-2)", light)
 
     print("### Zero invocations")
     if not zero_with_meta:

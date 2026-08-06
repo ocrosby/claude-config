@@ -52,6 +52,7 @@ def main() -> int:
         default=8,
         help="Number of leading words to use as the phrase key",
     )
+    _cli.add_json_flag(parser, help_text="Emit as JSON instead of Markdown")
     args = parser.parse_args()
 
     if not HISTORY.exists():
@@ -89,6 +90,24 @@ def main() -> int:
                 phrase_counts[phrase] += 1
 
     window = f"last {args.since.days}d" if args.since else "all time"
+    top_commands = slash_counts.most_common(args.top)
+    top_phrases = [
+        (p, c) for p, c in phrase_counts.most_common() if c >= args.min_count
+    ][: args.top]
+
+    if args.json:
+        payload = {
+            "window": window,
+            "scanned": total,
+            "in_window": in_window if cutoff else None,
+            "min_count": args.min_count,
+            "top": args.top,
+            "slash_commands": [{"cmd": c, "count": n} for c, n in top_commands],
+            "phrases": [{"phrase": p, "count": n} for p, n in top_phrases],
+        }
+        print(json.dumps(payload, indent=2))
+        return 0
+
     print(f"# Skill gap analysis ({window})")
     print()
     print(f"History records scanned: {total}")
@@ -98,8 +117,8 @@ def main() -> int:
 
     print("## Top slash-command invocations (skills currently in use)")
     print()
-    if slash_counts:
-        for cmd, count in slash_counts.most_common(args.top):
+    if top_commands:
+        for cmd, count in top_commands:
             print(f"- `{cmd[:60]}` — {count}")
     else:
         print("_No slash-command invocations in window._")
@@ -109,9 +128,8 @@ def main() -> int:
     print()
     print(f"Phrases typed ≥{args.min_count} times, top {args.top}:")
     print()
-    matches = [(p, c) for p, c in phrase_counts.most_common() if c >= args.min_count]
-    if matches:
-        for phrase, count in matches[: args.top]:
+    if top_phrases:
+        for phrase, count in top_phrases:
             print(f"- {count:>3}× `{phrase[:80]}`")
     else:
         print(f"_No phrases meeting the ≥{args.min_count} threshold._")
