@@ -116,8 +116,15 @@ def _json_payload(raw_root: Path, groups: dict[str, list[Path]]) -> dict:
     }
 
 
+EXAMPLES = """\
+Examples:
+  build_wiki_index.py path/to/kb/raw          # Markdown index to stdout
+  build_wiki_index.py path/to/kb/raw --json   # Structured payload for tooling
+"""
+
+
 def main(argv: list[str] | None = None) -> int:
-    parser = _cli.make_parser(__doc__)
+    parser = _cli.make_parser(__doc__, examples=EXAMPLES)
     parser.add_argument("raw", help="Path to the knowledge base's raw/ directory")
     _cli.add_json_flag(
         parser, help_text="Emit collected assets as JSON instead of Markdown"

@@ -34,8 +34,16 @@ def extract_display(record: dict) -> str:
     return ""
 
 
+EXAMPLES = """\
+Examples:
+  analyze_history.py --since=7d              # Last 7 days as Markdown
+  analyze_history.py --since=30d --json      # Last 30 days as JSON
+  analyze_history.py --min-count=5 --top=50  # Higher threshold, more rows
+"""
+
+
 def main() -> int:
-    parser = _cli.make_parser(__doc__)
+    parser = _cli.make_parser(__doc__, examples=EXAMPLES)
     parser.add_argument("--since", type=_history.parse_since, default=None)
     parser.add_argument(
         "--min-count",

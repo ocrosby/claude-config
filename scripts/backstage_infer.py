@@ -204,8 +204,15 @@ def scan_sibling_catalogs(root: Path, field: str) -> list[dict]:
     return out
 
 
+EXAMPLES = """\
+Examples:
+  backstage_infer.py                       # Infer from git-detected repo root
+  backstage_infer.py --root=../other-repo  # Point at a different repo
+"""
+
+
 def main() -> int:
-    parser = _cli.make_parser(__doc__)
+    parser = _cli.make_parser(__doc__, examples=EXAMPLES)
     parser.add_argument(
         "--root", default=None, help="Override repo root (default: derived from git)"
     )

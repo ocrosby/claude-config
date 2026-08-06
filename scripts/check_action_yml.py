@@ -38,8 +38,16 @@ BRANDING_BLOCK_RE = re.compile(r"^branding:\s*$")
 BRANDING_FIELD_RE = re.compile(r"^  (icon|color):\s*")
 
 
+EXAMPLES = """\
+Examples:
+  check_action_yml.py action.yml                 # Markdown findings for one action
+  check_action_yml.py .github/actions/           # Walk a directory
+  check_action_yml.py action.yml --fail-on=must  # CI gate on Must Fix findings
+"""
+
+
 def parse_args():
-    p = _cli.make_parser(__doc__)
+    p = _cli.make_parser(__doc__, examples=EXAMPLES)
     p.add_argument("paths", nargs="+", help="action.yml / action.yaml files")
     _cli.add_json_flag(p)
     _cli.add_severity_flag(p)

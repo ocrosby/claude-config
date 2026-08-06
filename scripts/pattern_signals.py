@@ -206,8 +206,16 @@ LANGUAGE_NOTES: dict[str, list[dict]] = {
 }
 
 
+EXAMPLES = """\
+Examples:
+  pattern_signals.py                        # All 22 GoF patterns
+  pattern_signals.py --category=creational  # One category only
+  pattern_signals.py --language=go          # Add Go-specific notes
+"""
+
+
 def main() -> int:
-    parser = _cli.make_parser(__doc__)
+    parser = _cli.make_parser(__doc__, examples=EXAMPLES)
     parser.add_argument(
         "--category",
         choices=["creational", "structural", "behavioral", "all"],

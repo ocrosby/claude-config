@@ -26,8 +26,15 @@ from _lib import cli as _cli  # noqa: E402  # type: ignore[import-not-found]
 USES_RE = re.compile(r"^\s*-?\s*uses:\s*['\"]?([^\s'\"#]+)")
 
 
+EXAMPLES = """\
+Examples:
+  extract_workflow_actions.py .github/workflows/         # Markdown list
+  extract_workflow_actions.py .github/workflows/ --json  # JSON — feeds /audit actions
+"""
+
+
 def parse_args():
-    p = _cli.make_parser(__doc__)
+    p = _cli.make_parser(__doc__, examples=EXAMPLES)
     p.add_argument(
         "paths", nargs="+", help="Workflow files or globs (.github/workflows/*.yml)"
     )
