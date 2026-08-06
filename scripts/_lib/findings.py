@@ -8,6 +8,7 @@ and renders it either as JSON (machine-consumable) or Markdown
 (severity-grouped per file). Both shapes are produced here so the per-file
 loop, the line/path labels, and the JSON schema stay consistent.
 """
+
 from __future__ import annotations
 
 import json
