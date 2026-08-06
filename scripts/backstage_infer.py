@@ -1,4 +1,7 @@
-#!/usr/bin/env python3
+#!/usr/bin/env -S uv run --script
+# /// script
+# requires-python = ">=3.11"
+# ///
 """Infer Backstage catalog-info.yaml fields from the current repo.
 
 Used by skills/backstage-catalog-init. Replaces ~100 lines of inlined shell
@@ -25,6 +28,7 @@ Sources are reported so the skill can explain to the user why each value
 was proposed. Errors are non-fatal hints (e.g. "no GitHub remote") that
 the skill must surface before writing the file.
 """
+
 from __future__ import annotations
 
 import json
@@ -81,7 +85,11 @@ def infer_description(root: Path, repo_name: str) -> str:
         for i, line in enumerate(lines[:20]):
             if line.startswith("# "):
                 for follow in lines[i + 1 : i + 11]:
-                    if follow.strip() and not follow.startswith("#") and not follow.startswith("!["):
+                    if (
+                        follow.strip()
+                        and not follow.startswith("#")
+                        and not follow.startswith("![")
+                    ):
                         return follow.strip()
                 break
     bare = re.sub(r"^sun-ms-|^sun-", "", repo_name)
@@ -97,7 +105,9 @@ def infer_title(repo_name: str) -> str:
 
 
 def infer_type(root: Path, repo_name: str) -> str:
-    if (root / "features").exists() and any(p.suffix == ".feature" for p in (root / "features").rglob("*.feature")):
+    if (root / "features").exists() and any(
+        p.suffix == ".feature" for p in (root / "features").rglob("*.feature")
+    ):
         return "test-suite"
     if (root / "tests" / "bdd").exists():
         return "test-suite"
@@ -112,7 +122,12 @@ def infer_type(root: Path, repo_name: str) -> str:
     if src.exists():
         for f in src.rglob("main.py"):
             text = f.read_text(errors="ignore")
-            if "FastAPI" in text or "FastMCP" in text or "fastapi" in text or "fastmcp" in text:
+            if (
+                "FastAPI" in text
+                or "FastMCP" in text
+                or "fastapi" in text
+                or "fastmcp" in text
+            ):
                 return "service"
     if "-cli" in repo_name or "-tool" in repo_name or repo_name.endswith("-tools"):
         return "tool"
@@ -159,7 +174,9 @@ def find_codeowners(root: Path) -> list[dict]:
                     for owner in parts[1:]:
                         if owner.startswith("@"):
                             slug = owner.lstrip("@").split("/", 1)[-1]
-                            candidates.append({"value": slug, "source": f"CODEOWNERS:{path.name}"})
+                            candidates.append(
+                                {"value": slug, "source": f"CODEOWNERS:{path.name}"}
+                            )
                     break
     return candidates
 
@@ -189,7 +206,9 @@ def scan_sibling_catalogs(root: Path, field: str) -> list[dict]:
 
 def main() -> int:
     parser = _cli.make_parser(__doc__)
-    parser.add_argument("--root", default=None, help="Override repo root (default: derived from git)")
+    parser.add_argument(
+        "--root", default=None, help="Override repo root (default: derived from git)"
+    )
     args = parser.parse_args()
 
     root = Path(args.root) if args.root else repo_root()
@@ -213,7 +232,9 @@ def main() -> int:
     system_candidates = scan_sibling_catalogs(root, "system")
 
     if not system_candidates and repo_name.startswith(("sun-ms-", "sun-")):
-        system_candidates.append({"value": "weather-infrastructure", "source": "name-prefix"})
+        system_candidates.append(
+            {"value": "weather-infrastructure", "source": "name-prefix"}
+        )
 
     result = {
         "slug": slug,

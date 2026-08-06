@@ -1,4 +1,7 @@
-#!/usr/bin/env python3
+#!/usr/bin/env -S uv run --script
+# /// script
+# requires-python = ">=3.11"
+# ///
 """Tally slash-command invocations and freeform natural-language phrases from
 ~/.claude/history.jsonl. Replaces the inline Python heredoc in
 skills/skill-gaps/SKILL.md so the parsing logic stays out of context.
@@ -7,6 +10,7 @@ The script outputs frequencies; the *gap interpretation* (which patterns are
 real gaps vs already covered by an existing skill) remains the user's job
 because it requires reading the current skill catalog.
 """
+
 from __future__ import annotations
 
 import json
@@ -33,9 +37,21 @@ def extract_display(record: dict) -> str:
 def main() -> int:
     parser = _cli.make_parser(__doc__)
     parser.add_argument("--since", type=_history.parse_since, default=None)
-    parser.add_argument("--min-count", type=int, default=2, help="Minimum repetition to surface (default: 2)")
-    parser.add_argument("--top", type=int, default=30, help="How many entries to show per section")
-    parser.add_argument("--phrase-words", type=int, default=8, help="Number of leading words to use as the phrase key")
+    parser.add_argument(
+        "--min-count",
+        type=int,
+        default=2,
+        help="Minimum repetition to surface (default: 2)",
+    )
+    parser.add_argument(
+        "--top", type=int, default=30, help="How many entries to show per section"
+    )
+    parser.add_argument(
+        "--phrase-words",
+        type=int,
+        default=8,
+        help="Number of leading words to use as the phrase key",
+    )
     args = parser.parse_args()
 
     if not HISTORY.exists():
@@ -80,7 +96,7 @@ def main() -> int:
         print(f"Records in window: {in_window}")
     print()
 
-    print(f"## Top slash-command invocations (skills currently in use)")
+    print("## Top slash-command invocations (skills currently in use)")
     print()
     if slash_counts:
         for cmd, count in slash_counts.most_common(args.top):
@@ -89,7 +105,7 @@ def main() -> int:
         print("_No slash-command invocations in window._")
     print()
 
-    print(f"## Repeating natural-language phrases (potential skill gaps)")
+    print("## Repeating natural-language phrases (potential skill gaps)")
     print()
     print(f"Phrases typed ≥{args.min_count} times, top {args.top}:")
     print()

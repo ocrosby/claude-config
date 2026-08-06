@@ -1,4 +1,7 @@
-#!/usr/bin/env python3
+#!/usr/bin/env -S uv run --script
+# /// script
+# requires-python = ">=3.11"
+# ///
 """Deterministic checks for GitHub Action definition files (action.yml / action.yaml).
 
 Replaces the inline checklist in skills/code-review/SKILL.md so the rules
@@ -9,6 +12,7 @@ rule_id + message lines, --json + --severity flags.
 The checks are regex-based against line content so no third-party YAML
 parser is required (consistent with the rest of the script catalog).
 """
+
 from __future__ import annotations
 
 import re
@@ -61,7 +65,14 @@ def check_name(lines: list[str]) -> list[tuple[int, str, str, str]]:
         if m:
             name = m.group(1).strip()
             if not name.endswith("by Jedi Knights"):
-                findings.append((i, SHOULD, "action-name-suffix", f"name '{name}' should end with 'by Jedi Knights' for marketplace consistency"))
+                findings.append(
+                    (
+                        i,
+                        SHOULD,
+                        "action-name-suffix",
+                        f"name '{name}' should end with 'by Jedi Knights' for marketplace consistency",
+                    )
+                )
             break  # only the first top-level name: counts
     return findings
 
@@ -73,7 +84,14 @@ def check_description(lines: list[str]) -> list[tuple[int, str, str, str]]:
         if m:
             desc = m.group(1).strip()
             if len(desc) >= 125:
-                findings.append((i, MUST, "action-description-too-long", f"description is {len(desc)} chars — GitHub truncates at 125 on the marketplace"))
+                findings.append(
+                    (
+                        i,
+                        MUST,
+                        "action-description-too-long",
+                        f"description is {len(desc)} chars — GitHub truncates at 125 on the marketplace",
+                    )
+                )
             break  # only top-level description matters here
     return findings
 
@@ -82,7 +100,14 @@ def check_branding(lines: list[str], text: str) -> list[tuple[int, str, str, str
     findings: list[tuple[int, str, str, str]] = []
     if not BRANDING_BLOCK_RE.search(text):
         # No branding at all
-        findings.append((0, SHOULD, "action-no-branding", "no branding: block — add branding.icon and branding.color for marketplace presentation"))
+        findings.append(
+            (
+                0,
+                SHOULD,
+                "action-no-branding",
+                "no branding: block — add branding.icon and branding.color for marketplace presentation",
+            )
+        )
         return findings
     # Find branding block index, then check its children
     block_start = None
@@ -93,7 +118,7 @@ def check_branding(lines: list[str], text: str) -> list[tuple[int, str, str, str
     if block_start is None:
         return findings
     fields_found: set[str] = set()
-    for line in lines[block_start + 1:]:
+    for line in lines[block_start + 1 :]:
         if line and not line[0].isspace():
             break  # left the block
         m = BRANDING_FIELD_RE.match(line)
@@ -101,7 +126,14 @@ def check_branding(lines: list[str], text: str) -> list[tuple[int, str, str, str
             fields_found.add(m.group(1))
     for required in ("icon", "color"):
         if required not in fields_found:
-            findings.append((block_start + 1, SHOULD, "action-no-branding", f"branding: block missing '{required}' field"))
+            findings.append(
+                (
+                    block_start + 1,
+                    SHOULD,
+                    "action-no-branding",
+                    f"branding: block missing '{required}' field",
+                )
+            )
     return findings
 
 
@@ -116,10 +148,22 @@ def check_inputs(lines: list[str]) -> list[tuple[int, str, str, str]]:
             continue
         if in_inputs:
             # End the block when a new top-level key appears (no leading space, contains ":")
-            if line and not line[0].isspace() and ":" in line and not line.startswith("inputs"):
+            if (
+                line
+                and not line[0].isspace()
+                and ":" in line
+                and not line.startswith("inputs")
+            ):
                 # Emit pending input if it never got a description
                 if pending_input and not has_description:
-                    findings.append((pending_input[0], MUST, "action-input-no-description", f"input '{pending_input[1]}' has no description"))
+                    findings.append(
+                        (
+                            pending_input[0],
+                            MUST,
+                            "action-input-no-description",
+                            f"input '{pending_input[1]}' has no description",
+                        )
+                    )
                 pending_input = None
                 in_inputs = False
                 continue
@@ -127,7 +171,14 @@ def check_inputs(lines: list[str]) -> list[tuple[int, str, str, str]]:
             if m:
                 # Close out previous input
                 if pending_input and not has_description:
-                    findings.append((pending_input[0], MUST, "action-input-no-description", f"input '{pending_input[1]}' has no description"))
+                    findings.append(
+                        (
+                            pending_input[0],
+                            MUST,
+                            "action-input-no-description",
+                            f"input '{pending_input[1]}' has no description",
+                        )
+                    )
                 pending_input = (i, m.group(1))
                 has_description = False
                 continue
@@ -135,7 +186,14 @@ def check_inputs(lines: list[str]) -> list[tuple[int, str, str, str]]:
                 has_description = True
     # Close out final pending input
     if pending_input and not has_description:
-        findings.append((pending_input[0], MUST, "action-input-no-description", f"input '{pending_input[1]}' has no description"))
+        findings.append(
+            (
+                pending_input[0],
+                MUST,
+                "action-input-no-description",
+                f"input '{pending_input[1]}' has no description",
+            )
+        )
     return findings
 
 
@@ -157,7 +215,14 @@ def check_composite_steps(lines: list[str]) -> list[tuple[int, str, str, str]]:
         has_run = any(RUN_RE.match(ln) for ln in step_lines)
         has_shell = any(SHELL_RE.match(ln) for ln in step_lines)
         if has_run and not has_shell:
-            findings.append((step_start_line, MUST, "action-composite-missing-shell", "composite step uses 'run:' without 'shell:' — every composite run step must declare a shell"))
+            findings.append(
+                (
+                    step_start_line,
+                    MUST,
+                    "action-composite-missing-shell",
+                    "composite step uses 'run:' without 'shell:' — every composite run step must declare a shell",
+                )
+            )
 
     for i, line in enumerate(lines, 1):
         if re.match(r"^\s*steps:\s*$", line):
@@ -202,12 +267,21 @@ def check_secrets_in_composite_env(lines: list[str]) -> list[tuple[int, str, str
                 continue
         else:
             stripped = line.rstrip()
-            if stripped and len(stripped) - len(stripped.lstrip()) <= (env_block_indent or 0):
+            if stripped and len(stripped) - len(stripped.lstrip()) <= (
+                env_block_indent or 0
+            ):
                 in_env_block = False
                 env_block_indent = None
                 continue
             if SECRETS_REF_RE.search(line):
-                findings.append((i, MUST, "action-secrets-in-env", "secrets.* used directly in env: inside a composite step — pass via inputs: only"))
+                findings.append(
+                    (
+                        i,
+                        MUST,
+                        "action-secrets-in-env",
+                        "secrets.* used directly in env: inside a composite step — pass via inputs: only",
+                    )
+                )
     return findings
 
 
@@ -244,7 +318,9 @@ def main() -> int:
         return 0
 
     total = sum(len(v) for v in by_file.values())
-    print(f"# GitHub Action definition checks\n\nFiles scanned: **{len(files)}** — findings: **{total}**\n")
+    print(
+        f"# GitHub Action definition checks\n\nFiles scanned: **{len(files)}** — findings: **{total}**\n"
+    )
     if not by_file:
         print("_No mechanical violations detected._")
         return 0

@@ -1,4 +1,7 @@
-#!/usr/bin/env python3
+#!/usr/bin/env -S uv run --script
+# /// script
+# requires-python = ">=3.11"
+# ///
 """Deterministic REST convention checks against HTTP handler files.
 
 Acts as a fast pre-check before /rest-review delegates to the rest-reviewer
@@ -9,6 +12,7 @@ on judgment-required concerns (auth flow, pagination shape, HATEOAS).
 Mirrors skills/doc-review/check_docs.py: same severity tiers, same finding
 shape, same flags.
 """
+
 from __future__ import annotations
 
 import re
@@ -22,27 +26,56 @@ from _lib.findings import MUST, SHOULD, CONSIDER  # noqa: E402  # type: ignore[i
 
 # Verbs commonly mis-used in URI paths (each becomes part of the verb-in-URI regex).
 URI_VERBS = (
-    "get", "create", "update", "delete", "remove", "add", "fetch", "list",
-    "find", "search", "edit", "modify", "save", "load", "submit", "send",
-    "cancel", "approve", "reject", "process", "execute", "run",
+    "get",
+    "create",
+    "update",
+    "delete",
+    "remove",
+    "add",
+    "fetch",
+    "list",
+    "find",
+    "search",
+    "edit",
+    "modify",
+    "save",
+    "load",
+    "submit",
+    "send",
+    "cancel",
+    "approve",
+    "reject",
+    "process",
+    "execute",
+    "run",
 )
 
 # Route registration patterns per language. Each match captures HTTP method + path literal.
 ROUTE_PATTERNS: dict[str, list[re.Pattern]] = {
     ".go": [
-        re.compile(r'\b(?:r|router|mux|app)\.(?P<method>GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS)\s*\(\s*"(?P<path>[^"]+)"'),
+        re.compile(
+            r'\b(?:r|router|mux|app)\.(?P<method>GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS)\s*\(\s*"(?P<path>[^"]+)"'
+        ),
         re.compile(r'\bhttp\.HandleFunc\s*\(\s*"(?P<path>[^"]+)"'),
     ],
     ".py": [
-        re.compile(r'@(?:app|router)\.(?P<method>get|post|put|patch|delete|head|options)\s*\(\s*["\'](?P<path>[^"\']+)["\']'),
+        re.compile(
+            r'@(?:app|router)\.(?P<method>get|post|put|patch|delete|head|options)\s*\(\s*["\'](?P<path>[^"\']+)["\']'
+        ),
         re.compile(r'@(?:app|router)\.route\s*\(\s*["\'](?P<path>[^"\']+)["\']'),
-        re.compile(r'\b(?:app|router)\.(?P<method>get|post|put|patch|delete)\s*\(\s*["\'](?P<path>[^"\']+)["\']'),
+        re.compile(
+            r'\b(?:app|router)\.(?P<method>get|post|put|patch|delete)\s*\(\s*["\'](?P<path>[^"\']+)["\']'
+        ),
     ],
     ".ts": [
-        re.compile(r'\b(?:app|router)\.(?P<method>get|post|put|patch|delete|head|options)\s*\(\s*[`"\'](?P<path>[^`"\']+)[`"\']'),
+        re.compile(
+            r'\b(?:app|router)\.(?P<method>get|post|put|patch|delete|head|options)\s*\(\s*[`"\'](?P<path>[^`"\']+)[`"\']'
+        ),
     ],
     ".js": [
-        re.compile(r'\b(?:app|router)\.(?P<method>get|post|put|patch|delete|head|options)\s*\(\s*[`"\'](?P<path>[^`"\']+)[`"\']'),
+        re.compile(
+            r'\b(?:app|router)\.(?P<method>get|post|put|patch|delete|head|options)\s*\(\s*[`"\'](?P<path>[^`"\']+)[`"\']'
+        ),
     ],
 }
 
@@ -90,47 +123,86 @@ def check_uri(line_no: int, route_path: str) -> list[tuple[int, str, str, str]]:
     bare = re.sub(r"\{[^}]+\}|:\w+", "", route_path)
 
     # Verb in URI — must fix
-    segments = [s for s in bare.split("/") if s and not s.startswith(":") and not s.startswith("{")]
+    segments = [
+        s
+        for s in bare.split("/")
+        if s and not s.startswith(":") and not s.startswith("{")
+    ]
     for seg in segments:
         # Lowercase the segment for matching, but strip suffixes that aren't verbs.
         # A segment "getUsers" matches "get"; "/users/get" matches "get"; "/v2/users" doesn't.
         seg_lower = seg.lower()
         for verb in URI_VERBS:
             # Match "getUsers", "createOrder", or a bare verb segment.
-            if seg_lower == verb or seg_lower.startswith(verb) and len(seg_lower) > len(verb) and not seg_lower[len(verb)].isdigit():
+            if (
+                seg_lower == verb
+                or seg_lower.startswith(verb)
+                and len(seg_lower) > len(verb)
+                and not seg_lower[len(verb)].isdigit()
+            ):
                 # Avoid false positives like 'addressBook' (starts with 'add' but 'r' continues)
                 # We only flag if the character after the verb is uppercase in the original (camelCase)
                 # OR the segment IS the verb exactly.
-                rest_orig = seg[len(verb):] if len(seg) >= len(verb) else ""
+                rest_orig = seg[len(verb) :] if len(seg) >= len(verb) else ""
                 if seg_lower == verb or (rest_orig and rest_orig[0].isupper()):
-                    findings.append((line_no, MUST, "uri-has-verb", f"URI path '{route_path}' contains the verb '{verb}' — use a noun and let the HTTP method express the verb"))
+                    findings.append(
+                        (
+                            line_no,
+                            MUST,
+                            "uri-has-verb",
+                            f"URI path '{route_path}' contains the verb '{verb}' — use a noun and let the HTTP method express the verb",
+                        )
+                    )
                     break
 
     # Uppercase letters in URI segments
     for seg in segments:
         if any(c.isupper() for c in seg):
-            findings.append((line_no, SHOULD, "uri-uppercase", f"URI path '{route_path}' contains uppercase letters — use lowercase"))
+            findings.append(
+                (
+                    line_no,
+                    SHOULD,
+                    "uri-uppercase",
+                    f"URI path '{route_path}' contains uppercase letters — use lowercase",
+                )
+            )
             break
 
     # snake_case in URI segments
     for seg in segments:
         if "_" in seg:
-            findings.append((line_no, SHOULD, "uri-snake-case", f"URI path '{route_path}' uses snake_case — use kebab-case (hyphens)"))
+            findings.append(
+                (
+                    line_no,
+                    SHOULD,
+                    "uri-snake-case",
+                    f"URI path '{route_path}' uses snake_case — use kebab-case (hyphens)",
+                )
+            )
             break
 
     # Trailing slash (excluding root)
     if route_path != "/" and route_path.endswith("/"):
-        findings.append((line_no, CONSIDER, "uri-trailing-slash", f"URI path '{route_path}' has a trailing slash — be consistent across the API"))
+        findings.append(
+            (
+                line_no,
+                CONSIDER,
+                "uri-trailing-slash",
+                f"URI path '{route_path}' has a trailing slash — be consistent across the API",
+            )
+        )
 
     return findings
 
 
 def find_handler_block(lines: list[str], start: int) -> str:
     """Return the next ~30 lines after a route registration — enough to inspect the handler body."""
-    return "\n".join(lines[start:start + 30])
+    return "\n".join(lines[start : start + 30])
 
 
-def check_handler(line_no: int, method: str, route_path: str, lines: list[str]) -> list[tuple[int, str, str, str]]:
+def check_handler(
+    line_no: int, method: str, route_path: str, lines: list[str]
+) -> list[tuple[int, str, str, str]]:
     """Handler-body checks. Look at the next ~30 lines after the route registration."""
     findings: list[tuple[int, str, str, str]] = []
     body = find_handler_block(lines, line_no - 1)
@@ -141,27 +213,76 @@ def check_handler(line_no: int, method: str, route_path: str, lines: list[str]) 
         # Heuristic: if the body returns 200 explicitly, flag. If it returns 201 without setting Location, flag.
         if re.search(r"\b201\b", body):
             if "location" not in lower_body and "set" not in lower_body:
-                findings.append((line_no, SHOULD, "post-no-location", f"POST {route_path} returns 201 but does not set a Location header"))
+                findings.append(
+                    (
+                        line_no,
+                        SHOULD,
+                        "post-no-location",
+                        f"POST {route_path} returns 201 but does not set a Location header",
+                    )
+                )
         elif re.search(r"\b200\b", body) and "list" not in route_path.lower():
-            findings.append((line_no, SHOULD, "post-no-201", f"POST {route_path} returns 200 — use 201 + Location header when creating a resource"))
+            findings.append(
+                (
+                    line_no,
+                    SHOULD,
+                    "post-no-201",
+                    f"POST {route_path} returns 200 — use 201 + Location header when creating a resource",
+                )
+            )
 
     if method == "GET":
         # GET should not read the request body
-        if re.search(r"\b(?:request|req|r)\.(?:Body|body|json|get_json)\b", body) and "decode" in lower_body:
-            findings.append((line_no, MUST, "get-with-body", f"GET {route_path} appears to read from the request body — GETs must be safe and idempotent"))
+        if (
+            re.search(r"\b(?:request|req|r)\.(?:Body|body|json|get_json)\b", body)
+            and "decode" in lower_body
+        ):
+            findings.append(
+                (
+                    line_no,
+                    MUST,
+                    "get-with-body",
+                    f"GET {route_path} appears to read from the request body — GETs must be safe and idempotent",
+                )
+            )
         # GET cache headers
-        if not re.search(r"\b(?:Cache-Control|ETag|cache_control|etag)\b", body, re.IGNORECASE):
-            findings.append((line_no, CONSIDER, "get-no-cache-headers", f"GET {route_path} omits Cache-Control / ETag headers"))
+        if not re.search(
+            r"\b(?:Cache-Control|ETag|cache_control|etag)\b", body, re.IGNORECASE
+        ):
+            findings.append(
+                (
+                    line_no,
+                    CONSIDER,
+                    "get-no-cache-headers",
+                    f"GET {route_path} omits Cache-Control / ETag headers",
+                )
+            )
 
     if method == "DELETE":
         # DELETE typically returns 204; if it returns 200, the response body should be absent
-        if re.search(r"\b200\b", body) and re.search(r"\breturn\b.*(?:json|jsonify|c\.JSON|response)", body, re.IGNORECASE):
-            findings.append((line_no, SHOULD, "delete-with-body", f"DELETE {route_path} returns a response body with 200 — use 204 No Content"))
+        if re.search(r"\b200\b", body) and re.search(
+            r"\breturn\b.*(?:json|jsonify|c\.JSON|response)", body, re.IGNORECASE
+        ):
+            findings.append(
+                (
+                    line_no,
+                    SHOULD,
+                    "delete-with-body",
+                    f"DELETE {route_path} returns a response body with 200 — use 204 No Content",
+                )
+            )
 
     # 405 without Allow header
     if re.search(r"\b405\b", body):
         if "allow" not in lower_body:
-            findings.append((line_no, SHOULD, "405-no-allow", f"{method or 'Handler'} for {route_path} returns 405 but does not set an Allow header"))
+            findings.append(
+                (
+                    line_no,
+                    SHOULD,
+                    "405-no-allow",
+                    f"{method or 'Handler'} for {route_path} returns 405 but does not set an Allow header",
+                )
+            )
 
     return findings
 
@@ -198,9 +319,13 @@ def main() -> int:
         return 0
 
     total = sum(len(v) for v in by_file.values())
-    print(f"# REST convention pre-check\n\nFiles scanned: **{len(files)}** — findings: **{total}**\n")
+    print(
+        f"# REST convention pre-check\n\nFiles scanned: **{len(files)}** — findings: **{total}**\n"
+    )
     if not by_file:
-        print("_No mechanical REST violations detected. The /rest-review skill will still delegate to the rest-reviewer agent for cross-cutting concerns._")
+        print(
+            "_No mechanical REST violations detected. The /rest-review skill will still delegate to the rest-reviewer agent for cross-cutting concerns._"
+        )
         return 0
 
     _findings.print_markdown(by_file, line_label=lambda n: f"line {n}")

@@ -1,4 +1,7 @@
-#!/usr/bin/env python3
+#!/usr/bin/env -S uv run --script
+# /// script
+# requires-python = ">=3.11"
+# ///
 """Deterministic checks for GitHub Actions workflow files (.github/workflows/*.yml).
 
 Replaces the inline checklist in skills/code-review/SKILL.md. Same shape as
@@ -9,6 +12,7 @@ only.
 Some rules need access to repo-level state (go.work existence, .golangci.yml
 version) — the script accepts --repo-root for that. Defaults to cwd.
 """
+
 from __future__ import annotations
 
 import re
@@ -36,8 +40,14 @@ GO_VERSION_RE = re.compile(r"\bgo-version:\s*['\"]?([0-9][0-9.]+)['\"]?")
 
 def parse_args():
     p = _cli.make_parser(__doc__)
-    p.add_argument("paths", nargs="+", help="Workflow files or globs (.github/workflows/*.yml)")
-    p.add_argument("--repo-root", default=".", help="Repo root (for go.work / .golangci.yml lookups)")
+    p.add_argument(
+        "paths", nargs="+", help="Workflow files or globs (.github/workflows/*.yml)"
+    )
+    p.add_argument(
+        "--repo-root",
+        default=".",
+        help="Repo root (for go.work / .golangci.yml lookups)",
+    )
     _cli.add_json_flag(p)
     _cli.add_severity_flag(p)
     return p.parse_args()
@@ -74,13 +84,22 @@ def detect_repo_state(repo_root: Path) -> dict:
     return state
 
 
-def check_go_workspace_root(lines: list[str], state: dict) -> list[tuple[int, str, str, str]]:
+def check_go_workspace_root(
+    lines: list[str], state: dict
+) -> list[tuple[int, str, str, str]]:
     findings: list[tuple[int, str, str, str]] = []
     if not state["has_go_work"]:
         return findings
     for i, line in enumerate(lines, 1):
         if GO_TEST_ROOT_RE.search(line) or GOLANGCI_RUN_ROOT_RE.search(line):
-            findings.append((i, SHOULD, "workflow-go-workspace-mismatch", "repo has go.work but command runs from root with ./... — iterate per-module instead"))
+            findings.append(
+                (
+                    i,
+                    SHOULD,
+                    "workflow-go-workspace-mismatch",
+                    "repo has go.work but command runs from root with ./... — iterate per-module instead",
+                )
+            )
     return findings
 
 
@@ -89,14 +108,28 @@ def check_golangci_action_version(lines: list[str]) -> list[tuple[int, str, str,
     for i, line in enumerate(lines, 1):
         m = USES_GOLANGCI_RE.search(line)
         if m and int(m.group(1)) < 9:
-            findings.append((i, SHOULD, "workflow-golangci-lint-version", f"golangci-lint-action@v{m.group(1)} caps at golangci-lint v1 (built with Go 1.24) — use @v9 for Go 1.26+ modules"))
+            findings.append(
+                (
+                    i,
+                    SHOULD,
+                    "workflow-golangci-lint-version",
+                    f"golangci-lint-action@v{m.group(1)} caps at golangci-lint v1 (built with Go 1.24) — use @v9 for Go 1.26+ modules",
+                )
+            )
     return findings
 
 
 def check_golangci_config_v1(state: dict) -> list[tuple[int, str, str, str]]:
     findings: list[tuple[int, str, str, str]] = []
     if state["has_golangci_yaml"] and state["golangci_yaml_version"] != "2":
-        findings.append((0, SHOULD, "workflow-golangci-config-v1", ".golangci.yml lacks `version: \"2\"` — v1 config is silently rejected by golangci-lint v2"))
+        findings.append(
+            (
+                0,
+                SHOULD,
+                "workflow-golangci-config-v1",
+                '.golangci.yml lacks `version: "2"` — v1 config is silently rejected by golangci-lint v2',
+            )
+        )
     return findings
 
 
@@ -109,9 +142,18 @@ def check_matrix_fail_fast(lines: list[str]) -> list[tuple[int, str, str, str]]:
     if not matrix_lines:
         return findings
     # Walk the file; if a matrix block exists but no explicit fail-fast: false is found nearby, flag.
-    has_explicit_false = any(FAIL_FAST_RE.search(line) and "false" in line for line in lines)
+    has_explicit_false = any(
+        FAIL_FAST_RE.search(line) and "false" in line for line in lines
+    )
     if not has_explicit_false:
-        findings.append((matrix_lines[0], CONSIDER, "workflow-matrix-fail-fast", "matrix block found without explicit `fail-fast: false` — default `true` cascades cancellations across independent jobs"))
+        findings.append(
+            (
+                matrix_lines[0],
+                CONSIDER,
+                "workflow-matrix-fail-fast",
+                "matrix block found without explicit `fail-fast: false` — default `true` cascades cancellations across independent jobs",
+            )
+        )
     return findings
 
 
@@ -125,14 +167,25 @@ def check_permissions(lines: list[str]) -> list[tuple[int, str, str, str]]:
         # Find the checkout line for the finding location
         for i, line in enumerate(lines, 1):
             if ACTIONS_CHECKOUT_RE.search(line):
-                findings.append((i, MUST, "workflow-missing-permissions", "actions/checkout used without a permissions: block declaring contents: read"))
+                findings.append(
+                    (
+                        i,
+                        MUST,
+                        "workflow-missing-permissions",
+                        "actions/checkout used without a permissions: block declaring contents: read",
+                    )
+                )
                 break
     return findings
 
 
-def check_release_concurrency(path: Path, lines: list[str], text: str) -> list[tuple[int, str, str, str]]:
+def check_release_concurrency(
+    path: Path, lines: list[str], text: str
+) -> list[tuple[int, str, str, str]]:
     findings: list[tuple[int, str, str, str]] = []
-    is_release = "release" in path.stem.lower() or re.search(r"^name:\s*['\"]?[^\n]*release", text, re.MULTILINE | re.IGNORECASE)
+    is_release = "release" in path.stem.lower() or re.search(
+        r"^name:\s*['\"]?[^\n]*release", text, re.MULTILINE | re.IGNORECASE
+    )
     if not is_release:
         return findings
     has_concurrency = any(CONCURRENCY_BLOCK_RE.search(line) for line in lines)
@@ -141,9 +194,23 @@ def check_release_concurrency(path: Path, lines: list[str], text: str) -> list[t
         # Find a reasonable location to point at
         for i, line in enumerate(lines, 1):
             if line.startswith("name:") or line.startswith("on:"):
-                findings.append((i, SHOULD, "workflow-release-no-concurrency", "release workflow should set `concurrency: { group: release, cancel-in-progress: false }` to prevent parallel releases"))
+                findings.append(
+                    (
+                        i,
+                        SHOULD,
+                        "workflow-release-no-concurrency",
+                        "release workflow should set `concurrency: { group: release, cancel-in-progress: false }` to prevent parallel releases",
+                    )
+                )
                 return findings
-        findings.append((0, SHOULD, "workflow-release-no-concurrency", "release workflow should set `concurrency: { group: release, cancel-in-progress: false }` to prevent parallel releases"))
+        findings.append(
+            (
+                0,
+                SHOULD,
+                "workflow-release-no-concurrency",
+                "release workflow should set `concurrency: { group: release, cancel-in-progress: false }` to prevent parallel releases",
+            )
+        )
     return findings
 
 
@@ -151,7 +218,14 @@ def check_pinned_versions(lines: list[str]) -> list[tuple[int, str, str, str]]:
     findings: list[tuple[int, str, str, str]] = []
     for i, line in enumerate(lines, 1):
         if USES_LATEST_RE.search(line):
-            findings.append((i, SHOULD, "workflow-action-pinned-latest", "action pinned to @latest — pin to a major version (@v4, @v9) to avoid unexpected breakage"))
+            findings.append(
+                (
+                    i,
+                    SHOULD,
+                    "workflow-action-pinned-latest",
+                    "action pinned to @latest — pin to a major version (@v4, @v9) to avoid unexpected breakage",
+                )
+            )
     return findings
 
 
@@ -168,7 +242,14 @@ def check_go_version_drift(lines: list[str]) -> list[tuple[int, str, str, str]]:
         first_value = versions[0][1]
         for i, v in versions:
             if v != first_value:
-                findings.append((i, MUST, "workflow-go-version-drift", f"go-version: {v} disagrees with earlier go-version: {first_value} in the same file"))
+                findings.append(
+                    (
+                        i,
+                        MUST,
+                        "workflow-go-version-drift",
+                        f"go-version: {v} disagrees with earlier go-version: {first_value} in the same file",
+                    )
+                )
     return findings
 
 
@@ -208,7 +289,9 @@ def main() -> int:
         return 0
 
     total = sum(len(v) for v in by_file.values())
-    print(f"# GitHub Actions workflow checks\n\nFiles scanned: **{len(files)}** — findings: **{total}**\n")
+    print(
+        f"# GitHub Actions workflow checks\n\nFiles scanned: **{len(files)}** — findings: **{total}**\n"
+    )
     if state["has_go_work"]:
         print("_Repo has go.work — workspace-mode rules active._\n")
     if not by_file:

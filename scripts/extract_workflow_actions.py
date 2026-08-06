@@ -1,4 +1,7 @@
-#!/usr/bin/env python3
+#!/usr/bin/env -S uv run --script
+# /// script
+# requires-python = ">=3.11"
+# ///
 """Extract unique third-party `uses:` action references from GitHub Actions
 workflow files (.github/workflows/*.yml).
 
@@ -9,6 +12,7 @@ That live check needs network access, so it stays out of this script — this
 script only does the deterministic part: parse and dedupe. Same shape as the
 rest of the script catalog — standard library only, --json flag.
 """
+
 from __future__ import annotations
 
 import json
@@ -24,7 +28,9 @@ USES_RE = re.compile(r"^\s*-?\s*uses:\s*['\"]?([^\s'\"#]+)")
 
 def parse_args():
     p = _cli.make_parser(__doc__)
-    p.add_argument("paths", nargs="+", help="Workflow files or globs (.github/workflows/*.yml)")
+    p.add_argument(
+        "paths", nargs="+", help="Workflow files or globs (.github/workflows/*.yml)"
+    )
     _cli.add_json_flag(p)
     return p.parse_args()
 
@@ -83,7 +89,9 @@ def main() -> int:
         print(json.dumps(unique, indent=2))
         return 0
 
-    print(f"# Third-party action references\n\nFiles scanned: **{len(files)}** — unique actions: **{len(unique)}**\n")
+    print(
+        f"# Third-party action references\n\nFiles scanned: **{len(files)}** — unique actions: **{len(unique)}**\n"
+    )
     if not unique:
         print("_No third-party `uses:` references found._")
         return 0

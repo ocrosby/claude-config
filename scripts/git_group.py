@@ -1,4 +1,7 @@
-#!/usr/bin/env python3
+#!/usr/bin/env -S uv run --script
+# /// script
+# requires-python = ">=3.11"
+# ///
 """Classify the working tree's changed files into conceptual commit groups.
 
 Consumed by /git ship for split-into-conceptual-groups detection. Lives in
@@ -11,6 +14,7 @@ A 'group' is a set of files that share a single conventional-commit (type,
 scope) pair. The script heuristically assigns each file to one group; Claude
 overrides when the heuristic is wrong.
 """
+
 from __future__ import annotations
 
 import json
@@ -28,7 +32,12 @@ TYPE_RULES: list[tuple[re.Pattern, str]] = [
     (re.compile(r"^\.github/workflows/"), "ci"),
     (re.compile(r"^(\.gitlab-ci|\.circleci|\.buildkite|\.travis)"), "ci"),
     (re.compile(r"^(Dockerfile|docker-compose\.|\.dockerignore)"), "build"),
-    (re.compile(r"^(go\.mod|go\.sum|package\.json|package-lock\.json|pyproject\.toml|uv\.lock|requirements.*\.txt|Pipfile|Cargo\.toml|Cargo\.lock)$"), "build"),
+    (
+        re.compile(
+            r"^(go\.mod|go\.sum|package\.json|package-lock\.json|pyproject\.toml|uv\.lock|requirements.*\.txt|Pipfile|Cargo\.toml|Cargo\.lock)$"
+        ),
+        "build",
+    ),
     (re.compile(r"^Makefile$|^makefile$"), "build"),
     (re.compile(r"^(README|CHANGELOG|CONTRIBUTING|LICENSE|AUTHORS|HISTORY)"), "docs"),
     (re.compile(r"^docs?/"), "docs"),
@@ -39,7 +48,20 @@ TYPE_RULES: list[tuple[re.Pattern, str]] = [
 ]
 
 # Scope inference: pull a meaningful subdirectory name.
-SCOPE_PREFIXES = ("internal/", "pkg/", "cmd/", "src/", "app/", "apps/", "lib/", "skills/", "rules/", "agents/", "hooks/", "commands/")
+SCOPE_PREFIXES = (
+    "internal/",
+    "pkg/",
+    "cmd/",
+    "src/",
+    "app/",
+    "apps/",
+    "lib/",
+    "skills/",
+    "rules/",
+    "agents/",
+    "hooks/",
+    "commands/",
+)
 
 
 def parse_args():
@@ -69,12 +91,18 @@ def current_branch() -> str:
     return _git.run(["branch", "--show-current"]).strip()
 
 
-def changed_files(include_untracked: bool, from_ref: str | None) -> list[tuple[str, str]]:
+def changed_files(
+    include_untracked: bool, from_ref: str | None
+) -> list[tuple[str, str]]:
     """Return (status_code, path) pairs for changed files."""
     if from_ref:
         # Compare against a ref — only show files that differ
         raw = _git.run(["diff", "--name-status", from_ref])
-        return [(line.split(maxsplit=1)[0], line.split(maxsplit=1)[1]) for line in raw.splitlines() if line.strip()]
+        return [
+            (line.split(maxsplit=1)[0], line.split(maxsplit=1)[1])
+            for line in raw.splitlines()
+            if line.strip()
+        ]
     raw = _git.run(["status", "--porcelain"])
     pairs: list[tuple[str, str]] = []
     for line in raw.splitlines():
@@ -103,7 +131,7 @@ def infer_scope(path: str) -> str:
     # Strip a known prefix and take the next path segment
     for prefix in SCOPE_PREFIXES:
         if path.startswith(prefix):
-            remainder = path[len(prefix):]
+            remainder = path[len(prefix) :]
             first = remainder.split("/", 1)[0]
             # If 'first' is itself a file, drop the extension and use top-level prefix
             if "." in first:
@@ -161,7 +189,17 @@ def main() -> int:
         return 1
     pairs = changed_files(args.include_untracked, args.from_ref)
     if not pairs:
-        print(json.dumps({"branch": branch, "is_main": branch in ("main", "master"), "groups": [], "untracked_only": False}, indent=2))
+        print(
+            json.dumps(
+                {
+                    "branch": branch,
+                    "is_main": branch in ("main", "master"),
+                    "groups": [],
+                    "untracked_only": False,
+                },
+                indent=2,
+            )
+        )
         return 0
     has_untracked = any(code == "??" for code, _ in pairs)
     groups = group_files(pairs)
