@@ -1,5 +1,5 @@
 ---
-description: Use when working with Neovim from Claude Code — talk to a running instance over msgpack-RPC (rpc), author a native vim.pack config (config), or author a redistributable Neovim plugin (plugin). Invoke as /nvim <rpc|config|plugin>. For lazy.nvim plugin adds, apply the inline conservative-update checklist in the skill body.
+description: Use when working with Neovim from Claude Code — talk to a running instance over msgpack-RPC (rpc), author a native vim.pack config (config), or author a redistributable Neovim plugin (plugin). Invoke as /nvim <rpc|config|plugin>.
 argument-hint: "<subcommand>"
 aliases: neovim, nvim-config, nvim-plugin
 ---

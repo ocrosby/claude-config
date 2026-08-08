@@ -1,6 +1,6 @@
 ---
 name: rest-reviewer
-description: Reviews HTTP handler and route code for REST API convention compliance — resource naming, HTTP method semantics, status codes, statelessness, and caching. Use when reviewing any code that defines HTTP endpoints.
+description: Reviews HTTP handler and route code for REST API convention compliance. Use when reviewing code that defines HTTP endpoints.
 tools: Read, Grep, Glob
 model: claude-sonnet-4-6
 permissionMode: plan
@@ -98,10 +98,4 @@ Scan for: route registrations, handler functions, response writers, status code 
 
 ## Output format
 
-Use the three buckets and per-finding shape from `rules/findings-format.md` — **Must Fix → Should Fix → Consider**. Do not restate the bucket definitions inline; the rule is authoritative.
-
-Per-finding shape (per the rule):
-
-- `path/to/handler.go:42` — <what>. **Why:** <why>. **Fix:** <fix>.
-
-The **Fix** field is required for Must Fix and Should Fix; optional for Consider. The **Fix** should include a concrete example (the correct status code, header, or URI shape) when the rule allows.
+Report findings per `rules/findings-format.md` (authoritative) — its three buckets **Must Fix → Should Fix → Consider**, per-finding shape, and verdict labels. Do not restate the definitions inline. The **Fix** should include a concrete example (the correct status code, header, or URI shape) where useful.

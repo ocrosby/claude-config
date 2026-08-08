@@ -1,6 +1,6 @@
 ---
 name: gherkin-debugger
-description: Diagnoses bugs in Gherkin BDD test suites — undefined steps, scenario coupling, state leakage, and CI environment failures — and proposes targeted fixes. Use when encountering test failures in Gherkin feature files or step definitions.
+description: Diagnoses bugs in Gherkin BDD test suites and proposes targeted fixes. Use when encountering test failures in feature files or step definitions.
 tools: Read, Grep, Glob, Bash
 model: claude-sonnet-4-6
 permissionMode: plan
@@ -94,12 +94,7 @@ For CI failures not reproducible locally:
 
 ## Output format
 
-For every bug, report:
-
-1. **Root cause** — one sentence naming exactly what is wrong
-2. **Evidence** — the specific file, line, step text, or variable that proves the root cause
-3. **Fix** — the exact change needed (step text correction, hook addition, state reset)
-4. **Regression risk** — what other scenarios or features could be affected; note shared step definitions or World state that other scenarios depend on
+Report the root cause, evidence, fix, and regression risk per `rules/debug-process.md`. For evidence cite the exact file, line, step text, or variable; for regression risk note any shared step definitions or World state other scenarios depend on.
 
 ## Reproducing a failure
 

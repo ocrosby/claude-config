@@ -89,19 +89,8 @@ See `rules/design-patterns-application.md` for recognition signals. Flag these a
 
 ### Safety-critical discipline
 
-See `rules/algorithmic-complexity.md` § Bounded loops, `rules/defensive-assertions.md`, and `rules/lint-suppression.md` for the underlying rules.
-
-- [ ] Every loop over user-controlled or externally-supplied input references a named cap (module-level constant or config value) — missing bound at a trust boundary is **Must Fix**; missing bound on internal input is **Should Fix**
-- [ ] Non-trivial function (>10 lines or with a non-obvious invariant) carries at least one `assert` on parameters/invariants and assertions are side-effect-free — assertion with a side effect is **Should Fix**; absence is **Consider** unless a plausible caller mistake would slip through, then **Should Fix**. Invariants that must survive `python -O` use an explicit `raise`, not `assert` — misuse is **Should Fix**
-- [ ] Silently-discarded error returns: `subprocess.run(...)` without `check=True` and no `returncode` branch is **Must Fix**; a bare non-void call on a line by itself with no `_ =` and no comment is **Should Fix**
-- [ ] Every `# noqa`, `# type: ignore`, and `# pyright: ignore` carries a rule code and an inline reason — bare form is **Must Fix**; code-without-reason is **Should Fix**
+Apply `rules/algorithmic-complexity.md` § Bounded loops, `rules/defensive-assertions.md`, and `rules/lint-suppression.md` with their Must/Should severities — do not restate them here. Check: every loop over external input references a named cap; every non-trivial function carries a side-effect-free `assert` (or an explicit `raise` for invariants that must survive `python -O`); every `subprocess.run(...)` sets `check=True` or branches on `returncode`; every `# noqa`/`# type: ignore`/`# pyright: ignore` carries a rule code plus inline reason.
 
 ## Output format
 
-Use the three buckets and per-finding shape from `rules/findings-format.md` — **Must Fix → Should Fix → Consider**. Do not restate the bucket definitions inline; the rule is authoritative.
-
-Per-finding shape (per the rule):
-
-- `path/to/file.py:42` — <what>. **Why:** <why>. **Fix:** <fix>.
-
-The **Fix** field is required for Must Fix and Should Fix; optional for Consider.
+Report findings per `rules/findings-format.md` (authoritative) — its three buckets **Must Fix → Should Fix → Consider**, per-finding shape, and verdict labels. Do not restate the definitions inline.

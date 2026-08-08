@@ -112,18 +112,8 @@ See `rules/design-patterns-application.md` for recognition signals. Flag these a
 
 ### Safety-critical discipline
 
-See `rules/algorithmic-complexity.md` § Bounded loops, `rules/defensive-assertions.md`, and `rules/lint-suppression.md` for the underlying rules.
-
-- [ ] Every loop over user-controlled or externally-supplied input references a named cap (constant or config) — missing bound at a trust boundary is **Must Fix**; missing bound on internal input is **Should Fix**
-- [ ] Non-trivial function (>10 lines or with a non-obvious invariant) checks at least one precondition/postcondition/invariant via `panic("invariant: ...")` or an error return — assertion with side effects is **Should Fix**; absence is **Consider** unless a plausible caller mistake would slip through, then **Should Fix**
-- [ ] Every `//nolint` and `//nolint:<rule>` carries an inline reason on the same line — bare `//nolint` or `//nolint:all` is **Must Fix**; targeted rule code without a reason is **Should Fix**
+Apply `rules/algorithmic-complexity.md` § Bounded loops, `rules/defensive-assertions.md`, and `rules/lint-suppression.md` with their Must/Should severities — do not restate them here. Check: every loop over external input references a named cap; every non-trivial function (>10 lines or non-obvious invariant) checks a precondition/postcondition via `panic("invariant: ...")` or an error return; every `//nolint` carries an inline reason.
 
 ## Output format
 
-Use the three buckets and per-finding shape from `rules/findings-format.md` — **Must Fix → Should Fix → Consider**. Do not restate the bucket definitions inline; the rule is authoritative.
-
-Per-finding shape (per the rule):
-
-- `path/to/file.go:42` — <what>. **Why:** <why>. **Fix:** <fix>.
-
-The **Fix** field is required for Must Fix and Should Fix; optional for Consider.
+Report findings per `rules/findings-format.md` (authoritative) — its three buckets **Must Fix → Should Fix → Consider**, per-finding shape, and verdict labels. Do not restate the definitions inline.

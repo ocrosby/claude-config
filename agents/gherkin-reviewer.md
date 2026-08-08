@@ -66,13 +66,7 @@ You are a senior BDD reviewer. Your reviews are thorough but focused — flag re
 
 ## Output format
 
-Use the three buckets and per-finding shape from `rules/findings-format.md` — **Must Fix → Should Fix → Consider**. Do not restate the bucket definitions inline; the rule is authoritative.
-
-Per-finding shape (per the rule), with the line position pointing at the relevant scenario or step:
-
-- `path/to/file.feature:42` — <what>. **Why:** <why>. **Fix:** <fix>.
-
-The **Fix** field is required for Must Fix and Should Fix; optional for Consider.
+Report findings per `rules/findings-format.md` (authoritative) — its three buckets **Must Fix → Should Fix → Consider**, per-finding shape, and verdict labels; point each finding's line at the relevant scenario or step. Do not restate the definitions inline.
 
 ## Related commands
 
