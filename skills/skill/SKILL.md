@@ -52,36 +52,9 @@ Guides creation of a new skill with frontmatter, workflow, language audit, confl
 
 3. **Write the frontmatter.** Read `~/.claude/rules/skill-conventions.md` (Frontmatter section) before adding any field. That file is authoritative — do not duplicate the field reference here. Only `description` is recommended for Claude to know when to invoke the skill.
 
-4. **Write the title and scope section.**
-   ```markdown
-   # Skill Name
+4. **Write the title and scope section.** Use the title/scope skeleton in `~/.claude/skills/skill/author-templates.md`. Omit "When NOT to use" if there are no meaningful exclusions.
 
-   Use this skill when <specific trigger condition>.
-
-   ## When NOT to use
-   - <exclusion 1 with literal example>
-   - <exclusion 2 with literal example>
-   ```
-   Omit "When NOT to use" if there are no meaningful exclusions.
-
-5. **Write the workflow.** Number every step. Each step must describe a concrete action, not a general principle.
-   ```markdown
-   ## Workflow
-
-   ### 1. <Action verb> the <thing>
-
-   - Concrete substep
-   - **If <failure condition>: stop and do not proceed.** <What to tell the user.>
-
-   ### 2. <Next action>
-   ...
-
-   ### N. Verify
-
-   Confirm the output is correct:
-   - <verification check 1>
-   - <verification check 2>
-   ```
+5. **Write the workflow.** Number every step; each step must describe a concrete action, not a general principle. Use the workflow skeleton in `~/.claude/skills/skill/author-templates.md`.
 
    Requirements: every blocking condition says "**stop and do not proceed**" (not "pause"); every step that produces output specifies what the output looks like; the final step is a verification step; agents the skill delegates to are named explicitly.
 
@@ -150,47 +123,9 @@ Invocation counts and retirement recommendations.
    ```bash
    python3 ~/.claude/scripts/tally_invocations.py [--since 30d]
    ```
-   The script parses every record in `~/.claude/history.jsonl`, extracts the leading `/<command>` from each prompt, restricts matches to commands that map to directories under `~/.claude/skills/`, resolves renamed skills via the `aliases:` frontmatter field (historical invocations under a previous name count toward the canonical name), tallies counts per skill, reads each SKILL.md to detect `disable-model-invocation: true` (zero usage there is a stronger retirement signal), and uses git first-add time as "age in catalog" (file mtime as fallback) so newly-added skills with zero counts are held rather than retired. Produces a ranked retirement recommendation as the final section.
+   The script parses `~/.claude/history.jsonl`, tallies per-skill invocation counts (resolving renamed skills via the `aliases:` frontmatter field), and emits a ranked retirement recommendation as its final section. See step 4 for the interpretation caveats it encodes (`paths:`, `disable-model-invocation`, recent-mtime holds).
 
-3. **Present the report** in this exact shape:
-
-   ```
-   ## Skill usage (last 90 days)
-
-   History records scanned: <N>
-   Skill invocations matched: <M>
-   Skills in catalog: <K>
-
-   ### Heavily used (>=10)
-   - /code-review  45
-   - /git-ship     32
-
-   ### Moderately used (3-9)
-   - /architect     7
-
-   ### Lightly used (1-2)
-   - /here-now      1
-
-   ### Zero invocations
-   - /skill-author      [added 92d ago]
-   - /rest-spec         [added 5d ago, new]
-   - /update-config     [added 180d ago, user-invocable only]
-
-   ### Retire (recommended)
-
-   These skills have zero invocations, have existed for ≥30 days, and are not new additions. Ordered by strongest signal first (longest unused).
-
-   1. /update-config   — 180d in catalog, user-invocable only, never invoked
-   2. /skill-author    — 92d in catalog, never invoked
-
-   ### Consider retiring
-
-   Low usage (1–2 invocations all-time) — keep if intentional, drop if accidental:
-
-   - /here-now  (1 invocation)
-   ```
-
-   Pass the script output through verbatim. Do not re-summarize the histogram or the recommendation rationale.
+3. **Present the report** in the exact shape defined in `~/.claude/skills/skill/usage-report-format.md`. Pass the script output through verbatim — do not re-summarize the histogram or the recommendation rationale.
 
 4. **Interpret the recommendations.** Note these caveats before the user acts:
    - A skill loaded automatically via `paths:` (e.g. a language rule firing on `.go` files) may not produce `/command` invocations even if it fires every session — check the skill's frontmatter for `paths:` before retiring.
