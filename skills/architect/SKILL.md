@@ -88,57 +88,13 @@ Advisory only — never implements.
 
 4. **Identify pattern signals.** Match the script's `signals` array exactly — do not substitute your own judgment. Use `language_notes` for implementation-style guidance specific to the language. For each signal record: exact code location (file, line or function name), which pattern it maps to, why (the specific structural problem present). **If no signals found: skip to step 6.**
 
-5. **Generate recommendations.** One block per signal:
-
-   ~~~
-   ### <Pattern Name> (<Category>)
-
-   **Signal:** <exact code location and what was observed>
-
-   **Why it fits:** <1–2 sentences on the specific structural problem this pattern solves here>
-
-   **Participants in this context:**
-   - <Role from pattern>: `<actual class/function/module name in the code>`
-   - (list all key roles)
-
-   **Sketch:**
-   ```<language>
-   // minimal pseudocode showing the structural change — not a full implementation
-   // name the pattern participants as they would appear in the real code
-   ```
-
-   **Trade-off:** <what applying this costs vs. what it gains in this specific context>
-   ~~~
+5. **Generate recommendations.** The recommendation, misuse, and report output templates live in `~/.claude/skills/architect/patterns.md` — read it and apply them for steps 5–7. Produce one block per signal per the recommendation template.
 
    **Hard limits:** never recommend more than 3 patterns per file (if more signals exist, list the top 3 by current pain severity); never recommend without citing the specific signal; never implement the refactoring — this is advisory only.
 
-6. **Flag pattern misuse.** If a pattern name appears in the code (class name, comment, doc) but the implementation violates the pattern's contract, flag it separately:
+6. **Flag pattern misuse.** If a pattern name appears in the code (class name, comment, doc) but the implementation violates the pattern's contract, flag it separately per the misuse template.
 
-   ```
-   ### Misuse: <Pattern Name>
-
-   **Location:** <file and line>
-   **Issue:** <what the current code does that violates the pattern>
-   **Fix:** <what correct application requires>
-   ```
-
-7. **Deliver the report.**
-   ```
-   ## Pattern Analysis: <filename or "Problem Description">
-
-   ### Opportunities
-   <one block per recommendation — highest-priority first>
-
-   ### Misuse
-   <any misapplied patterns found>
-
-   ### No-Pattern Zones
-   <note any sections intentionally kept simple — validate the simplicity is appropriate>
-
-   ### Summary
-   <one paragraph: how many signals found, highest-priority fix, overall design health>
-   ```
-   If no opportunities: `"No pattern opportunities identified — the current structure is appropriate for its complexity."`
+7. **Deliver the report** per the report template. If no opportunities: `"No pattern opportunities identified — the current structure is appropriate for its complexity."`
 
 8. **Confirm before implementing.** If the user asks to implement a recommended pattern: confirm the specific pattern, the participants, and target files before writing any code. Delegate to the appropriate language agent (`go-architect`, `py-architect`, `nvim-architect`). **Do not write production code in this skill.**
 
@@ -158,148 +114,32 @@ Output is a valid OpenAPI entry in `openapi.yaml` (or the project's existing spe
 
 **When to use.** A new endpoint being added; an existing endpoint changing shape (new param, new response, new status code); a new resource hierarchy (run `/architect design` first, then this subcommand).
 
-1. **Identify the resource and operation.**
-   - Resource: noun, lowercase, plural for collections, hyphens for multi-word.
-   - HTTP method per REST semantics:
-     - Collection: `GET /resources`, `POST /resources`
-     - Document: `GET /resources/{id}`, `PUT /resources/{id}`, `PATCH /resources/{id}`, `DELETE /resources/{id}`
-   - No verbs in paths — HTTP methods are the verbs.
-   - Breaking change (incompatible response shape, removed field) → new version prefix (`/v2/`). Never mutate the existing URI.
+Read `~/.claude/skills/architect/spec.md` and apply its workflow:
 
-2. **Ensure the spec file exists.** If no OpenAPI spec is present, create `openapi.yaml` at the project root with this minimal header:
-   ```yaml
-   openapi: "3.0.3"
-   info:
-     title: API
-     version: "1.0.0"
-   paths: {}
-   components:
-     schemas: {}
-     responses: {}
-   ```
-   If a spec exists at a different path (`api/openapi.yaml`, `docs/openapi.yaml`), use that.
-
-3. **Write the endpoint entry** under `paths:` with `operationId`, `summary`, parameters, request body (if any), and responses. Define reusable shapes under `components/`:
-
-   ```yaml
-   /users/{id}/orders:
-     get:
-       operationId: listUserOrders
-       summary: List orders for a user
-       parameters:
-         - name: id
-           in: path
-           required: true
-           schema: { type: string }
-         - name: status
-           in: query
-           schema:
-             type: string
-             enum: [pending, fulfilled, cancelled]
-       responses:
-         "200":
-           description: Paginated list of orders
-           content:
-             application/json:
-               schema: { $ref: "#/components/schemas/OrderList" }
-         "401": { $ref: "#/components/responses/Unauthorized" }
-         "404": { $ref: "#/components/responses/NotFound" }
-   ```
-
-4. **Apply the status code checklist.**
-
-   | Condition | Required status code |
-   |---|---|
-   | POST created a new resource | `201 Created` + `Location: /resources/{id}` header |
-   | Successful GET/PUT/PATCH with body | `200 OK` |
-   | Successful DELETE or no-content response | `204 No Content` (no body) |
-   | Resource not found | `404 Not Found` |
-   | Invalid credentials or missing auth | `401 Unauthorized` + `WWW-Authenticate` header |
-   | Valid identity, insufficient permission | `403 Forbidden` |
-   | Semantic validation failure | `422 Unprocessable Entity` |
-   | Malformed request syntax | `400 Bad Request` |
-   | Method not supported on this resource | `405 Method Not Allowed` + `Allow` header |
-
-   The spec must declare every status code the handler will return. If a status is missing from the spec but emitted by the handler, the spec is wrong.
-
-5. **Validate.** Run an OpenAPI validator if available (`swagger-cli validate`, `redocly lint`). If none configured, at minimum confirm: YAML parses, every `$ref` resolves, every operation has a unique `operationId`, every response declares a `description`. **If validation fails: stop and fix before handoff.**
-
-6. **Hand off to `/feature rest`.** Report the spec entry added (operationId + path + method) and instruct the user to invoke `/feature rest <operationId>` to write the handler against this spec.
+- Identify the resource (noun, lowercase, plural for collections) and HTTP method per REST semantics — no verbs in paths; breaking change → new version prefix, never mutate the existing URI
+- Ensure the spec file exists — create `openapi.yaml` with the minimal header if none is present
+- Write the endpoint entry under `paths:` with `operationId`, `summary`, parameters, request body, and responses; define reusable shapes under `components/`
+- Apply the status-code checklist so the spec declares every status the handler will return
+- Validate — YAML parses, every `$ref` resolves, unique `operationId`, every response has a `description`; **if validation fails: stop and fix before handoff**
+- Hand off to `/feature rest` — report the spec entry added (operationId + path + method)
 
 **Rules for `spec`.** Never write handler code — that's `/feature rest`'s job. Follow `rules/rest-api-conventions.md` for naming, methods, status codes, headers — that rule is authoritative. Breaking changes require a new version prefix, not in-place mutation.
 
 ### 5. Dispatch — `catalog`
 
-Creates a `catalog-info.yaml` Backstage descriptor for a repo that does not yet have one.
+Creates a `catalog-info.yaml` Backstage descriptor for a repo that does not yet have one. **This subcommand commits and pushes to remote.**
 
 **When NOT to use.** The repo already has a `catalog-info.yaml` — edit the existing file. The repo registers more than one `kind: Component` — this subcommand creates a single descriptor.
 
-1. **Check for an existing descriptor.**
-   ```bash
-   test -f catalog-info.yaml && echo "EXISTS" || echo "MISSING"
-   ```
-   **If the file exists: stop and do not proceed.** Show its current contents.
+Read `~/.claude/skills/architect/catalog.md` and apply its workflow:
 
-2. **Run the inference script.**
-   ```bash
-   python3 ~/.claude/scripts/backstage_infer.py
-   ```
-   Emits JSON with: `slug`, `repo_name`, `branch`, `title`, `description`, `type`, `lifecycle`, `owner_candidates`, `system_candidates`, `errors`. Each candidate carries a `source` field (CODEOWNERS, sibling catalog, name-prefix).
-
-   **If `errors` is non-empty: stop and do not proceed.** Surface the error.
-
-3. **Resolve owner.**
-   - All `owner_candidates` agree → use that value, tell user where it came from.
-   - Candidates differ → present every candidate and source, ask which to use.
-   - Empty → ask: "What Backstage group should own this component? (e.g. `qa-engineering`, `platform-engineering`)". **Do not guess. Do not proceed without confirmed owner.**
-
-4. **Resolve system.**
-   - All `system_candidates` agree → propose, wait for explicit confirmation.
-   - Multiple or none → ask: "Which Backstage system does this component belong to? (e.g. `weather-infrastructure`)". Wait for explicit answer.
-
-5. **Write the file** using script's values + resolved owner and system:
-   ```yaml
-   apiVersion: backstage.io/v1alpha1
-   kind: Component
-   metadata:
-     name: <repo_name>
-     title: <title>
-     description: <description>
-     annotations:
-       github.com/project-slug: <slug>
-       backstage.io/managed-by-location: url:https://github.com/<slug>/blob/<branch>/catalog-info.yaml
-       backstage.io/managed-by-origin-location: url:https://github.com/<slug>/blob/<branch>/catalog-info.yaml
-   spec:
-     type: <type>
-     lifecycle: <lifecycle>
-     owner: <owner>
-     system: <system>
-   ```
-
-6. **Verify the written file.** `cat catalog-info.yaml`. Confirm every field is present and non-empty:
-   - `metadata.name`
-   - `metadata.annotations["github.com/project-slug"]` — must be `org/repo` format, no `.git` suffix
-   - `spec.type`, `spec.lifecycle`, `spec.owner`, `spec.system`
-
-   **If any field is missing or empty: stop and do not proceed.**
-
-7. **Confirm and commit.** Print the file contents, ask: "Ready to commit this as `chore: add Backstage catalog-info.yaml`? (yes / edit first)".
-
-   - **yes** → stage, commit, push:
-     ```bash
-     git add catalog-info.yaml
-     git commit -m "chore: add Backstage catalog-info.yaml"
-     git push
-     ```
-     **If `git push` fails: stop.** Tell the user the commit is local-only and they must push manually before importing.
-
-   - **edit first** → show the file and wait. Do not commit until confirmed.
-
-8. **Print the import URL** after a successful push:
-   ```
-   Register this component in Backstage by importing:
-   https://github.com/<slug>/blob/<branch>/catalog-info.yaml
-   ```
+- Check for an existing descriptor — **if `catalog-info.yaml` exists: stop and do not proceed;** show its current contents
+- Run `backstage_infer.py`; **if `errors` is non-empty: stop and do not proceed**
+- Resolve owner and system — **never guess;** ask the user when candidates disagree or are empty, and wait for explicit confirmation
+- Write the `catalog-info.yaml` from the script's values plus the resolved owner and system
+- Verify every field is present and non-empty; **if any field is missing or empty: stop**
+- Confirm, then commit and push (`chore: add Backstage catalog-info.yaml`) — **if `git push` fails: stop** and tell the user the commit is local-only
+- Print the import URL after a successful push
 
 **Rules for `catalog`.** Never guess owner or system. Never overwrite an existing `catalog-info.yaml`. Never push if `git push` failed — tell the user to push manually.
 
