@@ -81,19 +81,8 @@ See `rules/design-patterns-application.md` for recognition signals. Flag these a
 
 ### Safety-critical discipline
 
-See `rules/algorithmic-complexity.md` § Bounded loops, `rules/defensive-assertions.md`, and `rules/lint-suppression.md` for the underlying rules.
-
-- [ ] Every loop over external input (buffer contents, LSP responses, user config) has a named cap; recursion on unbounded structures (JSON, AST, filesystem walk) uses an explicit depth guard — missing bound at a trust boundary is **Must Fix**; missing bound on internal input is **Should Fix**
-- [ ] Non-trivial function (>10 lines or with a non-obvious invariant) carries at least one `assert(...)` on parameters or invariants beyond the `vim.validate` at `setup()` entry, and assertions are side-effect-free — assertion with a side effect is **Should Fix**; absence is **Consider** unless a plausible caller mistake would slip through, then **Should Fix**
-- [ ] `pcall`/`xpcall` return values are inspected — a bare `pcall(fn, ...)` with no `ok, err` binding is **Must Fix**
-- [ ] Every `-- luacheck: ignore <code>` and `-- selene: allow(<rule>)` carries an inline reason — bare form is **Must Fix**; code-without-reason is **Should Fix**
+Apply `rules/algorithmic-complexity.md` § Bounded loops, `rules/defensive-assertions.md`, and `rules/lint-suppression.md` with their Must/Should severities — do not restate them here. Check: every loop over external input (buffer contents, LSP responses, user config) has a named cap and recursion on unbounded structures uses an explicit depth guard; every non-trivial function carries a side-effect-free `assert(...)` beyond the `setup()` `vim.validate`; every `pcall`/`xpcall` inspects its `ok, err` return; every `-- luacheck: ignore`/`-- selene: allow` carries an inline reason.
 
 ## Output format
 
-Use the three buckets and per-finding shape from `rules/findings-format.md` — **Must Fix → Should Fix → Consider**. Do not restate the bucket definitions inline; the rule is authoritative.
-
-Per-finding shape (per the rule):
-
-- `path/to/file.lua:42` — <what>. **Why:** <why>. **Fix:** <fix>.
-
-The **Fix** field is required for Must Fix and Should Fix; optional for Consider.
+Report findings per `rules/findings-format.md` (authoritative) — its three buckets **Must Fix → Should Fix → Consider**, per-finding shape, and verdict labels. Do not restate the definitions inline.

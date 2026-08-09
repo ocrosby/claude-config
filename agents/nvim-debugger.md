@@ -56,9 +56,4 @@ vim.api.nvim_get_autocmds({ group = "Name" })  -- autocommands in a group
 
 ## Output format
 
-For every bug, report:
-
-1. **Root cause** — the specific line and condition that triggers the failure
-2. **Evidence** — code references and state that confirm the diagnosis
-3. **Fix** — minimal code change that resolves the issue
-4. **Regression risk** — what else could break and how to verify
+Report the root cause, evidence, fix, and regression risk per `rules/debug-process.md`.
