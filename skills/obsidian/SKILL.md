@@ -97,26 +97,7 @@ Committing is the user's job — surface the change set per the "Git discipline"
 
 ## Setup checklist (one-time bootstrap)
 
-The vault's own `readme.md` describes a PARA layout, but several folders it lists aren't created yet. Run this once to bring the on-disk structure in line with the readme so the workflow below has somewhere to write:
-
-```bash
-VAULT="$HOME/src/github.com/ocrosby/obsidian"
-mkdir -p "$VAULT"/{Inbox,Daily,Archives,Templates}
-```
-
-Optional but recommended:
-
-- **Add a `.gitignore` rule for `.obsidian/workspace*.json`** — these track UI state (open panes, recent files) and create noise in commits. Run from the vault root: `printf '.obsidian/workspace*.json\n.obsidian/cache\n.trash/\n' >> .gitignore && git add .gitignore`.
-- **Decide on the daily-notes cadence.** A practical starter: open today's note first thing each morning, capture the day's thoughts, link out to project notes via `[[Projects/scout_sleuth/...]]` when work shifts there. The "Daily notes workflow" section below has the create-if-missing recipe.
-- **Install `obsidian.nvim` only if you want in-editor vault management.** It's not currently in `yoda.nvim/lua/plugins/`; the shell + Obsidian.app combo this skill assumes works without it. If you do add it, prefer `/add-plugin` and re-read this skill afterward to surface obsidian.nvim-specific shortcuts.
-
-After bootstrapping, commit the empty folders intentionally (each needs a `.gitkeep` since git ignores empty dirs):
-
-```bash
-for d in Inbox Daily Archives Templates; do touch "$VAULT/$d/.gitkeep"; done
-```
-
-Templates rollout is covered in its own section below — leave `Templates/` empty for now; this skill works fine without it.
+First-run only: create the PARA folders, add `.gitignore` noise rules, and commit `.gitkeep` files. Read `~/.claude/skills/obsidian/setup.md` and run it. Skip if the vault is already bootstrapped.
 
 ## Folder layout
 
@@ -217,71 +198,7 @@ If the requested date's note doesn't exist, ask before creating — backfilling 
 
 ## Templates (when you start using them)
 
-`Templates/` is empty for now. When you're ready to adopt them, create the files below — this skill will start using them automatically (the note-creation logic checks for `Templates/<type>.md` and falls back to the minimal frontmatter above if missing).
-
-### How to add templates
-
-1. **Create the template files** under `Templates/` using `{{date}}` and `{{title}}` placeholders. Suggested starters:
-
-   ```markdown
-   # Templates/daily.md
-   ---
-   id: {{date}}
-   date: {{date}}
-   tags: [daily-notes]
-   ---
-
-   # {{date}}
-
-   ## What I worked on
-
-   ## Notes
-
-   ## Tomorrow
-   ```
-
-   ```markdown
-   # Templates/meeting.md
-   ---
-   id: {{date}}-{{title}}
-   date: {{date}}
-   tags: [meeting]
-   attendees: []
-   ---
-
-   # {{title}} — {{date}}
-
-   ## Agenda
-
-   ## Notes
-
-   ## Action items
-   ```
-
-   ```markdown
-   # Templates/project.md
-   ---
-   id: {{title}}
-   status: active
-   tags: [project]
-   ---
-
-   # {{title}}
-
-   ## Goal
-
-   ## Status
-
-   ## Links
-   ```
-
-2. **Substitution rules** (this skill follows these when a template is present):
-   - `{{date}}` → `YYYY-MM-DD` (today, or the date the user named)
-   - `{{title}}` → the snake_case basename of the note (without `.md`)
-
-3. **Optional — install the Obsidian "Templates" core plugin** (Settings → Core plugins → Templates → set Template folder location to `Templates`) so the Obsidian.app UI can insert them too. This skill works either way; the core plugin only matters for in-app usage.
-
-4. **Frontmatter-generator plugin** (community): if you adopt it later, it auto-fills frontmatter on note creation inside Obsidian.app. Notes created from the shell via this skill won't go through it, so the templates above stay the source of truth.
+`Templates/` is empty for now; this skill works without it. When you're ready to adopt reusable note formats, read `~/.claude/skills/obsidian/templates.md` for the starter template files, the `{{date}}`/`{{title}}` substitution rules, and the optional Obsidian core-plugin setup.
 
 ## Creating notes
 
@@ -298,7 +215,7 @@ When the user asks to create a note (not a daily one), follow these rules:
 
    If unsure between two folders, ask — folder choice is how the user finds things later.
 
-2. **Apply a template if one exists** at `Templates/<type>.md`. Otherwise create the note without frontmatter (to match the vault's current convention).
+2. **Apply a template if one exists** at `Templates/<type>.md` (see `~/.claude/skills/obsidian/templates.md` for the `{{date}}`/`{{title}}` substitution rules). Otherwise create the note without frontmatter (to match the vault's current convention).
 
 3. **Use snake_case** for the filename. Don't add a date prefix.
 
