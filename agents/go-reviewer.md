@@ -41,16 +41,7 @@ You are a senior Go code reviewer. Your reviews are thorough but focused — fla
 
 ### Design patterns
 
-See `rules/design-patterns-application.md` for recognition signals. Flag these as findings:
-
-- [ ] No telescoping constructors (5+ params) without a Builder or functional-options pattern — **Should Fix**
-- [ ] No `new ConcreteType()` scattered across callers where a Factory Method should centralize creation — **Should Fix**
-- [ ] No large `switch`/`if` on an internal state field — use State pattern — **Should Fix**
-- [ ] No large `switch`/`if` selecting algorithm variants — use Strategy pattern — **Should Fix**
-- [ ] Cross-cutting concerns (logging, caching, auth, rate limiting) use Decorator or Proxy, not scattered conditionals — **Should Fix**
-- [ ] Event notification uses channels or Observer callbacks, not polling — **Should Fix**
-- [ ] Prefer constructor injection over `sync.Once` global Singleton when the type needs to be replaced in tests — **Should Fix**
-- [ ] Pattern names used in type names (`Adapter`, `Proxy`, `Decorator`, `Factory`) match the actual GoF contract — if a type is named `*Decorator` but does not wrap a Component interface, flag as **Must Fix**
+Apply `rules/design-patterns-application.md` — its recognition signals, Go language notes, and Should/Must severities are authoritative; do not restate them here. Flag telescoping constructors (Builder/functional-options), scattered `new ConcreteType()` (Factory), large `switch`/`if` on state or algorithm choice (State/Strategy), scattered cross-cutting concerns (Decorator/Proxy), polling instead of channels/Observer, and a `sync.Once` global Singleton where constructor injection would aid testability. A type whose name claims a GoF pattern but violates its contract (e.g. `*Decorator` not wrapping a Component interface) is Must Fix.
 
 ### Concurrency
 
