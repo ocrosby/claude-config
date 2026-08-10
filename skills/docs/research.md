@@ -50,74 +50,23 @@ Read this file when `SKILL.md` step 1 dispatches to `research`. Publishes a rese
    </html>
    ```
 
-4. **Compute file metadata.**
+4. **Publish to here.now.**
    ```bash
-   FILE="/tmp/study-{slug}.html"
-   SIZE=$(wc -c < "$FILE" | tr -d ' ')
-   HASH=$(python3 -c "import hashlib,sys; print(hashlib.sha256(open(sys.argv[1],'rb').read()).hexdigest())" "$FILE")
+   python3 ~/.claude/scripts/here_now_publish.py /tmp/study-{slug}.html --title "{Topic}" [--keep]
    ```
+   The script computes the file's size + sha256, POSTs the manifest to `/api/v1/publish`, PUTs the file to the returned upload URL, finalizes, verifies the site, and prints the published URL to stdout (exit non-zero on any failure). Pass `--keep` only when `HERE_NOW_API_KEY` is set — it requires the key and produces a permanent publish; without the key the link is ephemeral (~24h). Use `--dry-run` to preview the manifest and planned calls without publishing. **If the script exits non-zero: report the failure and clean up the temp file (step 5).**
 
-5. **Create the publication.** POST file manifest to the here.now API:
+5. **Report and clean up.**
    ```bash
-   MANIFEST=$(python3 -c "
-   import json, sys, os
-   api_key = os.environ.get('HERE_NOW_API_KEY', '')
-   print(json.dumps({
-     'files': [{
-       'path': 'index.html',
-       'size': int(sys.argv[1]),
-       'contentType': 'text/html; charset=utf-8',
-       'hash': sys.argv[2]
-     }],
-     'viewer': {
-       'title': sys.argv[3],
-       'description': 'Researched by Claude'
-     }
-   }))" "$SIZE" "$HASH" "{Topic}")
-
-   AUTH_HEADER=""
-   if [ -n "$HERE_NOW_API_KEY" ]; then
-     AUTH_HEADER="-H \"Authorization: Bearer $HERE_NOW_API_KEY\""
-   fi
-
-   RESPONSE=$(curl -s -X POST https://here.now/api/v1/publish \
-     -H "Content-Type: application/json" \
-     -H "X-HereNow-Client: claude-code/study" \
-     $AUTH_HEADER \
-     -d "$MANIFEST")
+   rm -f /tmp/study-{slug}.html
    ```
-
-   Extract: `SITE_URL`, `UPLOAD_URL` (`upload.uploads[0].url`), `FINALIZE_URL` (`upload.finalizeUrl`), `VERSION_ID` (`upload.versionId`). **If POST returns non-2xx or an error field: stop, report, clean up temp file.**
-
-6. **Upload the file.**
-   ```bash
-   curl -s -X PUT "$UPLOAD_URL" \
-     -H "Content-Type: text/html; charset=utf-8" \
-     --data-binary "@$FILE"
+   On success, report:
    ```
-   **If non-2xx: stop, report, clean up.**
-
-7. **Finalize.**
-   ```bash
-   curl -s -X POST "$FINALIZE_URL" \
-     -H "Content-Type: application/json" \
-     -d "{\"versionId\":\"$VERSION_ID\"}"
-   ```
-   **If non-2xx: stop and report.**
-
-8. **Verify and report.**
-   ```bash
-   STATUS=$(curl -s -o /dev/null -w "%{http_code}" --head "$SITE_URL")
-   rm -f "$FILE"
-   ```
-
-   On status 200, report:
-   ```
-   Published: {SITE_URL}
+   Published: {URL from the script's stdout}
    Topic: {Topic} · {N} sources
    Expires: 24 hours from now
    ```
-   If `HERE_NOW_API_KEY` was set, replace `Expires` with `Permanent`. On non-200, report the URL anyway and note it may still be propagating.
+   Replace `Expires` with `Permanent` if `HERE_NOW_API_KEY` was set. Always remove the temp file, even on failure.
 
 ## Rules
 
