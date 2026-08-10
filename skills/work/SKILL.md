@@ -57,15 +57,13 @@ Always split `$ARGUMENTS` on the first space. The first word is the subcommand; 
 
 Period is one of: today (default), yesterday, this-week, last-week.
 
-1. Determine the date range:
-   - today: today only
-   - yesterday: yesterday only
-   - this-week: Monday through today of the current week
-   - last-week: Monday through Sunday of the previous calendar week
-2. For each date in the range, compute the file path and read it if it exists. Always skip missing dates silently — never warn about a missing daily file.
-3. Display results grouped by date with a heading per day. Show all tasks with checkbox state. Show Notes only if non-empty.
-4. End with a one-line summary: e.g. "3 of 7 tasks complete across 2 days."
-5. If no files exist for the range, say so clearly.
+1. Resolve the period to the existing journal files in range (oldest first):
+   ```bash
+   bash ~/.claude/skills/work/resolve_period.sh [period]
+   ```
+   It emits one existing file path per line — the Monday-of-week and previous-calendar-week date math and the no-zero-padding path format live in the script. Missing days are already skipped (only existing paths are emitted). **If the output is empty: tell the user no journal files exist for the period and stop.**
+2. Read each emitted path. Display results grouped by date (derive the date from the `YYYY/M/D` path) with a heading per day. Show all tasks with checkbox state. Show Notes only if non-empty.
+3. End with a one-line summary: e.g. "3 of 7 tasks complete across 2 days."
 
 ### 5. Dispatch — `done [task text]`
 
