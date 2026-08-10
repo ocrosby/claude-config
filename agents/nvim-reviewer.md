@@ -51,14 +51,7 @@ You are a senior Neovim plugin reviewer. Your reviews are thorough but focused �
 
 ### Design patterns
 
-See `rules/design-patterns-application.md` for recognition signals. Flag these as findings:
-
-- [ ] No large `if`/`elseif` chains dispatching on a state value — use a dispatch table (State pattern) — **Should Fix**
-- [ ] No large `if`/`elseif` chains selecting behavior variants — use a strategy table (`local strategies = { ... }`) — **Should Fix**
-- [ ] Editor event notification uses `nvim_create_autocmd` groups, not manual callback tables — **Should Fix**
-- [ ] Cross-cutting concerns (timing, logging, guards) wrap the original function rather than polluting it — **Should Fix**
-- [ ] Object creation varying by type uses a factory function (`M.new(kind, opts)`), not scattered conditionals — **Should Fix**
-- [ ] Pattern names used in module or function names match their GoF contract — mismatched naming is **Must Fix**
+Apply `rules/design-patterns-application.md` — its recognition signals, Lua language notes, and severities are authoritative; do not restate them here. Flag large `if`/`elseif` chains on state or behavior choice (State/Strategy dispatch tables), editor events wired via manual callback tables instead of `nvim_create_autocmd` groups (Observer), cross-cutting concerns that pollute a function instead of wrapping it (Decorator), and type-varying creation via scattered conditionals instead of a factory (`M.new(kind, opts)`). A module or function name that claims a GoF pattern but violates its contract is Must Fix.
 
 ### Performance
 
