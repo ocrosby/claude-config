@@ -153,10 +153,7 @@ Print `--- Pass 2 ---`, `--- Pass 3 ---` headers. Consider items never trigger a
 Adversarial review. Same pipeline as `review` but the reviewer agents are instructed to apply the strictest interpretation and the verdict scale is binary.
 
 1. Invoke the `review` workflow above with this explicit instruction passed to each reviewer agent: **"Adversarial mode — apply the strictest interpretation. Default to NEEDS WORK unless every issue is conclusively resolved."**
-2. Override the summary verdict with this scale:
-   - **SHIP IT** — zero Must Fix, zero Should Fix, zero Consider items
-   - **NEEDS WORK** — any Should Fix or Consider items remain
-   - **BLOCK** — any Must Fix items, OR new/changed behavior missing tests, OR breaking change to a public API
+2. Override the summary verdict with the SHIP IT / NEEDS WORK / BLOCK scale defined in `rules/findings-format.md` (Verdict labels) — authoritative there; do not restate the thresholds here.
 3. On NEEDS WORK or BLOCK, list every issue with file, line, and the specific fix. **Quote the reviewer agent verbatim — do not paraphrase.**
 4. After fixes are applied, re-run from step 1. Loop a maximum of 5 passes. **On pass 5, if issues remain: mark them "Needs Manual Fix" and stop — do not proceed to another loop iteration.**
 5. Only return SHIP IT after a clean pass with zero remaining items.

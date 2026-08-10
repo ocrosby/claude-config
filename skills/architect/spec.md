@@ -52,21 +52,7 @@ Detailed workflow for the `/architect spec` subcommand. Output is a valid OpenAP
          "404": { $ref: "#/components/responses/NotFound" }
    ```
 
-4. **Apply the status code checklist.**
-
-   | Condition | Required status code |
-   |---|---|
-   | POST created a new resource | `201 Created` + `Location: /resources/{id}` header |
-   | Successful GET/PUT/PATCH with body | `200 OK` |
-   | Successful DELETE or no-content response | `204 No Content` (no body) |
-   | Resource not found | `404 Not Found` |
-   | Invalid credentials or missing auth | `401 Unauthorized` + `WWW-Authenticate` header |
-   | Valid identity, insufficient permission | `403 Forbidden` |
-   | Semantic validation failure | `422 Unprocessable Entity` |
-   | Malformed request syntax | `400 Bad Request` |
-   | Method not supported on this resource | `405 Method Not Allowed` + `Allow` header |
-
-   The spec must declare every status code the handler will return. If a status is missing from the spec but emitted by the handler, the spec is wrong.
+4. **Apply the status-code checklist.** Use the status codes and required headers defined in `rules/rest-api-conventions.md` — authoritative there; do not restate the table here. The spec must declare every status code the handler will return; a status emitted by the handler but missing from the spec means the spec is wrong.
 
 5. **Validate.** Run an OpenAPI validator if available (`swagger-cli validate`, `redocly lint`). If none configured, at minimum confirm: YAML parses, every `$ref` resolves, every operation has a unique `operationId`, every response declares a `description`. **If validation fails: stop and fix before handoff.**
 

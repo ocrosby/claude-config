@@ -30,19 +30,9 @@ Returns `go`, `py`, `nvim`, `gherkin`, `rest`, or `unknown`. If `unknown`: stop 
    package users
    ```
 
-3. **Document exported symbols** per godoc conventions:
-   ```go
-   // UserService manages user lifecycle operations.
-   // It is safe for concurrent use.
-   type UserService struct { ... }
+3. **Document exported symbols** following `rules/go-conventions.md` § Godoc conventions — that rule is authoritative for the format and carries the reference example.
 
-   // CreateUser creates a new user with the given name and email.
-   // It returns [ErrDuplicateEmail] if the email is already registered.
-   // The ctx parameter is used for cancellation and deadline propagation.
-   func (s *UserService) CreateUser(ctx context.Context, name, email string) (*User, error)
-   ```
-
-4. **Format rules.** First sentence starts with the symbol name, present tense, third person (`CreateUser creates...`, not `Create a user`). Document all error return conditions with sentinel references. State concurrency safety explicitly when relevant. Use `[SymbolName]` cross-reference syntax. Do not document unexported symbols unless logic is genuinely non-obvious.
+4. **Format rules** — apply `rules/go-conventions.md` § Godoc conventions for the symbol-name-first summary, error-return documentation, `[SymbolName]` cross-references, and concurrency-safety notes. Authoritative there; do not restate here.
 
 5. **Verify.**
    ```bash
@@ -50,7 +40,7 @@ Returns `go`, `py`, `nvim`, `gherkin`, `rest`, or `unknown`. If `unknown`: stop 
    godoc -http=:6060
    ```
 
-**Checklist:** every exported type's doc starts with its name; functions document error returns; package-level comment exists; concurrency safety stated on shared types; `[SymbolName]` cross-references used; no placeholder `// TODO: document this` comments.
+**Checklist:** every exported symbol documented per `rules/go-conventions.md` § Godoc; package-level comment exists; no placeholder `// TODO: document this` comments; `go doc ./...` renders cleanly.
 
 ## write py — Google-style docstrings
 
@@ -60,26 +50,9 @@ Returns `go`, `py`, `nvim`, `gherkin`, `rest`, or `unknown`. If `unknown`: stop 
 
 3. **Document public classes** with Google-style format including an `Attributes:` section.
 
-4. **Document public functions/methods:**
-   ```python
-   def create_user(name: str, email: str, role: str = "member") -> User:
-       """Create a new user and send a welcome notification.
+4. **Document public functions/methods** in Google-style, following `rules/py-docs.md` — that rule is authoritative for the format and carries the `create_user` reference example.
 
-       Args:
-           name: Display name for the user.
-           email: Email address — must be unique across all accounts.
-           role: Authorization role. Defaults to "member".
-
-       Returns:
-           The newly created user with a generated ID and timestamps.
-
-       Raises:
-           DuplicateEmailError: If the email is already registered.
-           ValidationError: If the email format is invalid.
-       """
-   ```
-
-5. **Format rules.** First line is a concise imperative summary. `Args:` one per parameter — type info lives in the signature. `Returns:` describes what is returned, not its type. `Raises:` lists only exceptions the caller should handle. Omit sections that don't apply.
+5. **Format rules** — apply `rules/py-docs.md` for the summary line, `Args:`/`Returns:`/`Raises:` sections, and empty-section omission. Authoritative there; do not restate here.
 
 6. **FastAPI routes** — add `summary` and `description` to any route whose path alone does not convey the operation. Example: `POST /users` does not need a description; `POST /users/{id}/notifications/batch` does. Also add to any route with query params that affect behavior beyond filtering:
    ```python
