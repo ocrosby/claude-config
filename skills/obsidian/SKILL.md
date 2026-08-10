@@ -124,32 +124,7 @@ Skip `.obsidian/` and `.trash/` (if present) when searching unless the user expl
 
 ## Note conventions
 
-### Filenames
-
-- **Daily notes**: `Daily/YYYY-MM-DD.md` (e.g. `Daily/2026-06-03.md`)
-- **All other notes**: `snake_case.md` — matching the existing pattern (`project_planning.md`, `llm_assisted_project_development_framework.md`). Do not introduce Title Case, kebab-case, or date prefixes; the rest of the vault is consistent snake_case.
-
-### Wikilinks
-
-The vault uses **Obsidian wikilinks**, and the observed style is **path-style relative** — not the shortest-form most Obsidian docs show:
-
-```markdown
-[[../readme]]
-[[../prompt_engineering/readme]]
-[[readme]]
-```
-
-**Preserve the style as written.** If the user wrote `[[../readme]]`, don't "normalize" it to `[[readme]]`. If creating a new cross-reference and unsure, use the relative-path form already present nearby — it's the dominant convention here.
-
-Standard markdown links (`[text](path.md)`) are not used — use wikilinks.
-
-### Frontmatter
-
-Most existing notes have **no YAML frontmatter**. Behavior:
-
-- **When editing**: preserve what's there. Don't add frontmatter to a note that doesn't have it.
-- **When creating a new note** via this skill: add a minimal block only if a template (see below) calls for it. Otherwise leave the file frontmatter-free to match the surrounding vault.
-- **When creating a Daily note**: include the canonical daily frontmatter (`date`, `tags: [daily-notes]`) — see the daily-notes section.
+Operative rules: filenames are `snake_case.md` (daily notes `Daily/YYYY-MM-DD.md`, no date prefixes elsewhere); cross-references use path-style-relative Obsidian wikilinks (`[[../readme]]`), preserved exactly as written — never normalized to short form or markdown links; most notes have **no** frontmatter, so don't add it when editing a note that lacks it. Full conventions with examples and the frontmatter-by-operation table live in `~/.claude/skills/obsidian/conventions.md` — read it before creating or editing a note.
 
 ## Daily notes workflow
 
