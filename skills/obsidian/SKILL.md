@@ -153,48 +153,7 @@ Most existing notes have **no YAML frontmatter**. Behavior:
 
 ## Daily notes workflow
 
-The daily note is the catch-all for a single day's thoughts: standups, what you worked on, things you want to revisit, links to project notes. Daily notes live at `Daily/YYYY-MM-DD.md`.
-
-### Create-or-open today's note
-
-```bash
-VAULT="$HOME/src/github.com/ocrosby/obsidian"
-TODAY="$VAULT/Daily/$(date +%Y-%m-%d).md"
-if [ ! -f "$TODAY" ]; then
-  cat > "$TODAY" <<EOF
----
-id: $(date +%Y-%m-%d)
-date: $(date +%Y-%m-%d)
-tags: [daily-notes]
----
-
-# $(date +%Y-%m-%d)
-
-## What I worked on
-
-## Notes
-
-## Tomorrow
-EOF
-fi
-```
-
-When the user says "today's daily note" or "add to today", run this pattern. If `$TODAY` already exists, append rather than overwrite — usually under `## Notes`. Show the resulting path so they can open it in Obsidian.app.
-
-### Append a quick thought to today
-
-```bash
-echo -e "\n- $(date +%H:%M) — <thought here>" >> "$TODAY"
-```
-
-### Open yesterday's / a specific date's note
-
-```bash
-YESTERDAY="$VAULT/Daily/$(date -v-1d +%Y-%m-%d).md"   # macOS date syntax
-SPECIFIC="$VAULT/Daily/2026-05-15.md"
-```
-
-If the requested date's note doesn't exist, ask before creating — backfilling daily notes is usually not what the user wants.
+Daily notes live at `Daily/YYYY-MM-DD.md` — the catch-all for a single day's thoughts. The create-or-open, append-a-thought, and open-a-past-date shell recipes live in `~/.claude/skills/obsidian/daily-notes.md`; read it and apply. Invariants: when today's note already exists, append under `## Notes` rather than overwrite; never backfill a past date without confirming first.
 
 ## Templates (when you start using them)
 
@@ -230,26 +189,7 @@ When the user asks to create a note (not a daily one), follow these rules:
 
 ## Finding things
 
-All recipes assume `VAULT="$HOME/src/github.com/ocrosby/obsidian"`. Exclude `.obsidian/` and `.trash/` to keep results signal-rich. Prefer `rg`/`fd`; fall back to `grep`/`find` if missing.
-
-```bash
-# Find notes by filename (case-insensitive, fuzzy on basename)
-fd -tf 'pattern' "$VAULT" -E .obsidian -E .trash
-
-# Full-text search across notes
-rg --type md -n 'search term' "$VAULT" -g '!.obsidian' -g '!.trash'
-
-# Find notes tagged X (frontmatter list or inline #tag)
-rg --type md -n '(^|\s)#X\b|tags:.*\bX\b' "$VAULT" -g '!.obsidian' -g '!.trash'
-
-# Find backlinks to a note titled `project_planning`
-rg --type md -n '\[\[(.*/)?project_planning(\||#|\]\])' "$VAULT" -g '!.obsidian' -g '!.trash'
-
-# What did I write about X recently? (combine filename + content; sort by mtime)
-{ fd -tf 'X' "$VAULT" -E .obsidian -E .trash; rg --type md -l 'X' "$VAULT" -g '!.obsidian' -g '!.trash'; } | sort -u | xargs -I{} stat -f '%m %N' {} | sort -rn | head -10 | cut -d' ' -f2-
-```
-
-For broad questions ("what notes do I have about Postgres?"), search both filenames and content — the vault organizes by both folder and inline references.
+Search recipes — by filename, full-text, tag, backlinks, and recent-mentions (mtime-sorted) — live in `~/.claude/skills/obsidian/finding.md`; read it and apply. Always exclude `.obsidian/` and `.trash/`; prefer `rg`/`fd`, falling back to `grep`/`find`. For broad questions ("what notes do I have about Postgres?"), search both filenames and content.
 
 ## Git discipline
 
