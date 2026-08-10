@@ -1,5 +1,5 @@
 ---
-description: Use when the user says "set up a knowledge base", "index this folder", "build a wiki over these files/notes/exports", or wants an auto-maintained table of contents over a pile of documents. Creates raw/ (untouched originals) + wiki/ (AI-written index) + a pinned CLAUDE.md that enforces the split.
+description: Use when the user says "set up a knowledge base", "index this folder", "build a wiki over these files/notes/exports", or wants an auto-maintained table of contents over a pile of documents.
 argument-hint: "[dir]"
 arguments: [dir]
 allowed-tools: Bash(python3 *) Bash(mkdir *) Bash(mv *) Bash(ls *) Bash(find *) Bash(wc *) Read Write AskUserQuestion

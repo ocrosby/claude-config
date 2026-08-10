@@ -1,5 +1,5 @@
 ---
-description: Use when the user needs design-phase work — language-specific architecture (design), GoF pattern advice (patterns), OpenAPI spec authoring (spec), Backstage catalog registration (catalog), plan-mode interviewing (interview), or adversarial plan stress-testing (grill). Invoke as /architect <design|patterns|spec|catalog|interview|grill>. catalog commits and pushes to remote.
+description: Use when the user needs design-phase work — language-specific architecture, GoF pattern advice, OpenAPI spec authoring, Backstage catalog registration, plan-mode interviewing, or adversarial plan stress-testing. Invoke as /architect <design|patterns|spec|catalog|interview|grill>. catalog commits and pushes to remote.
 argument-hint: "<subcommand> [arguments]"
 aliases: patterns, rest-spec, backstage-catalog-init, backstage-init, plan-interview
 allowed-tools: Read, Grep, Glob, Write, Edit, Bash

@@ -1,5 +1,5 @@
 ---
-description: Use when the user asks to audit the Claude workflow system (rules, agents, hooks, skills, commands, settings), a git repository's history (churn, ownership, hotspots, momentum), individual SKILL.md files against authoring conventions, or GitHub Actions Node-version deprecation. Invoke as /audit <system|repo|skill|actions>.
+description: Use when the user asks to audit the Claude workflow system, a git repository's history, individual SKILL.md files against authoring conventions, or GitHub Actions Node-version deprecation. Invoke as /audit <system|repo|skill|actions>.
 argument-hint: "<subcommand> [arguments]"
 aliases: codebase-audit, workflow-audit
 allowed-tools: Read, Grep, Glob, Bash
