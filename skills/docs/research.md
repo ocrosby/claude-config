@@ -10,45 +10,7 @@ Read this file when `SKILL.md` step 1 dispatches to `research`. Publishes a rese
 
 2. **Research.** Use WebSearch to find 4–6 authoritative sources. Use WebFetch on each to extract: key definitions/concepts, current state or recent developments, notable perspectives or debates, quantitative data. **Do not rely on training knowledge alone — always fetch live sources.** Record each source URL and the facts drawn from it.
 
-3. **Synthesize the report** as a complete self-contained HTML document at `/tmp/study-{slug}.html`. Structure:
-   ```html
-   <!DOCTYPE html>
-   <html lang="en">
-   <head>
-     <meta charset="UTF-8">
-     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-     <title>{Topic}</title>
-     <style>
-       :root { color-scheme: light dark; }
-       body { font-family: system-ui, sans-serif; max-width: 800px; margin: 2rem auto;
-              padding: 0 1rem; line-height: 1.6; }
-       h1 { font-size: 2rem; margin-bottom: 0.25rem; }
-       .meta { color: #666; font-size: 0.9rem; margin-bottom: 2rem; }
-       h2 { border-bottom: 1px solid #ddd; padding-bottom: 0.3rem; margin-top: 2rem; }
-       blockquote { border-left: 3px solid #ccc; margin: 1rem 0; padding: 0.5rem 1rem;
-                    color: #555; }
-       ol.sources { padding-left: 1.2rem; }
-       ol.sources li { margin-bottom: 0.4rem; }
-       a { color: #0070f3; }
-     </style>
-   </head>
-   <body>
-     <header>
-       <h1>{Topic}</h1>
-       <p class="meta">Researched {YYYY-MM-DD} · {N} sources</p>
-     </header>
-     <main>
-       <section id="summary"><h2>Summary</h2><p>{2–3 sentence overview}</p></section>
-       <section id="details"><h2>Key Points</h2><!-- substantive content --></section>
-       <section id="sources"><h2>Sources</h2>
-         <ol class="sources">
-           <li><a href="{url}">{title or domain}</a></li>
-         </ol>
-       </section>
-     </main>
-   </body>
-   </html>
-   ```
+3. **Synthesize the report** as a complete self-contained HTML document at `/tmp/study-{slug}.html`. Read the template at `~/.claude/skills/docs/research-template.html` and fill its placeholders: `{Topic}`, `{YYYY-MM-DD}`, `{N}` (source count), the Summary text, the Key Points content, and one `<li><a href="{url}">{title or domain}</a></li>` per source. Keep it self-contained — inline CSS only, no external assets.
 
 4. **Publish to here.now.**
    ```bash
