@@ -141,7 +141,29 @@ def check(
 ) -> list[tuple[int, str, str, str]]:
     """Return findings for one package/target pair, most severe first."""
     findings: list[tuple[int, str, str, str]] = []
-    for name, _dest, already_linked in stow_plan(package_dir, target, package):
+    plan = stow_plan(package_dir, target, package)
+
+    # If nothing at all is linked, the package was never stowed here — or
+    # this is the wrong target. Either way, reporting every entry as
+    # individually "unlinked" buries the one fact that matters under a wall
+    # of noise. Say it once, and stop.
+    #
+    # Seen for real: pointing this at a Neovim plugin repo that a plugin
+    # manager *clones* rather than links produced ten Must Fix findings,
+    # every one of them false.
+    if plan and not any(already_linked for _n, _d, already_linked in plan):
+        return [
+            (
+                0,
+                MUST,
+                "stow-nothing-linked",
+                f"the target holds no links into `{package}` — it was never "
+                f"stowed there, or this is the wrong target. No other checks "
+                f"were run ({len(plan)} package entries would be linked by a stow)",
+            )
+        ]
+
+    for name, _dest, already_linked in plan:
         if is_junk(name):
             findings.append(
                 (
