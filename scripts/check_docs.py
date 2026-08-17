@@ -172,23 +172,146 @@ def classify(path: Path) -> str:
     return "Document"
 
 
+# Canonical H2 sections from rules/readme-standard.md, in required order.
+# Each maps to the aliases a real README plausibly uses for it. Aliases
+# match the whole heading or a leading whole word ("Installation" also
+# matches "## Installation & Setup").
+README_SECTIONS: tuple[tuple[str, tuple[str, ...]], ...] = (
+    ("Overview", ("overview", "about", "introduction", "what is")),
+    ("Features", ("features", "capabilities", "highlights")),
+    ("Requirements", ("requirements", "prerequisites", "dependencies")),
+    ("Installation", ("installation", "install", "getting started", "setup")),
+    ("Usage", ("usage", "use", "quick start", "quickstart")),
+    ("Examples", ("examples", "example")),
+    ("Configuration", ("configuration", "config", "options", "settings")),
+    ("Development", ("development", "developing", "contributing and development")),
+    ("Contributing", ("contributing", "contribute")),
+    ("License", ("license", "licence", "licensing")),
+)
+
+# Examples is required "unless a single Usage example fully demonstrates the
+# surface" — a judgment the script cannot make, so its absence is Should Fix
+# while every other section's absence is Must Fix.
+README_CONDITIONAL = frozenset({"Examples"})
+
+TOC_ALIASES = ("table of contents", "contents", "toc")
+
+# rules/readme-standard.md: a TOC is required once the README exceeds four
+# sections.
+TOC_SECTION_THRESHOLD = 4
+
+
+def _normalize_heading(text: str) -> str:
+    """Lowercase, drop non-alphanumerics, collapse whitespace."""
+    kept = "".join(c if (c.isalnum() or c.isspace()) else " " for c in text.lower())
+    return " ".join(kept.split())
+
+
+def _matches(normalized: str, aliases: tuple[str, ...]) -> bool:
+    return any(
+        normalized == alias or normalized.startswith(alias + " ") for alias in aliases
+    )
+
+
+def h2_sections(lines: list[str]) -> list[tuple[int, str]]:
+    """Return (line_number, heading_text) for every H2 outside a code fence.
+
+    Single pass — the module's in_code_block() helper is O(n) per call and
+    would make this O(n^2) over the file.
+    """
+    sections: list[tuple[int, str]] = []
+    inside = False
+    for i, line in enumerate(lines, 1):
+        if CODE_FENCE_RE.match(line):
+            inside = not inside
+            continue
+        if inside:
+            continue
+        m = HEADING_RE.match(line)
+        if m and len(m.group(1)) == 2:
+            sections.append((i, m.group(2).strip()))
+    return sections
+
+
+def check_readme_sections(lines: list[str]) -> list[tuple[int, str, str, str]]:
+    """Check required-section presence, ordering, and TOC per readme-standard."""
+    findings: list[tuple[int, str, str, str]] = []
+    sections = h2_sections(lines)
+    normalized = [(line_no, _normalize_heading(text)) for line_no, text in sections]
+
+    # Map each canonical section to the first heading that satisfies it.
+    found: dict[str, int] = {}
+    for canonical, aliases in README_SECTIONS:
+        for line_no, norm in normalized:
+            if canonical not in found and _matches(norm, aliases):
+                found[canonical] = line_no
+
+    for canonical, _ in README_SECTIONS:
+        if canonical in found:
+            continue
+        if canonical in README_CONDITIONAL:
+            findings.append(
+                (
+                    0,
+                    SHOULD,
+                    "readme-no-examples",
+                    f"README has no {canonical} section — required unless the Usage "
+                    "example fully demonstrates the surface",
+                )
+            )
+        else:
+            findings.append(
+                (
+                    0,
+                    MUST,
+                    "readme-missing-section",
+                    f"README is missing the required '{canonical}' section "
+                    "(write 'N/A' under the heading if genuinely not applicable)",
+                )
+            )
+
+    # Ordering: the canonical sections that are present must appear in the
+    # standard's order. Non-canonical sections may be interleaved freely.
+    present = [(found[c], c) for c, _ in README_SECTIONS if c in found]
+    in_document_order = sorted(present)
+    if [c for _, c in present] != [c for _, c in in_document_order]:
+        expected = [c for _, c in present]
+        actual = [c for _, c in in_document_order]
+        first_bad = next(
+            (a for e, a in zip(expected, actual) if e != a),
+            actual[0] if actual else "",
+        )
+        findings.append(
+            (
+                found.get(first_bad, 0),
+                SHOULD,
+                "readme-section-order",
+                f"README sections are out of order — expected {' → '.join(expected)}, "
+                f"found {' → '.join(actual)}",
+            )
+        )
+
+    has_toc = any(_matches(norm, TOC_ALIASES) for _, norm in normalized)
+    body_sections = [1 for _, norm in normalized if not _matches(norm, TOC_ALIASES)]
+    if not has_toc and len(body_sections) > TOC_SECTION_THRESHOLD:
+        findings.append(
+            (
+                0,
+                SHOULD,
+                "readme-no-toc",
+                f"README has {len(body_sections)} sections and no Table of Contents "
+                f"(required above {TOC_SECTION_THRESHOLD})",
+            )
+        )
+
+    return findings
+
+
 def check_readme(text: str) -> list[tuple[int, str, str, str]]:
     """README-specific checks (only run when classified as README)."""
     findings: list[tuple[int, str, str, str]] = []
     body = text.lower()
-    if (
-        "## install" not in body
-        and "## usage" not in body
-        and "## getting started" not in body
-    ):
-        findings.append(
-            (
-                0,
-                MUST,
-                "readme-no-install",
-                "README has no installation or usage section",
-            )
-        )
+    findings.extend(check_readme_sections(text.splitlines()))
     if "```" not in body:
         findings.append((0, MUST, "readme-no-example", "README has no code example"))
     if "license" not in body:
