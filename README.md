@@ -1,199 +1,180 @@
-# My Claude Code Configuration
+# claude-config
 
-This is my personal Claude Code configuration — the rules, skills, agents, commands, hooks, output styles, and global instructions I use across every project. It lives in this repository, gets cloned onto each machine I work on, and is linked into `~/.claude/` with GNU Stow.
+My personal Claude Code configuration — version-controlled, and symlinked into `~/.claude/` with GNU Stow.
 
-If you're me on a fresh machine, follow the install steps below. If you're someone else, you're welcome to read it for ideas; just don't expect anything here to be tuned for your workflow.
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 
-## Installation
+## Table of Contents
 
-Requires GNU Stow:
+- [Overview](#overview)
+- [Features](#features)
+- [Requirements](#requirements)
+- [Installation](#installation)
+- [Usage](#usage)
+- [Examples](#examples)
+- [Configuration](#configuration)
+- [Development](#development)
+- [Contributing](#contributing)
+- [License](#license)
+- [Tips from the Claude Code team](#tips-from-the-claude-code-team)
+- [Power features](#power-features)
+- [Related documentation](#related-documentation)
+- [References](#references)
+
+## Overview
+
+*Written for: me, on a fresh machine. If you're someone else, read it for ideas — none of it is tuned for your workflow.*
+
+**Claude Code reads its configuration from `~/.claude/`.** `CLAUDE.md` holds standing instructions loaded into every session; `rules/` holds always-on conventions; `skills/`, `agents/`, `commands/`, `hooks/`, and `output-styles/` hold the things you invoke or that fire on events. If you use Claude Code, you already have that directory.
+
+By default it is machine-local and unversioned, so it accumulates by drift. A rule gets tightened after one bad session. A skill gets written mid-task and never looked at again. A line lands in `CLAUDE.md` because Claude did something annoying that Tuesday. Six months later a second machine has none of it, and when a rule says something surprising there is no record of which mistake it was written to prevent.
+
+Version-controlling it is not a matter of running `git init` in `~/.claude/`. Claude Code writes its own runtime state into that same directory — sessions, projects, plans, caches, shell snapshots, telemetry — and creates new such directories as it gains features. So the directory you want to track and the directory the tool owns are the same directory. What you actually need is something that links tracked config *in* while leaving runtime state alone, doesn't fight the tool when it invents a new folder next month, and doesn't need re-running every time you add a skill.
+
+That is what GNU Stow does, with this repo's root as the stow package:
 
 ```bash
-brew install stow
-```
-
-Clone the repo and stow it into `~/.claude/`:
-
-```bash
-git clone https://github.com/ocrosby/claude-config ~/src/github.com/ocrosby/claude-config
-mkdir -p ~/.claude
 stow -t ~/.claude -d ~/src/github.com/ocrosby claude-config
 ```
 
-This symlinks every top-level item (`agents/`, `skills/`, `rules/`, `commands/`, `hooks/`, `output-styles/`, `CLAUDE.md`, `settings.json`, …) directly into `~/.claude/`. Stow's default ignore list keeps `README.md`, `LEARNINGS.md`, `.git`, and `.gitignore` in the repo only — they are not linked into `~/.claude/`.
+One command symlinks `CLAUDE.md`, `settings.json`, and every tracked directory into `~/.claude/`, and touches nothing else in there. Git supplies the history, the rollback, and — in `LEARNINGS.md` — a place to record *why* a rule says what it says.
 
-**Re-stow after adding any new top-level item or new skill.** Because `~/.claude/skills/` also holds Claude-Code-created directories, stow unfolds it and links each skill *individually* rather than linking the whole `skills/` directory. A newly added skill (e.g. `skills/neovim/`) therefore has no symlink until you re-run the stow command above — and Claude will not see it. After adding a skill, agent, command, or any other top-level entry, re-run the stow command and verify with `readlink ~/.claude/skills/<name>`.
+## Features
 
-If `~/.claude/` already has conflicting files (for example from a previous dotfiles-managed setup), stow will refuse and report conflicts. To resolve:
+- **One command to provision a machine** — clone, stow, done. No copying files, no per-machine drift.
+- **Coexists with Claude Code's own state** — runtime directories are left untouched because they aren't in the package.
+- **Config is reviewable** — every rule change is a diff with a commit message explaining the mistake it prevents.
+- **Layered instruction surface** — always-on rules, on-demand skills, isolated agents, single-file commands, event-driven hooks, and session-wide output styles.
+- **Deterministic work lives in `scripts/`** — parsing, scanning, and classification run as code rather than being re-derived by the model each session.
+- **Machine-local escape hatch** — `settings.local.json` stays gitignored, so per-machine permissions never enter the repo.
+
+## Requirements
+
+- [Claude Code](https://code.claude.com/docs/en/overview)
+- [GNU Stow](https://www.gnu.org/software/stow/) — `brew install stow`
+- Git
+- [uv](https://docs.astral.sh/uv/) — only to run the helper scripts under `scripts/`, which are PEP 723 single-file scripts
+
+## Installation
 
 ```bash
-# Adopt existing files into the repo (then git diff to review)
-stow --adopt -t ~/.claude -d ~/src/github.com/ocrosby claude-config
+mkdir -p ~/src/github.com/ocrosby ~/.claude
+git clone https://github.com/ocrosby/claude-config ~/src/github.com/ocrosby/claude-config
+stow -t ~/.claude -d ~/src/github.com/ocrosby claude-config
+```
 
-# Or remove existing files first
+Verify the links resolve back into the repo:
+
+```bash
+readlink ~/.claude/CLAUDE.md   # → ../src/github.com/ocrosby/claude-config/CLAUDE.md
+readlink ~/.claude/rules       # → ../src/github.com/ocrosby/claude-config/rules
+```
+
+### What gets linked, and what doesn't
+
+`.stow-local-ignore` controls this. Defining that file **overrides** stow's built-in default ignore list, so the defaults worth keeping are repeated inside it. Currently excluded from the package: `.git`, `.gitignore`, `README.md`, `LICENSE.*`, `LEARNINGS.md`, and `SKILLS.md` — repo-only meta-documents that are not live configuration.
+
+Everything else at the top level is linked, including `scripts/`, `docs/`, and `prompts/`.
+
+### Layout
+
+The repo root *is* the stow package. **Never wrap the contents in a `.claude/` directory** — that wrapper would force stow into a less-direct linking shape. The flat layout is intentional.
+
+```text
+claude-config/                ← the stow package; repo root
+├── README.md                 ← not linked
+├── LEARNINGS.md              ← not linked
+├── .stow-local-ignore        ← defines what stays repo-only
+├── CLAUDE.md                 ← global instructions, loaded every session
+├── settings.json
+├── agents/
+├── commands/
+├── docs/
+├── hooks/
+├── output-styles/
+├── prompts/
+├── rules/
+├── scripts/
+└── skills/
+```
+
+### If stow reports conflicts
+
+`~/.claude/` may already hold files from a previous setup. Stow refuses rather than clobbering them:
+
+```bash
+# Adopt the existing files into the repo, then review what got pulled in
+stow --adopt -t ~/.claude -d ~/src/github.com/ocrosby claude-config
+git -C ~/src/github.com/ocrosby/claude-config diff
+
+# Or clear and re-link
 rm -rf ~/.claude && mkdir -p ~/.claude
 stow -t ~/.claude -d ~/src/github.com/ocrosby claude-config
 ```
 
-### Layout
+Leave the runtime directories Claude Code created (`projects/`, `sessions/`, `plans/`, `shell-snapshots/`, `telemetry/`, and friends) — they aren't in this repo and won't conflict.
 
-The repo root *is* the stow package. **Never wrap contents in a `.claude/` directory** — that wrapper would force stow into a less-direct linking shape. The current flat layout is intentional.
+### Folded vs unfolded directories
 
-```
-claude-config/                ← the stow package; repo root
-├── README.md
-├── LEARNINGS.md
-├── CLAUDE.md                 ← global user instructions, loaded every session
-├── settings.json
-├── agents/
-├── commands/
-├── hooks/
-├── output-styles/
-├── rules/
-└── skills/
+When `~/.claude/` has no directory of the same name, stow links the whole directory in one symlink:
+
+```bash
+readlink ~/.claude/skills   # → ../src/github.com/ocrosby/claude-config/skills
 ```
 
-## Migrating from a dotfiles-managed setup
+While that holds, a newly added skill is visible to Claude immediately — no re-stow needed.
 
-> Transitional section — used to flip each of my machines from the old `~/dotfiles/claude` stow package to this repo. Remove once every machine is over.
+If `~/.claude/skills/` already exists as a real directory (because Claude Code or another tool created entries there), stow *unfolds* it: it links each skill individually instead. In that state a newly added skill has **no symlink until you re-run the stow command**, and Claude will not see it. Check which state you are in with the `readlink` above — if it prints nothing, you are unfolded and must re-stow after every addition.
 
-On each machine that still has `~/.claude/` wired through `~/dotfiles/claude`:
+### Migrating from a dotfiles-managed setup
 
-1. **Clone this repo** if it isn't already on the machine:
+> Transitional. Remove this section once every machine is over.
 
-   ```bash
-   mkdir -p ~/src/github.com/ocrosby
-   git clone https://github.com/ocrosby/claude-config ~/src/github.com/ocrosby/claude-config
-   ```
+On a machine where `~/.claude/` is still wired through `~/dotfiles/claude`:
 
-2. **Unstow the old claude package** to free `~/.claude/`:
-
-   ```bash
-   cd ~/dotfiles && stow -D claude
-   ```
-
-3. **Stow this repo** into `~/.claude/`:
-
-   ```bash
-   mkdir -p ~/.claude
-   stow -t ~/.claude -d ~/src/github.com/ocrosby claude-config
-   ```
-
-4. **Verify** symlinks now resolve into the new location:
-
-   ```bash
-   readlink ~/.claude/CLAUDE.md   # → ~/src/github.com/ocrosby/claude-config/CLAUDE.md
-   readlink ~/.claude/agents      # → ~/src/github.com/ocrosby/claude-config/agents
-   ```
-
-5. **Smoke test** by starting a fresh Claude Code session and confirming a global rule fires or a global skill (`/audit`, `/git-ship`, …) loads.
-
-Leave `~/dotfiles/claude/` in place for now — the two trees can coexist as long as only one is stowed at a time. Removing it from dotfiles is a separate, later step that should land in a single dotfiles PR once every machine has been flipped.
-
-### Troubleshooting
-
-- **Stow conflict on step 3** (`existing target is not owned by stow`): `~/.claude/` still has a file or symlink that step 2 didn't remove. Inspect `ls -la ~/.claude/`. For runtime directories Claude Code itself created (`backups/`, `cache/`, `projects/`, `sessions/`, `shell-snapshots/`, `todos/`), leave them — they aren't in this repo and won't conflict. For everything else, either delete it or use `stow --adopt …` then `git diff` to review what got pulled in.
-- **Orphan `~/dotfiles/.claude/settings.local.json`**: leave it. It's machine-local, gitignored in this repo, and not part of either stow package.
-
-## When to Use What
-
-### Rules (`rules/`)
-
-Use a rule when you want Claude to **always follow a convention** without being asked.
-
-- Loaded automatically at session start (or when a matching file enters context if `paths:` is set)
-- Best for: coding standards, commit formats, naming conventions, style guides
-- Think of rules as "background instructions" — they shape behavior passively
-
-### Skills (`skills/`)
-
-Use a skill when you have a **repeatable workflow** you want to invoke on demand with `/skill-name`.
-
-- Each skill is a directory with a `SKILL.md` and optional supporting files
-- Best for: code review checklists, deployment workflows, PR templates, scaffolding
-- Can accept arguments (e.g., `/deploy staging`)
-- Can be restricted to user-only invocation with `disable-model-invocation: true`
-
-### Agents (`agents/`)
-
-Use an agent when a task needs **isolation** — its own context window, restricted tools, or a different model.
-
-- Runs in a separate context window from your main session
-- Best for: code review (read-only), security audits, specialized analysis
-- Use `tools:` frontmatter to restrict what the agent can do (e.g., read-only access)
-- Invoked by Claude automatically based on `description`, or manually with `@agent-name`
-
-### Commands (`commands/`)
-
-Use a command when you want a **simple, single-file prompt** invoked with `/command-name`.
-
-- Same as a skill but without supporting files — just one markdown file
-- Best for: lightweight prompts that don't need bundled references
-- Also the right home for **shared building blocks**: when 2+ skills repeat the same focused action (compose a Conventional Commits message, open a PR with `gh`, branch from main), extract it as a command and have the skills invoke `/command-name` as a numbered step
-- Deterministic logic (parsing, scanning, classification) goes in `scripts/` instead — commands are for prompted reasoning, scripts are for code
-- See `rules/skill-conventions.md` → "Skills as orchestrators, commands as building blocks" for the extraction rule
-
-### Output Styles (`output-styles/`)
-
-Use an output style when you want to **change how Claude responds** across an entire session.
-
-- Appended to the system prompt at session start
-- Best for: teaching mode, verbose explanations, terse responses, non-coding use cases
-- Selected via `outputStyle` in `settings.json`
-
-## Quick Reference
-
-| I want Claude to... | Use a... |
-|---|---|
-| Always follow a convention | Rule |
-| Run a workflow when I ask | Skill |
-| Delegate a task with restricted access | Agent |
-| Run a simple prompt when I ask | Command |
-| Change its response style globally | Output Style |
-
-## Authoring rules
-
-Rules are always-on behavioral constraints loaded into every Claude Code session. Unlike skills (invoked on demand) or hooks (triggered by tool events), rules apply continuously — they shape how Claude reasons and responds without being called explicitly.
-
-### File format
-
-Rules are plain Markdown files in `rules/`. Frontmatter is optional but enables path-scoped activation:
-
-```markdown
----
-description: One-line summary of what this rule enforces.
-paths:
-  - "**/*.go"
-  - "**/go.mod"
----
-
-# Rule Title
-
-Rule content here — signal tables, mandatory behaviors, examples.
+```bash
+cd ~/dotfiles && stow -D claude                                   # free ~/.claude/
+mkdir -p ~/.claude
+stow -t ~/.claude -d ~/src/github.com/ocrosby claude-config       # link this repo
+readlink ~/.claude/CLAUDE.md                                      # confirm
 ```
 
-#### Frontmatter fields
+Then start a fresh Claude Code session and confirm a global skill (`/audit`, `/git ship`) loads.
 
-| Field | Required | Description |
+Leave `~/dotfiles/claude/` in place — the two trees coexist as long as only one is stowed at a time. Removing it is a separate dotfiles PR once every machine has been flipped. An orphaned `~/dotfiles/.claude/settings.local.json` can stay; it is machine-local and part of neither package.
+
+## Usage
+
+Once stowed, most of this repo works without being invoked. Rules load themselves; hooks fire on tool events; `CLAUDE.md` is in the system prompt of every session. The parts you invoke are skills (`/skill-name`) and commands (`/command-name`).
+
+The five surfaces differ by *when they run* and *what they can reach*:
+
+| I want Claude to... | Use a... | Lives in | Activation |
+|---|---|---|---|
+| Always follow a convention | Rule | `rules/` | Session start, or lazily when `paths:` matches an opened file |
+| Run a workflow when I ask | Skill | `skills/` | `/skill-name`, or by Claude from its `description` |
+| Delegate a task with restricted tools or its own context | Agent | `agents/` | `@agent-name`, or by Claude from its `description` |
+| Run a simple prompt when I ask | Command | `commands/` | `/command-name` |
+| Change response style for a whole session | Output style | `output-styles/` | `outputStyle` in `settings.json` |
+| Run deterministic logic at a lifecycle event | Hook | `hooks/` | Configured in `settings.json` |
+
+Two distinctions worth keeping straight, because they are the ones that blur:
+
+- **Rule vs skill.** A rule applies without anyone remembering to ask; a skill is a multi-step workflow with flags and choices that the user opts into. If forgetting to invoke it would be a bug, it's a rule.
+- **Command vs script.** A command is a prompt — reasoning you want Claude to do. A script under `scripts/` is code — parsing, scanning, classification that should never be re-derived by a language model. When two or more skills repeat the same focused action, extract it: prompts become a command, logic becomes a script.
+
+Rules use optional frontmatter:
+
+| Field | Required | Effect |
 |---|---|---|
-| `description` | No | Shown in rule listings; helps identify what the rule covers |
-| `paths` | No | Glob patterns — rule activates lazily when the Read tool opens a matching file. Omit to apply in every session |
+| `description` | No | Shown in rule listings; identifies what the rule covers |
+| `paths` | No | Glob patterns. The rule activates the first time the Read tool opens a matching file, then stays loaded for the session. Omit to load at session start and apply everywhere |
 
-A rule with no `paths` (or no frontmatter at all) is always active and loads at session start. A rule with `paths` only activates the first time the Read tool opens a matching file during the session; once activated, it stays loaded for the rest of the session.
+## Examples
 
-### When to write a rule
+### Write a rule that actually holds
 
-Rules are appropriate when a behavior should apply **automatically and consistently** — not just when a user remembers to invoke a command.
-
-| Write a rule when... | Write a skill instead when... |
-|---|---|
-| The behavior should apply every session without being triggered | The behavior is a multi-step workflow invoked on demand |
-| You want Claude to recognize a pattern and respond to it | The workflow involves flags, arguments, or user choices |
-| A constraint should never be bypassed by forgetting to ask | The user needs to opt in explicitly |
-
-### Writing rules that hold
-
-Rules written with advisory language drift across sessions — Claude interprets "consider" and "should" as optional. Use mandatory language.
+Rules written in advisory language drift — "consider" and "should" get read as optional and quietly dropped under pressure. The fix is mandatory phrasing plus a reason the constraint exists:
 
 | Drifts | Holds |
 |---|---|
@@ -201,149 +182,149 @@ Rules written with advisory language drift across sessions — Claude interprets
 | "You should use parameterized queries" | "Never build SQL queries by string interpolation. Always use parameterized queries." |
 | "Prefer dependency injection" | "Pass dependencies via constructor — never use globals. **This is an intentional design decision — do not simplify it away.**" |
 
-Add a "don't revert" anchor with the reasoning for non-obvious constraints. Without a *why*, Claude will optimize the constraint away when it encounters complexity.
+The bolded anchor matters more than it looks. Without a stated *why*, Claude optimizes the constraint away the moment the code gets complicated enough to make it inconvenient.
 
-#### Define exceptions with literal examples
+Scope exceptions with literal cases, not categories — a category like "mechanical changes" will be read as broadly as it possibly can be:
 
-Vague exception categories like "purely mechanical changes" are interpreted too broadly. Name the exact cases:
-
-```
-# Too broad — overused:
+```markdown
+<!-- Too broad — gets overused -->
 Exceptions: mechanical changes.
 
-# Scoped correctly — stable:
-Exceptions: renaming an identifier, moving a file to a different package, updating an import path.
-If there is any change to logic, control flow, or observable behavior, it is not mechanical.
+<!-- Scoped — stays stable -->
+Exceptions: renaming an identifier, moving a file to a different package,
+updating an import path. If there is any change to logic, control flow, or
+observable behavior, it is not mechanical.
 ```
 
-### Discovering existing rules
-
-To list available rules and what each enforces:
+### Add a skill and confirm Claude can see it
 
 ```bash
-ls ~/.claude/rules/*.md
+mkdir -p skills/deploy
+cat > skills/deploy/SKILL.md <<'EOF'
+---
+description: Deploy the current service to an environment. Invoke as /deploy <staging|prod>.
+---
 
-# To see each rule's description:
+# Deploy
+
+1. Confirm the branch is clean and rebased on main.
+2. Run the test suite; stop on failure.
+3. Deploy to the named environment.
+EOF
+
+readlink ~/.claude/skills   # non-empty → folded, skill is already live
+```
+
+If that `readlink` prints nothing, `~/.claude/skills/` is unfolded and the new skill has no symlink yet:
+
+```bash
+stow -R -t ~/.claude -d ~/src/github.com/ocrosby claude-config
+readlink ~/.claude/skills/deploy   # → .../claude-config/skills/deploy
+```
+
+Commit the skill so the next machine gets it — a skill that only exists in `~/.claude/` is exactly the drift this repo exists to prevent.
+
+### Find the rule that governs something
+
+Rules are the surface most likely to surprise you later, because they apply without being invoked. To see what is currently in force:
+
+```bash
 for f in ~/.claude/rules/*.md; do
   echo "=== $(basename "$f") ==="
   awk '/^description:/' "$f"
 done
 ```
 
-Each rule's `description:` frontmatter explains what it enforces.
+Rules with no `description:` print only their filename — that's a gap worth filling, since the description is what makes a rule discoverable.
 
-## Tips from the Claude Code Team
+## Configuration
 
-> Sourced from [Boris Cherny's thread (Jan 2026)](https://x.com/bcherny/status/2017742741636321619), where the Claude Code team shared their own workflow tips. Boris created Claude Code at Anthropic.
+| File | Tracked | Purpose |
+|---|---|---|
+| `CLAUDE.md` | Yes | Global instructions loaded into every session |
+| `settings.json` | Yes | Permissions, hooks, enabled plugins, TUI options, auto-approve rules |
+| `settings.local.json` | No — gitignored | Per-machine permissions and paths. Never commit it |
+| `.stow-local-ignore` | Yes | Which top-level entries stay repo-only |
 
-### Parallelism
+`settings.json` currently defines `includeCoAuthoredBy`, `permissions`, `hooks`, `enabledPlugins`, `tui`, `skipAutoPermissionPrompt`, `voiceEnabled`, and `autoApprove`. Machine-specific overrides belong in `settings.local.json`, which Claude Code merges over the tracked file.
 
-- Run 3–5 Claude sessions in parallel using git worktrees
-- Use subagents to throw more compute at problems
-- Offload tasks to subagents to keep your main context clean
-- Route permission requests to Opus 4.5 via a hook to auto-approve safe ones
+## Development
 
-### Planning
+The helper scripts under `scripts/` are PEP 723 single-file scripts — run them directly and `uv` resolves the interpreter and dependencies:
 
-- Start complex tasks in plan mode (shift+tab)
-- When things go sideways, re-plan instead of pushing through
-- Use plan mode for verification steps, not just builds
+```bash
+./scripts/check_docs.py README.md              # documentation findings
+./scripts/check_docs.py . --fail-on=must       # gate on Must Fix across the repo
+./scripts/tally_invocations.py                 # which skills actually get used
+```
 
-### Configuration
+After changing anything that affects linking — a new top-level directory, an edit to `.stow-local-ignore` — re-stow and verify:
 
-- Invest in your CLAUDE.md — update it after every mistake
-- Create reusable skills and commit them to git
-- Use `/statusline` to show context usage and git branch
-- Color-code and name terminal tabs, one per task/worktree
+```bash
+stow -R -t ~/.claude -d ~/src/github.com/ocrosby claude-config
+readlink ~/.claude/CLAUDE.md
+```
 
-### Prompting
+Conventions for this repo live in `CLAUDE.md`: Conventional Commits, one `type(scope)` pair per PR, and branch-before-touching-files. Insights about how rules and skills behave in practice go in `LEARNINGS.md`, not here.
 
-- Challenge Claude: "Grill me on these changes"
-- Demand proof: "Prove to me this works"
-- Reset mediocre work: "Scrap this, implement the elegant solution"
-- Write detailed specs to reduce ambiguity
+## Contributing
 
-### Workflow
+This is a personal configuration, so outside contributions aren't expected and issues may sit unanswered. Fork it and make it yours instead — the license permits it, and it will serve you better than a patch to mine.
 
-- Paste Slack bug threads and just say "fix"
-- Say "Go fix the failing CI tests" — don't micromanage how
-- Point Claude at docker logs to troubleshoot distributed systems
-- Use Claude for analytics — works with any database CLI, MCP, or API
+## License
 
-### Learning
+MIT. See [LICENSE](./LICENSE). Copy whatever is useful; nothing here is warranted to work on your machine.
 
-- Enable "Explanatory" output style in `/config` to learn the *why*
-- Have Claude generate visual HTML presentations for unfamiliar code
-- Ask Claude to draw ASCII diagrams of protocols and codebases
-- Use voice dictation (fn x2 on macOS) — you speak 3x faster than you type
+`.stow-local-ignore` excludes `LICENSE.*` from the stow package, so the file stays repo-only and is never linked into `~/.claude/`.
 
-### Terminal
+## Tips from the Claude Code team
 
-- The team recommends Ghostty for its synchronized rendering and unicode support
+> From [Boris Cherny's January 2026 thread](https://x.com/bcherny/status/2017742741636321619). Boris created Claude Code at Anthropic.
 
-## Power Features
+**Parallelism** — run 3–5 sessions in parallel using git worktrees; use subagents to throw more compute at a problem and to keep the main context clean; route permission requests through a hook to auto-approve safe ones.
 
-> Sourced from [Boris Cherny's thread (Mar 2026)](https://x.com/bcherny/status/2038454336355999749) covering his favorite hidden and under-utilized Claude Code features.
+**Planning** — start complex tasks in plan mode (shift+tab); re-plan instead of pushing through when things go sideways; use plan mode for verification steps, not just builds.
 
-### Mobile & Cross-Device
+**Configuration** — invest in `CLAUDE.md` and update it after every mistake; commit reusable skills to git; use `/statusline` to surface context usage and branch; name and color-code one terminal tab per task or worktree.
 
-- Claude Code has a mobile app (iOS/Android) — open the Claude app and use the Code tab
-- Use `/teleport` or `claude --teleport` to continue a cloud session on your local machine
-- Use `/remote-control` to control a local session from your phone or browser
-- Set "Enable Remote Control for all sessions" in `/config` for always-on access
+**Prompting** — "Grill me on these changes"; "Prove to me this works"; "Scrap this, implement the elegant solution"; write detailed specs to cut ambiguity.
 
-### Automation & Scheduling
+**Workflow** — paste a Slack bug thread and say "fix"; say "go fix the failing CI tests" without micromanaging how; point Claude at docker logs to troubleshoot distributed systems; use it for analytics against any database CLI, MCP, or API.
 
-- `/loop` runs a skill on a recurring interval (e.g., `/loop 5m /babysit` for auto code review and rebase)
-- `/schedule` runs Claude on a cron schedule, up to a week at a time
-- Example loops: auto-address code review, auto-rebase PRs, sweep post-merge comments, prune stale PRs
-- Turn workflows into skills, then loop them for hands-free automation
+**Learning** — enable the Explanatory output style in `/config` to get the *why*; have Claude generate visual HTML presentations for unfamiliar code and ASCII diagrams of protocols; use voice dictation (fn twice on macOS), since you speak about 3× faster than you type.
 
-### Hooks
+**Terminal** — the team recommends Ghostty, for synchronized rendering and unicode support.
 
-- Use hooks to run deterministic logic at each stage of the agent lifecycle
-- `SessionStart` — dynamically load context when Claude starts
-- `PreToolUse` — log every bash command the model runs
-- `PermissionRequest` — route approval prompts to WhatsApp or other channels
-- `Stop` — poke Claude to keep going whenever it stops
-- Docs: https://code.claude.com/docs/en/hooks
+## Power features
 
-### Desktop & Browser Integration
+> From [Boris Cherny's March 2026 thread](https://x.com/bcherny/status/2038454336355999749) on under-used Claude Code features.
 
-- **Cowork Dispatch** — secure remote control for Claude Desktop; catch up on Slack, emails, manage files from mobile
-- **Chrome extension** — connect Claude to your browser for frontend work; Claude iterates until the result looks right
-- **Desktop app** — auto-starts web servers and tests them in a built-in browser
+**Mobile and cross-device** — there's an iOS/Android app (Claude app → Code tab); `/teleport` or `claude --teleport` continues a cloud session locally; `/remote-control` drives a local session from a phone or browser, and `/config` can enable it for all sessions.
 
-### Session Management
+**Automation** — `/loop` runs a skill on an interval (`/loop 5m /babysit` for auto review and rebase); `/schedule` runs Claude on a cron schedule up to a week out. Turn a workflow into a skill first, then loop it.
 
-- `/branch` forks your current session; or use `claude --resume <session-id> --fork-session` from CLI
-- `/btw` answers quick side questions without interrupting the agent's current work
-- `/voice` enables voice input — hold space bar in CLI, or use the voice button in Desktop
+**Hooks** — deterministic logic at each lifecycle stage: `SessionStart` to load context, `PreToolUse` to log every bash command, `PermissionRequest` to route approvals to another channel, `Stop` to poke Claude to keep going. See the [hooks documentation](https://code.claude.com/docs/en/hooks).
 
-### Parallel Work at Scale
+**Desktop and browser** — Cowork Dispatch for secure remote control of Claude Desktop; the Chrome extension for frontend work, where Claude iterates until the result looks right; the desktop app auto-starts web servers and tests them in a built-in browser.
 
-- `claude -w` starts a new session directly in a git worktree
-- `/batch` fans out massive changesets to dozens, hundreds, or thousands of worktree agents
-- Use `WorktreeCreate` hook for non-git VCS worktree creation
+**Session management** — `/branch` forks the current session (or `claude --resume <id> --fork-session`); `/btw` answers a side question without derailing the agent; `/voice` enables voice input.
 
-### SDK & CLI Flags
+**Parallel work at scale** — `claude -w` starts a session directly in a git worktree; `/batch` fans a changeset out to many worktree agents; the `WorktreeCreate` hook covers non-git VCS.
 
-- `--bare` speeds up SDK startup by up to 10x — skips auto-loading CLAUDE.md, settings, MCPs
-- `--add-dir` (or `/add-dir`) gives Claude access to additional repos; also grants permissions there
-- `--agent=<name>` runs a custom agent defined in `.claude/agents/` — works for non-interactive mode too
-- Add `"additionalDirectories"` to `settings.json` to always load extra folders
+**SDK and CLI flags** — `--bare` speeds SDK startup up to 10× by skipping `CLAUDE.md`, settings, and MCP auto-load; `--add-dir` (or `/add-dir`) grants access and permissions in additional repos; `--agent=<name>` runs a custom agent, including non-interactively; `additionalDirectories` in `settings.json` always loads extra folders.
 
 ## Related documentation
 
-- `CLAUDE.md` — global instructions loaded into every Claude Code session
-- `LEARNINGS.md` — accumulating notes on what makes Claude rules, skills, hooks, and agents work reliably
-- Per-directory `README.md` files inside `skills/`, `agents/`, `commands/`, `hooks/`, `output-styles/` (each `SKILL.md`'s `description:` frontmatter is the source of truth for what a skill does; no separate catalog to keep in sync)
+- `CLAUDE.md` — global instructions loaded into every session
+- `LEARNINGS.md` — accumulated notes on what makes rules, skills, hooks, and agents behave reliably
+- `docs/OPERATING.md` — plan mode, session management, parallel work, multi-repo setups
+- Per-directory `README.md` files under `skills/`, `agents/`, `commands/`, `hooks/`, and `output-styles/`. Each `SKILL.md`'s `description:` frontmatter is the source of truth for what that skill does — there is no separate catalog to keep in sync
 
 ## References
 
-- [Claude Code Documentation](https://code.claude.com/docs/en/overview) — Official Claude Code docs covering configuration, skills, rules, agents, and more
-- [obra/superpowers](https://github.com/obra/superpowers) — Community collection of Claude Code skills, rules, and agents
-- [affaan-m/everything-claude-code](https://github.com/affaan-m/everything-claude-code) — Broad harness for Claude Code (and other AI agent harnesses) covering skills, instincts, memory, security, and research-first development; rich source of ideas for personal configs
-- [shanraisshan/claude-code-best-practice](https://github.com/shanraisshan/claude-code-best-practice) — Best-practice patterns and conventions for Claude Code agents, commands, and skills
-- [0xquinto/bcherny-claude](https://github.com/0xquinto/bcherny-claude) — Boris Cherny's personal Claude Code configuration (commands, agents, and settings). Many workflow agents/commands in this repo and the "Tips from the Claude Code Team" and "Power Features" sections above are sourced from his repo and X threads
-- [GNU Stow](https://www.gnu.org/software/stow/) — Symlink farm manager used to wire this package into `~/.claude/`
+- [Claude Code documentation](https://code.claude.com/docs/en/overview) — configuration, skills, rules, agents
+- [obra/superpowers](https://github.com/obra/superpowers) — community collection of skills, rules, and agents
+- [affaan-m/everything-claude-code](https://github.com/affaan-m/everything-claude-code) — broad harness covering skills, instincts, memory, security, and research-first development
+- [shanraisshan/claude-code-best-practice](https://github.com/shanraisshan/claude-code-best-practice) — patterns and conventions for agents, commands, and skills
+- [0xquinto/bcherny-claude](https://github.com/0xquinto/bcherny-claude) — Boris Cherny's own configuration; the two sourced sections above draw on this repo and the linked threads
+- [GNU Stow](https://www.gnu.org/software/stow/) — the symlink farm manager wiring this package into `~/.claude/`
