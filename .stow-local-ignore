@@ -10,3 +10,12 @@
 # --- Repo-only meta-docs (not part of live ~/.claude/ config) ---
 ^/LEARNINGS\.md
 ^/SKILLS\.md
+
+# --- Tool caches (created by running scripts/, never config) ---
+# These are self-ignoring for git (pytest and ruff each write a
+# .gitignore containing `*` inside their cache), so they never appear
+# in `git status` — but stow has no such notion and would happily link
+# them into ~/.claude/. Because this file overrides stow's built-in
+# defaults, they must be listed explicitly.
+^/\.pytest_cache
+^/\.ruff_cache
