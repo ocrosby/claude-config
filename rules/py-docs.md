@@ -41,9 +41,10 @@ def create_user(name: str, email: str, role: str = "member") -> User:
 
 ## README
 
-- Every project has a README with: purpose, quickstart, configuration, and development setup
-- Quickstart shows `uv sync` and how to run the application
-- Configuration documents all environment variables
+Required sections, explanation quality, and example verification are owned by `rules/readme-standard.md`. Follow it — do not re-derive a shorter section list here. Python-specific content only:
+
+- Installation shows `uv sync`; Usage shows how to run the application
+- Configuration documents every environment variable and its default
 
 ## API Documentation
 
