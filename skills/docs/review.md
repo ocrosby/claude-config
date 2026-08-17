@@ -16,7 +16,9 @@ Read this file when `SKILL.md` step 1 dispatches to `review`. Audits documentati
    ```bash
    python3 ~/.claude/scripts/check_docs.py <paths>... [--severity must|should|consider|all] [--json]
    ```
-   Rules applied: `vague-link-text` (Must), `heading-hierarchy` (Should), `heading-title-case` (Consider), `faq-section` (Should), `image-no-alt` (Must), `alt-text-long` (Consider), `code-block-no-lang` (Consider), `raw-url` (Consider), `readme-no-install` / `readme-no-example` (Must), `readme-no-license` (Should).
+   Rules applied: `vague-link-text` (Must), `heading-hierarchy` (Should), `heading-title-case` (Consider), `faq-section` (Should), `image-no-alt` (Must), `alt-text-long` (Consider), `code-block-no-lang` (Consider), `raw-url` (Consider), `readme-missing-section` / `readme-no-example` (Must), `readme-section-order` / `readme-no-toc` / `readme-no-examples` / `readme-no-license` (Should).
+
+   The `readme-*` rules encode the mechanical half of `rules/readme-standard.md` (required sections, their order, TOC threshold). The judgment half — the At-a-Glance Test, the Overview's Anchor/Gap/Cost/Payoff contract, and whether examples were actually executed — stays in step 3.
 
 3. **Apply judgment-required checks** by reading each file fully:
    - **Technical accuracy** (Must Fix): commands that don't work, deprecated syntax, behavior the code no longer has.
