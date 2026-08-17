@@ -255,15 +255,25 @@ The helper scripts under `scripts/` are PEP 723 single-file scripts — run them
 ```bash
 ./scripts/check_docs.py README.md              # documentation findings
 ./scripts/check_docs.py . --fail-on=must       # gate on Must Fix across the repo
+./scripts/check_stow.py                        # is the package actually linked?
 ./scripts/tally_invocations.py                 # which skills actually get used
 ```
 
-After changing anything that affects linking — a new top-level directory, an edit to `.stow-local-ignore` — re-stow and verify:
+Scripts with behavior worth pinning have a sibling test file, run the same way:
+
+```bash
+./scripts/test_check_docs.py
+./scripts/test_check_stow.py
+```
+
+After changing anything that affects linking — a new top-level directory, an edit to `.stow-local-ignore` — re-stow and confirm the package is clean:
 
 ```bash
 stow -R -t ~/.claude -d ~/src/github.com/ocrosby claude-config
-readlink ~/.claude/CLAUDE.md
+./scripts/check_stow.py
 ```
+
+`check_stow.py` answers what `git status` cannot: whether everything in the package is actually linked into `~/.claude/`, whether a re-stow would drag in something that isn't config, and whether any link now dangles. A directory added to the repo months ago and never stowed looks perfectly healthy in git.
 
 Conventions for this repo live in `CLAUDE.md`: Conventional Commits, one `type(scope)` pair per PR, and branch-before-touching-files. Insights about how rules and skills behave in practice go in `LEARNINGS.md`, not here.
 
