@@ -2,6 +2,8 @@
 
 My personal Claude Code configuration — version-controlled, and symlinked into `~/.claude/` with GNU Stow.
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
+
 ## Table of Contents
 
 - [Overview](#overview)
@@ -267,11 +269,13 @@ Conventions for this repo live in `CLAUDE.md`: Conventional Commits, one `type(s
 
 ## Contributing
 
-This is a personal configuration, so outside contributions aren't expected and issues may sit unanswered. Fork it and make it yours instead — that will serve you better than a patch to mine.
+This is a personal configuration, so outside contributions aren't expected and issues may sit unanswered. Fork it and make it yours instead — the license permits it, and it will serve you better than a patch to mine.
 
 ## License
 
-No license file. All rights reserved; this is published to be read, not redistributed. Nothing here is warranted to work on your machine.
+MIT. See [LICENSE](./LICENSE). Copy whatever is useful; nothing here is warranted to work on your machine.
+
+`.stow-local-ignore` excludes `LICENSE.*` from the stow package, so the file stays repo-only and is never linked into `~/.claude/`.
 
 ## Tips from the Claude Code team
 
