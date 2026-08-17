@@ -167,6 +167,42 @@ def test_unrelated_real_directory_in_target_is_ignored(tmp_path):
     assert check_stow.check(root, target, "pkg") == []
 
 
+# --- not a stow package -------------------------------------------------
+
+
+def test_never_stowed_target_reports_once_not_per_entry(tmp_path):
+    """A target with no links into the package is a wrong-target mistake,
+    not N separate unlinked findings."""
+    root, _, target = make_package(
+        tmp_path, {"rules/": "x", "skills/": "y", "CLAUDE.md": "z"}
+    )
+    # deliberately not stowed
+    found = check_stow.check(root, target, "pkg")
+    assert len(found) == 1
+    assert found[0][2] == "stow-nothing-linked"
+    assert found[0][1] == check_stow.MUST
+    assert "stow-unlinked" not in codes(found)
+
+
+def test_never_stowed_target_does_not_report_junk_separately(tmp_path):
+    root, pkg, target = make_package(tmp_path, {"rules/": "x"})
+    (pkg / ".pytest_cache").mkdir()
+    (pkg / ".pytest_cache" / "v").write_text("c", encoding="utf-8")
+    found = check_stow.check(root, target, "pkg")
+    assert codes(found) == ["stow-nothing-linked"]
+
+
+def test_partially_stowed_target_still_reports_per_entry(tmp_path):
+    """The guard must not swallow real drift once anything is linked."""
+    root, pkg, target = make_package(tmp_path, {"rules/": "x"})
+    stow(root, target)
+    (pkg / "docs").mkdir()
+    (pkg / "docs" / "f.md").write_text("f", encoding="utf-8")
+    found = check_stow.check(root, target, "pkg")
+    assert "stow-nothing-linked" not in codes(found)
+    assert by_code(found, "stow-unlinked")
+
+
 # --- output rendering ----------------------------------------------------
 
 
