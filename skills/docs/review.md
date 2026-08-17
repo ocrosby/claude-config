@@ -21,7 +21,7 @@ Read this file when `SKILL.md` step 1 dispatches to `review`. Audits documentati
 3. **Apply judgment-required checks** by reading each file fully:
    - **Technical accuracy** (Must Fix): commands that don't work, deprecated syntax, behavior the code no longer has.
    - **Missing code example** (Must Fix in tutorials): step-by-step content needs runnable examples.
-   - **Missing problem statement / project purpose** (Must Fix in READMEs).
+   - **README explanation quality** (root READMEs): apply `rules/readme-standard.md` — the At-a-Glance Test, the Overview's Anchor/Gap/Cost/Payoff contract, and whether examples were verified rather than asserted. Its severity mapping governs; do not re-derive one here.
    - **Prerequisites stated after they are needed** (Must Fix in tutorials): violates Cumulative principle.
    - **Terminology drift** (Should Fix): same term spelled/capitalized differently across the doc.
    - **Active voice absent** (Consider).

@@ -284,9 +284,10 @@ func ExampleEncode() {
 
 ### README
 
-- Every project has a README with: purpose, quickstart, configuration, and development setup
-- Quickstart shows `go build` / `go run` and how to start the application
-- Configuration documents all environment variables and flags
+Required sections, explanation quality, and example verification are owned by `rules/readme-standard.md`. Follow it — do not re-derive a shorter section list here. Go-specific content only:
+
+- Installation shows `go install` / `go build`; Usage shows how to start the application
+- Configuration documents every environment variable and flag and its default
 
 ### API documentation
 
