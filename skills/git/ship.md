@@ -92,5 +92,5 @@ After the last group: `git stash drop`.
 
 ## Verify
 
-- **Branch mode:** PR URL is reachable and state is `OPEN`.
+- **Branch mode:** trust the URL printed by `/open-pr` step 7 — that URL came from `gh pr create`'s stdout, and `gh pr create` returning zero is proof the PR is `OPEN`. Do not re-query with `gh pr view`; a second round-trip adds ~1s per ship for no new information. Only re-verify if `/open-pr` itself did not print a URL (which indicates it stopped early).
 - **Direct-to-main:** `git log -1 origin/main --oneline` shows the new commit.

@@ -51,10 +51,10 @@ Use this command to push the current branch upstream and open a pull request aga
    | `docs` | `documentation` |
    | anything else | omit `--label` |
 
-6. Open the PR with `gh pr create` using the commit subject as the title (under 70 characters) and a structured body:
+6. Open the PR with `gh pr create` using the commit subject as the title (under 70 characters) and a structured body. **Capture the URL from stdout** — `gh pr create` prints the PR URL on success, so a follow-up `gh pr view` is a wasted network round-trip:
 
    ```bash
-   gh pr create --assignee @me --label <label> --title "<conventional title>" --body "$(cat <<'EOF'
+   PR_URL=$(gh pr create --assignee @me --label <label> --title "<conventional title>" --body "$(cat <<'EOF'
    ## Summary
    - <bullet 1>
    - <bullet 2>
@@ -66,7 +66,7 @@ Use this command to push the current branch upstream and open a pull request aga
    - [ ] <test step 1>
    - [ ] <test step 2>
    EOF
-   )"
+   )")
    ```
 
    Derive bullets and motivation from the commit body and the diff against `main`. If `$ARGUMENTS` contains the literal token `depends-on=<PR>` (e.g. `depends-on=123`), append a `Depends on #123` line to the body. If `$ARGUMENTS` is empty or contains no such token, omit the dependency line.
@@ -86,7 +86,7 @@ Use this command to push the current branch upstream and open a pull request aga
 
    Never link to `/blob/main/` — those URLs silently change meaning the next time `main` is updated.
 
-7. Run `gh pr view --json url,state --jq '"\(.state) \(.url)"'` and print the result. Confirm the state is `OPEN`.
+7. Print `$PR_URL`. If `gh pr create` returned zero, the PR is `OPEN` — there is no path where create succeeds and the PR is in another state, so no additional `gh pr view` is needed here. Do **not** query `mergeable` at this step regardless: GitHub computes it asynchronously and asking for it right after create can force `gh` to wait or retry against an unstable field, adding seconds per ship.
 
 ## Rules
 
