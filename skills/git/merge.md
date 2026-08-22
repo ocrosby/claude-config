@@ -38,24 +38,56 @@ Print the ordered list as `#<N> <title> (<headRefName>)` and the resolved option
    - `isDraft: true` → **stop the run** and report; do not merge a draft.
    - `mergeable == CONFLICTING` → **stop the run**, name the conflict, and do not force. The user resolves conflicts (via `/git sync` on that branch) before re-running.
    - `mergeStateStatus == BLOCKED` (required reviews outstanding, an unmet branch-protection rule, etc.) → **stop the run** and report the blocking reason. Do not attempt the merge — `gh pr merge` will fail. This is a distinct fourth stop condition, not a conflict or a red check.
-2. **Require green checks.**
+   - `mergeStateStatus == BEHIND` or `UNSTABLE` is NOT a stop condition here — step 3 handles both via the try-auto-then-poll flow.
+2. **Require green checks.** Skip this pre-check when `mergeStateStatus == BEHIND` — the branch is going to be rebased in step 3, which invalidates the current check run anyway. For every other state:
    ```bash
    gh pr checks <N>
    ```
-   If any required check is failing or still pending → **stop the run** and report which check. Never merge a red or in-flight PR.
-3. **Merge.** Build the command from the parsed flags — do not hardcode `--squash`/`--delete-branch`:
+   If any required check is failing (not pending) → **stop the run** and report which check. Never merge a red PR. Pending checks are fine — step 3's fallback will bounded-poll them.
+3. **Merge — try `--auto` first, fall back to bounded polling.** Server-side auto-merge handles rebase + CI wait + merge without blocking the caller, so a single `/git merge` invocation lands the PR (or queues it) even when the branch is BEHIND or checks are pending. When the repo has `allow_auto_merge` disabled, fall back to a bounded-poll flow so the invocation still completes without a stop.
+
+   Build the flag list from parsed args:
    - Method token: `--squash` (default), or `--merge` / `--rebase` when the user passed one.
-   - Branch flag: include `--delete-branch` **unless** `--keep-branch` was passed; omit it when it was.
+   - Branch flag: include `--delete-branch` **unless** `--keep-branch` was passed.
+
+   Flow:
    ```bash
-   gh pr merge <N> <--squash|--merge|--rebase> [--delete-branch]
+   # 3a. First try server-side auto-merge. Succeeds if repo has
+   # allow_auto_merge=true; PR is either merged immediately (if fully green)
+   # or queued for GitHub to merge when checks pass + branch is up to date.
+   if gh pr merge <N> <method> [--delete-branch] --auto 2>/tmp/merge_err; then
+     : # done — queued or merged
+   elif grep -q "Auto merge is not allowed" /tmp/merge_err; then
+     # 3b. Fallback: repo has auto-merge disabled. Update the branch if
+     # needed, wait for CI, then merge directly.
+     gh pr update-branch <N>
+     # Bounded poll: check every 15s, cap at 3 minutes. `timeout` provides the
+     # hard ceiling so the invocation never hangs indefinitely.
+     timeout 180 bash -c '
+       until gh pr checks '<N>' --json state --jq "
+         if length == 0 then true
+         else [.[].state] | all(. == \"SUCCESS\" or . == \"NEUTRAL\" or . == \"SKIPPED\")
+         end" | grep -qx true; do
+         sleep 15
+       done
+     ' || { echo "checks did not go green within 3 minutes on #<N>"; exit 1; }
+     gh pr merge <N> <method> [--delete-branch]
+   else
+     # Other failure (conflict surfaced, blocked ruleset, etc.) — propagate.
+     cat /tmp/merge_err
+     exit 1
+   fi
    ```
-   Example — default flags: `gh pr merge 31 --squash --delete-branch`. With `--rebase --keep-branch`: `gh pr merge 31 --rebase`.
-4. **Sync `main` between PRs.** Dispatch to the `main` subcommand in `SKILL.md` to checkout `main`, pull, and prune the merged branch. This is the "sync main between" step. **Note:** the `main` dispatch prunes *every* local branch fully merged into `main`, not only the branches in this merge set — so an unrelated, already-merged local branch (even one you were sitting on before the run) can be cleaned up here. This is harmless (`git branch -d` refuses unmerged branches, so nothing with unmerged work is ever deleted), but do not assume the only branch removed is the one just merged.
-5. **Bring the next PR up to date.** If more PRs remain, run `gh pr update-branch` on the next one — it is idempotent (a no-op when the branch is already current), so run it unconditionally rather than guessing whether branch protection requires it:
-   ```bash
-   gh pr update-branch <next-N>
-   ```
-   If the output reports the branch is already up to date, continue immediately. **If it updates the branch, its checks are now pending — stop the run and tell the user checks are re-running on `#<next-N>`; do not proceed until they re-invoke `/git merge` after checks pass.** (Do not poll or block waiting for CI.)
+
+   Rationale: the previous flow always required at least two `/git merge` invocations per BEHIND-or-pending PR (one to update-branch and stop, one to actually merge). `--auto` collapses that to one invocation server-side; the bounded-poll fallback preserves the same UX for repos without auto-merge enabled.
+
+4. **Sync `main` between PRs.** Dispatch to the `main` subcommand in `SKILL.md` to checkout `main`, pull, and prune the merged branch.
+
+   **Skip this step when step 3 took the `--auto` path** — the PR is queued server-side and hasn't landed yet, so `git pull` would be a no-op and pruning would refuse (branch not merged locally). Instead, run the sync on the FINAL PR of a batch (or on any subsequent `/git main`).
+
+   **Note:** the `main` dispatch prunes *every* local branch fully merged into `main`, not only the branches in this merge set — so an unrelated, already-merged local branch (even one you were sitting on before the run) can be cleaned up here. This is harmless (`git branch -d` refuses unmerged branches, so nothing with unmerged work is ever deleted), but do not assume the only branch removed is the one just merged.
+
+5. **Bring the next PR up to date.** No longer needed — step 3 handles the up-to-date requirement inline for each PR via `--auto` (server-side) or the bounded-poll fallback. Removed to eliminate the "stop and wait for the user to re-invoke" cycle that used to fire once per PR in a batch.
 
 ## Stop semantics
 
