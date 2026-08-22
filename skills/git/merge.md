@@ -56,7 +56,16 @@ Print the ordered list as `#<N> <title> (<headRefName>)` and the resolved option
    # allow_auto_merge=true; PR is either merged immediately (if fully green)
    # or queued for GitHub to merge when checks pass + branch is up to date.
    if gh pr merge <N> <method> [--delete-branch] --auto 2>/tmp/merge_err; then
-     : # done — queued or merged
+     # Poll for state == MERGED so the invocation blocks until the merge
+     # actually lands, giving in-session confirmation and letting step 4
+     # sync main unconditionally. Cap at 5 minutes -- typical merges land
+     # in under a minute once queued, so this cap only fires when CI
+     # itself is genuinely slow or stuck.
+     timeout 300 bash -c '
+       until [ "$(gh pr view '<N>' --json state --jq .state)" = "MERGED" ]; do
+         sleep 15
+       done
+     ' || { echo "PR #<N> did not reach MERGED within 5 minutes"; exit 1; }
    elif grep -q "Auto merge is not allowed" /tmp/merge_err; then
      # 3b. Fallback: repo has auto-merge disabled. Update the branch if
      # needed, wait for CI, then merge directly.
@@ -79,11 +88,9 @@ Print the ordered list as `#<N> <title> (<headRefName>)` and the resolved option
    fi
    ```
 
-   Rationale: the previous flow always required at least two `/git merge` invocations per BEHIND-or-pending PR (one to update-branch and stop, one to actually merge). `--auto` collapses that to one invocation server-side; the bounded-poll fallback preserves the same UX for repos without auto-merge enabled.
+   Rationale: the previous flow always required at least two `/git merge` invocations per BEHIND-or-pending PR (one to update-branch and stop, one to actually merge). `--auto` collapses that to one invocation server-side; the bounded-poll fallback preserves the same UX for repos without auto-merge enabled. Both paths now block until the merge actually lands (5-min cap on the `--auto` path, 3-min cap on the fallback), so the caller has in-session confirmation and step 4 can sync main unconditionally.
 
-4. **Sync `main` between PRs.** Dispatch to the `main` subcommand in `SKILL.md` to checkout `main`, pull, and prune the merged branch.
-
-   **Skip this step when step 3 took the `--auto` path** — the PR is queued server-side and hasn't landed yet, so `git pull` would be a no-op and pruning would refuse (branch not merged locally). Instead, run the sync on the FINAL PR of a batch (or on any subsequent `/git main`).
+4. **Sync `main` between PRs.** Dispatch to the `main` subcommand in `SKILL.md` to checkout `main`, pull, and prune the merged branch. Both step 3 paths guarantee the PR is MERGED (not just queued) before we reach this step, so `git pull` picks up the squash commit and `git branch -d` succeeds on the local topic branch.
 
    **Note:** the `main` dispatch prunes *every* local branch fully merged into `main`, not only the branches in this merge set — so an unrelated, already-merged local branch (even one you were sitting on before the run) can be cleaned up here. This is harmless (`git branch -d` refuses unmerged branches, so nothing with unmerged work is ever deleted), but do not assume the only branch removed is the one just merged.
 
