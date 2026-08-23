@@ -44,6 +44,7 @@ High-quality code communicates **why**, not just **what**. Before changing code,
 - **Lint suppression** → `rules/lint-suppression.md`. Every `# noqa` / `//nolint` / `# type: ignore` / `eslint-disable` needs the rule code **and** an inline reason. Disable globally if annoying; do not sprinkle.
 - **Unit testing (in order)** → `rules/black-box-testing.md` (shape, non-negotiable) → coverage as detector → `rules/mutation-testing.md` (assertion strength). Never invert the order.
 - **Tool language selection** → `rules/tool-language-selection.md`. Rust for tree-sitter / AST-heavy scans / stylua-shelf ecosystem; Go for CI plumbing / cloud-native / existing-Go-tool code-sharing. Name the signal that drove the pick.
+- **Coverage report tooling** → `rules/coverage-report-tooling.md`. HTML coverage reports use `genhtml` from the `lcov` package (yoda.nvim standard). Never `ReportGenerator` / `dotnet-reportgenerator-globaltool`. Applies to Go, Python, Lua, mixed-language repos.
 
 # Task Tracking
 
