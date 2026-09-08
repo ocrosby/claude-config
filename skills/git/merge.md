@@ -60,26 +60,35 @@ Print the ordered list as `#<N> <title> (<headRefName>)` and the resolved option
      # actually lands, giving in-session confirmation and letting step 4
      # sync main unconditionally. Cap at 5 minutes -- typical merges land
      # in under a minute once queued, so this cap only fires when CI
-     # itself is genuinely slow or stuck.
-     timeout 300 bash -c '
-       until [ "$(gh pr view '<N>' --json state --jq .state)" = "MERGED" ]; do
-         sleep 15
-       done
-     ' || { echo "PR #<N> did not reach MERGED within 5 minutes"; exit 1; }
+     # itself is genuinely slow or stuck. Bounded with bash's builtin
+     # SECONDS counter, not the external `timeout` binary -- `timeout` /
+     # `gtimeout` is absent by default on macOS without coreutils installed,
+     # and this flow must not depend on an optional package.
+     SECONDS=0
+     until [ "$(gh pr view <N> --json state --jq .state)" = "MERGED" ]; do
+       if [ "$SECONDS" -ge 300 ]; then
+         echo "PR #<N> did not reach MERGED within 5 minutes"
+         exit 1
+       fi
+       sleep 15
+     done
    elif grep -q "Auto merge is not allowed" /tmp/merge_err; then
      # 3b. Fallback: repo has auto-merge disabled. Update the branch if
      # needed, wait for CI, then merge directly.
      gh pr update-branch <N>
-     # Bounded poll: check every 15s, cap at 3 minutes. `timeout` provides the
-     # hard ceiling so the invocation never hangs indefinitely.
-     timeout 180 bash -c '
-       until gh pr checks '<N>' --json state --jq "
+     # Bounded poll: check every 15s, cap at 3 minutes via SECONDS -- same
+     # portability reason as 3a, no external `timeout` dependency.
+     SECONDS=0
+     until gh pr checks <N> --json state --jq '
          if length == 0 then true
-         else [.[].state] | all(. == \"SUCCESS\" or . == \"NEUTRAL\" or . == \"SKIPPED\")
-         end" | grep -qx true; do
-         sleep 15
-       done
-     ' || { echo "checks did not go green within 3 minutes on #<N>"; exit 1; }
+         else [.[].state] | all(. == "SUCCESS" or . == "NEUTRAL" or . == "SKIPPED")
+         end' | grep -qx true; do
+       if [ "$SECONDS" -ge 180 ]; then
+         echo "checks did not go green within 3 minutes on #<N>"
+         exit 1
+       fi
+       sleep 15
+     done
      gh pr merge <N> <method> [--delete-branch]
    else
      # Other failure (conflict surfaced, blocked ruleset, etc.) — propagate.
@@ -88,7 +97,7 @@ Print the ordered list as `#<N> <title> (<headRefName>)` and the resolved option
    fi
    ```
 
-   Rationale: the previous flow always required at least two `/git merge` invocations per BEHIND-or-pending PR (one to update-branch and stop, one to actually merge). `--auto` collapses that to one invocation server-side; the bounded-poll fallback preserves the same UX for repos without auto-merge enabled. Both paths now block until the merge actually lands (5-min cap on the `--auto` path, 3-min cap on the fallback), so the caller has in-session confirmation and step 4 can sync main unconditionally.
+   Rationale: the previous flow always required at least two `/git merge` invocations per BEHIND-or-pending PR (one to update-branch and stop, one to actually merge). `--auto` collapses that to one invocation server-side; the bounded-poll fallback preserves the same UX for repos without auto-merge enabled. Both paths now block until the merge actually lands (5-min cap on the `--auto` path, 3-min cap on the fallback), so the caller has in-session confirmation and step 4 can sync main unconditionally. The bound is implemented with bash's builtin `SECONDS` variable rather than the external `timeout`/`gtimeout` binary: a live run on macOS without GNU coreutils hit `command not found: timeout` mid-merge, so the flow must not assume that binary exists.
 
 4. **Sync `main` between PRs.** Dispatch to the `main` subcommand in `SKILL.md` to checkout `main`, pull, and prune the merged branch. Both step 3 paths guarantee the PR is MERGED (not just queued) before we reach this step, so `git pull` picks up the squash commit and `git branch -d` succeeds on the local topic branch.
 
