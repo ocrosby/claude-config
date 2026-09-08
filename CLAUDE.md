@@ -67,13 +67,14 @@ One PR = one `type(scope)` pair. If the description contains "and", split the co
 
 ```bash
 owner=... repo=... branch=main
-gh api "repos/$owner/$repo/branches/$branch/protection" \
-  --jq '.required_pull_request_reviews // .required_status_checks // "protected"' 2>/dev/null
-gh api "repos/$owner/$repo/rules/branches/$branch" \
-  --jq '[.[] | select(.type == "pull_request" or .type == "required_status_checks" or .type == "required_signatures" or .type == "required_deployments")] | length'
+# Legacy protection: "unprotected" if 404, else the response is protection config.
+gh api "repos/$owner/$repo/branches/$branch/protection" 2>&1 \
+  | grep -q '"Branch not protected"' && echo "legacy: clear" || echo "legacy: PROTECTED (see full response)"
+# Rulesets: print every rule type applied. Empty output = no rules.
+gh api "repos/$owner/$repo/rules/branches/$branch" --jq '.[].type' | sort -u
 ```
 
-Direct push is fine **only if BOTH** clear (protection 404 *and* rulesets `0`). Otherwise open a PR. A successful bypass is not permission to bypass. **If the remote reports `Bypassed rule violations`, surface it immediately — do not treat exit 0 as success.**
+Direct push is fine **only if BOTH** `legacy: clear` **and** the ruleset command prints nothing. Any rule type listed (`pull_request`, `non_fast_forward`, `required_linear_history`, `deletion`, `required_status_checks`, `commit_message_pattern`, etc.) means push through a PR — do not filter to a fixed allowlist, because rule types not on the allowlist still block direct pushes. A successful bypass is not permission to bypass. **If the remote reports `Bypassed rule violations`, surface it immediately — do not treat exit 0 as success.**
 
 # Self-Improvement
 
