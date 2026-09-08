@@ -24,6 +24,10 @@
           {
             "type": "command",
             "command": "echo \"Session started at $(date). Branch: $(git branch --show-current 2>/dev/null || echo 'N/A'). Last commit: $(git log --oneline -1 2>/dev/null || echo 'N/A').\""
+          },
+          {
+            "type": "command",
+            "command": "~/.claude/skills/work/session_context.sh"
           }
         ]
       }
