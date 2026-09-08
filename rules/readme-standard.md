@@ -6,7 +6,7 @@ paths:
 
 # README Standard — Root README.md
 
-**Every root `README.md` must conform to this standard. Do not ship a README that violates it.**
+**Every root `README.md` must conform to this standard. Do not ship a README that violates it** — except for the internal reusable-workflow repos exempted under Pragmatism Guard below.
 
 This rule's `paths` glob (`README.md`, bare) anchors to the repository root, so the rule only fires on the root README — README files in subdirectories are covered by their own local conventions, not this rule.
 
@@ -156,13 +156,46 @@ One-sentence description of what it does.
 - **Deferring the point to the docs.** "See the docs for what this does" in an Overview means the README has no Overview.
 - **Silent narrowing of a claim.** If a behavior only applies to one mode, one platform, or one motion type, say which — an unqualified claim that holds 70% of the time is a defect.
 
+## Pragmatism Guard
+
+**Internal reusable-workflow repositories are exempt from the Required Sections list and the
+mandatory workflow-badge rule.** Recognition signal: the repo's shipped content is
+predominantly `.github/workflows/*.yaml` files exposing `on: workflow_call`, meant to be
+referenced from *other* repositories' `uses:` lines (e.g. `TheWeatherCompany/sun-workflows`) —
+not an installable tool, library, or standalone service. This repo shape has no install step,
+no runtime to configure, and most of its files never run independently, so several required
+sections don't apply and would be filled with "N/A" noise:
+
+- **Skip entirely**: Features, Requirements, Installation, Configuration, Development. There is
+  nothing to install or configure; "Development" is just "edit a YAML file and test it against a
+  pilot consumer repo," which belongs under Contributing instead.
+- **Reframe, don't skip**: Usage becomes "how a consumer repo references one of these
+  workflows" (a `uses:` example), not a runnable example of this repo on its own.
+- **Workflow badges**: do not add one per file in `.github/workflows/`. Most files in this repo
+  shape are `workflow_call`-only with no independent trigger — a pass/fail badge for a file that
+  never runs by itself is meaningless, and a wall of such badges is worse than none. Only add a
+  badge for a workflow that *does* run independently in this repo (e.g. its own release or CI
+  workflow triggered on `push`).
+- **Still required, just reframed**: a version of Overview, a per-workflow reference section
+  (name, description, a `uses:`/`with:` example, an inputs/secrets table — one entry per
+  reusable workflow file, kept in sync the same way badges would be), Secrets, Versioning
+  (how consumers pin a version), Security (SHA-pinning policy for third-party actions used
+  inside these workflows), and Contributing.
+
+`TheWeatherCompany/sun-workflows`'s `README.md` (Background / Quick Start / Available Workflows
+/ Secrets / Versioning / Security / Limitations / Contributing) is the reference example for
+this exemption — use its structure as the template for other repos of this shape rather than
+re-deriving one from scratch.
+
 ## Before finalizing any README change
 
-1. Confirm all required sections are present
+1. Confirm all required sections are present (or the Pragmatism Guard exemption applies and the
+   reframed sections it calls for are present instead)
 2. Confirm the Overview passes the At-a-Glance Test for a named assumed reader
 3. Confirm every Usage and Examples snippet was **executed**, not merely reviewed
 4. Confirm every literal (command, key, flag, symbol, make target) was grepped against the code
-5. Confirm badges match the current `.github/workflows/` directory exactly
+5. Confirm badges match the current `.github/workflows/` directory exactly (or, under the
+   exemption, match only the independently-triggered workflows)
 6. Confirm all code blocks have language hints
 7. Confirm the H1/H2/H3 hierarchy is correct
 
