@@ -65,6 +65,10 @@
           {
             "type": "command",
             "command": "~/.claude/hooks/tdd-remind.sh"
+          },
+          {
+            "type": "command",
+            "command": "~/.claude/hooks/electron-browserwindow-check.sh"
           }
         ]
       },
