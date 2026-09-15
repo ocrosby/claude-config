@@ -58,6 +58,8 @@ Conventional Commits: `<type>(<scope>): <description>` — lowercase, imperative
 
 One PR = one `type(scope)` pair. If the description contains "and", split the concerns. Name the branch after the intended commit before touching files.
 
+**Never commit while `main`/`master` is checked out.** Even when the user just says "commit this" with no mention of branches or PRs, create/switch to a feature branch first (`git checkout -b <name>`, or `/branch-from-main`) before running `git commit` — do not commit to main and discover only at push time that the repo requires a PR. Moving a commit off main after the fact (branch, push, `reset --hard origin/main`) is avoidable rework; branching first avoids it entirely. This applies regardless of whether main turns out to be protected — branch first, verify protection at push time per the check below.
+
 **Always self-assign.** Every `gh pr create` call must include `--assignee "@me"` explicitly. Do not rely on repo-side auto-assign automation — it has been observed to fire inconsistently (assigned on some PRs, silently skipped on others, same repo, same call shape). If a PR already exists without an assignee, `gh pr edit <N> --add-assignee "@me"`.
 
 **Mixed concerns mid-stream:** `git stash push -u -m "split: <desc>"` → one branch from main per concern → apply relevant files → PR each targeting main.
