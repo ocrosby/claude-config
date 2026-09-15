@@ -9,6 +9,9 @@ paths:
   - "**/*.ts"
   - "**/*.tsx"
   - "**/*.feature"
+  - "**/*.rs"
+  - "**/capabilities/*.json"
+  - "**/tauri.conf.json"
 ---
 
 # Code: Quality and Transformation Dispatcher
@@ -73,6 +76,14 @@ If `golangci-lint` is unavailable, fall back to `go vet ./...` but note the gap.
 - Path under `**/routes/**`, `**/handlers/**`, `**/controllers/**`, `**/views/**`, `**/api/**`
 
 If matched, invoke `rest-reviewer` on those files **in addition to** the language-specific agent.
+
+**Detect Tauri surface.** A changed file defines Tauri backend/IPC surface if it matches:
+
+- `#[tauri::command]`, `tauri::Builder`, `.invoke_handler(`, `.manage(`
+- A `capabilities/*.json` file, or `tauri.conf.json`
+- Frontend: `@tauri-apps/api` imports, `invoke(`, `listen(`, `emit(`
+
+If matched, invoke `tauri-reviewer` on those files **in addition to** the language-specific agent.
 
 **Delegate to language-reviewer agents.**
 

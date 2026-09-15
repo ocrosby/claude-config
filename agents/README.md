@@ -60,5 +60,10 @@ Use this prompt to create a role-based reviewer agent:
 | `py-reviewer` | Reviews Python code for correctness, architecture, type safety, and idiomatic patterns |
 | `rest-reviewer` | Reviews HTTP handler and route code for REST API convention compliance |
 | `skill-reviewer` | Reviews Claude skill files (SKILL.md) for structural quality and consistency |
+| `tauri-architect` | Designs Tauri v2 desktop app architecture — IPC command surface, capability/permission scoping, state management, plugin selection |
+| `tauri-debugger` | Diagnoses Tauri build/bundle failures, IPC errors, and capability permission-denied runtime errors |
+| `tauri-reviewer` | Reviews Tauri command handlers, capability files, and frontend `invoke()` call sites for the backend/webview trust boundary |
 
 **Note on the REST asymmetry:** REST has only `rest-reviewer` — no `rest-architect` or `rest-debugger` — because REST is a discipline layered over a language, not a language itself. Design work for REST APIs is handled by `/architect spec` (OpenAPI-first design); debugging surfaces as language-level bugs and uses the underlying language debugger (`go-debugger`, `py-debugger`, etc.).
+
+**Note on Tauri getting the full triad:** unlike REST, Tauri gets `tauri-architect`/`tauri-debugger`/`tauri-reviewer` because its failure modes are not reducible to "Rust bugs" or "JS bugs" — the capability/permission model, the IPC serialization boundary, and the per-OS bundler pipeline are genuinely Tauri-specific integration concerns that the underlying Rust and JS/TS tooling has no visibility into.
