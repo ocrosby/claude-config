@@ -96,7 +96,7 @@ If the build fails, dispatch to `debug` (step 8) rather than guessing at the fix
 
 **Identify scope.** If no path argument: `git diff --name-only HEAD`. Filter to files matching Tauri patterns (`#[tauri::command]`, `capabilities/*.json`, `tauri.conf.json`, `@tauri-apps/api` usage) — if none match, report that and stop (mirrors `tauri-reviewer`'s own precondition, checked here first to avoid an unnecessary agent call).
 
-Invoke the `tauri-reviewer` agent on the matched files. Report its findings per `rules/findings-format.md`.
+Invoke the `tauri-reviewer` agent on the matched files with `model: "haiku"` — reviewer output is structured findings against `rules/findings-format.md` (file:line, what, why, fix), well within Haiku's range. Report the findings.
 
 ### 8. Dispatch — `debug`
 

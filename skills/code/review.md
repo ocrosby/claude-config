@@ -4,6 +4,8 @@ Read this file when `SKILL.md` step 1 dispatches to `review` (or when `grill` in
 
 **Flag semantics.** `-f` = fix all Must Fix and Should Fix once. `-fc` = fix, re-review, fix again, cap at 5 passes. `--rest` = REST-convention review only (no language pass).
 
+**Model pinning for reviewer agents.** When invoking `go-reviewer`, `py-reviewer`, `nvim-reviewer`, `gherkin-reviewer`, `skill-reviewer`, `rest-reviewer`, `tauri-reviewer`, or `electron-reviewer` from this workflow, **pass `model: "haiku"`** on the `Agent()` call. Reviewer output is structured findings against the fixed rubric in `rules/findings-format.md` (file:line, what, why, fix) — well within Haiku's range, and `/code review` runs frequently enough that the cost compounds. Exception: when `grill` calls this workflow under adversarial mode (step 3 of `SKILL.md`), keep the default model — verdict-shifting judgment is stronger on the default.
+
 ## Workflow
 
 **Identify scope.** If no path/ref argument: `git diff --name-only HEAD`. If an argument: use it as the file list or as a git ref. Group files by language.
