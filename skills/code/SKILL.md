@@ -18,7 +18,7 @@ paths:
 
 Use this skill for any audit, transformation, or cleanup of existing code: structured review, REST-convention check, refactor, deprecation migration, dead-code sweep, or adversarial pre-ship review.
 
-Delegates to language-specialist agents (`go-reviewer`, `py-reviewer`, `nvim-reviewer`, `gherkin-reviewer`, `rest-reviewer`) and to shared deterministic scripts in `~/.claude/scripts/`.
+Delegates to language-specialist agents (`go-reviewer`, `py-reviewer`, `nvim-reviewer`, `gherkin-reviewer`, `rest-reviewer`, `tauri-reviewer`, `electron-reviewer`, `skill-reviewer`) and to shared deterministic scripts in `~/.claude/scripts/`. Heavy subcommand dispatch lives in Level 3 files (`review.md`, `refactor.md`, `migrate.md`) — this file stays thin.
 
 ## Usage
 
@@ -33,11 +33,7 @@ Delegates to language-specialist agents (`go-reviewer`, `py-reviewer`, `nvim-rev
 /code simplify                           # delegate to the external /simplify skill
 ```
 
-**Flag semantics for `review`:**
-
-- `-f` — fix all Must Fix and Should Fix findings once, then stop
-- `-fc` — fix, re-review, fix again, repeat until clean (implies `-f`); cap at 5 passes
-- `--rest` — REST-convention review only (skip language reviewer pass)
+**Flag semantics for `review`:** `-f` = fix Must Fix and Should Fix once. `-fc` = fix, re-review, repeat (cap 5). `--rest` = REST-convention only (no language pass).
 
 ## Workflow
 
@@ -47,123 +43,17 @@ Split `$ARGUMENTS` on the first space. The first word is the subcommand.
 
 - Empty or `help` → print **Usage** and stop.
 - Not one of `review`, `grill`, `refactor`, `migrate`, `techdebt`, `simplify` → print **Usage** and stop.
-- Dispatch to the matching step.
+- Dispatch to the matching step below.
 
 ### 2. Dispatch — `review`
 
-**Identify scope.** If no path/ref argument: `git diff --name-only HEAD`. If an argument: use it as the file list or as a git ref. Group files by language.
-
-**Run linters per file.** Lint failures are **Must Fix** — do not proceed without reporting them.
-
-For Go files, resolve the module root first (don't run from the changed file's directory — that misses sibling packages):
-
-```bash
-MODULE_ROOT=$(dirname <file>); while [ ! -f "$MODULE_ROOT/go.mod" ] && [ "$MODULE_ROOT" != "/" ]; do MODULE_ROOT=$(dirname $MODULE_ROOT); done
-```
-
-| Extension | Linter command (run from module/project root) |
-|---|---|
-| `.lua` | Run `stylua --check <file>` — if the binary is absent, skip and note the gap in the Lint section. Then run `luacheck --quiet <file>` — if `.luacheckrc` is absent, skip and note. |
-| `.py` | `ruff check --quiet <file> && ruff format --check --quiet <file>` |
-| `.go` | `cd <module-root> && golangci-lint run ./... && go test -race ./...` |
-| `.feature` | Run `gherkin-lint <file>` — if the binary is absent, skip and note the gap in the Lint section. |
-
-If `golangci-lint` is unavailable, fall back to `go vet ./...` but note the gap. Report lint failures under a **Lint** section before the semantic review. Do not proceed to semantic review until lint failures are resolved.
-
-**Detect REST endpoints.** A changed file defines HTTP endpoints if it matches:
-
-- Route registrations: `router.GET`, `router.POST`, `app.get(`, `@app.route`, `http.HandleFunc`, `mux.Handle`, `router.Handle`, `APIRouter()`, `@router.get`, `@router.post`, `r.GET`, `r.POST`, `r.PUT`, `r.PATCH`, `r.DELETE`
-- Path under `**/routes/**`, `**/handlers/**`, `**/controllers/**`, `**/views/**`, `**/api/**`
-
-If matched, invoke `rest-reviewer` on those files **in addition to** the language-specific agent.
-
-**Detect Tauri surface.** A changed file defines Tauri backend/IPC surface if it matches:
-
-- `#[tauri::command]`, `tauri::Builder`, `.invoke_handler(`, `.manage(`
-- A `capabilities/*.json` file, or `tauri.conf.json`
-- Frontend: `@tauri-apps/api` imports, `invoke(`, `listen(`, `emit(`
-
-If matched, invoke `tauri-reviewer` on those files **in addition to** the language-specific agent.
-
-**Delegate to language-reviewer agents.**
-
-| Extension / Path | Reviewer Agent |
-|---|---|
-| `.go` | `go-reviewer` |
-| `.py` | `py-reviewer` |
-| `.lua` | `nvim-reviewer` |
-| `.feature` | `gherkin-reviewer` |
-| `skills/*/SKILL.md` | `skill-reviewer` |
-| Other | Review inline: general quality, OWASP Top 10, readability |
-
-**Run CI-config deterministic checks.** For `action.yml` / `action.yaml`:
-
-```bash
-python3 ~/.claude/scripts/check_action_yml.py <file>... [--severity must|should|consider] [--json]
-```
-
-For `.github/workflows/*.yml`:
-
-```bash
-python3 ~/.claude/scripts/check_workflows.py <file-or-dir>... [--repo-root <path>] [--severity must|should|consider] [--json]
-```
-
-Merge script findings into the per-file report alongside the language-reviewer output. Scripts emit `file:line — rule_id — message` consistent with `check_rest.py` / `check_docs.py`.
-
-**REST review path (`--rest` flag, no language pass).** Identify HTTP endpoint files via the same patterns as above, or use the `$ARGUMENTS` path. Run the REST deterministic pre-check:
-
-```bash
-python3 ~/.claude/scripts/check_rest.py <file-or-glob>... [--severity must|should|consider] [--json]
-```
-
-Rules the script applies: `uri-has-verb` (Must), `uri-uppercase` / `uri-snake-case` / `uri-trailing-slash` (Should/Consider), `get-with-body` (Must), `post-no-201` / `post-no-location` (Should), `delete-with-body` (Should), `405-no-allow` (Should), `get-no-cache-headers` (Consider).
-
-Then invoke `rest-reviewer` with the same files, passing the script findings as context so the agent focuses on auth, pagination, error envelope, HATEOAS, versioning, bulk-operation design.
-
-**Compile the report.** Aggregate findings per file using the shape from `rules/findings-format.md`:
-
-```
-## Review: <filename>
-
-### Must Fix
-- `path/to/file.ext:42` — <what>. **Why:** <why>. **Fix:** <fix>.
-
-### Should Fix
-- `path/to/file.ext:88` — <what>. **Why:** <why>. **Fix:** <fix>.
-
-### Consider
-- `path/to/file.ext:120` — <what>. **Why:** <why>.
-```
-
-Omit a bucket entirely when it has no entries — do not print an empty `### Must Fix` header. If a file has no issues at all: `✓ <filename> — no issues found`. End with a one-paragraph summary: overall verdict, most important issue, cross-cutting patterns.
-
-**Auto-fix (`-f` flag).** **If `-f` was not passed: stop after the report.**
-
-Apply every Must Fix and Should Fix finding (not Consider). For each: Edit or Write directly, no confirmation — the `-f` flag is the authorization. Order: all Must Fix → all Should Fix. After fixes, re-run the relevant linters from the linter step. Print:
-
-```
-## Fixes Applied
-- <filename>:<line> — <what was fixed>
-
-Linters: ✓ clean  (or list any remaining failures)
-```
-
-Findings that cannot be automatically fixed (architectural change required, missing context, external dep) → **Needs Manual Fix**.
-
-**Continuous loop (`-fc` flag).** **If `-fc` was not passed: stop.**
-
-After auto-fix, re-run the full review on the same scope. If Must Fix or Should Fix findings remain, fix and loop again. Stop when:
-
-- Zero Must Fix and Should Fix → print `✓ Clean — no further findings`
-- 5 iterations reached → stop and mark remaining as **Needs Manual Fix**
-
-Print `--- Pass 2 ---`, `--- Pass 3 ---` headers. Consider items never trigger another loop pass. At exit, print a **Session Summary** with all remaining findings + all Consider items collected across passes (de-duplicated).
+Read `~/.claude/skills/code/review.md` and follow it. Handles scope identification, per-language linting, endpoint/Tauri surface detection, language-reviewer delegation (with `model: "haiku"` pinning), deterministic script checks, report compilation, and `-f` / `-fc` auto-fix modes.
 
 ### 3. Dispatch — `grill`
 
-Adversarial review. Same pipeline as `review` but the reviewer agents are instructed to apply the strictest interpretation and the verdict scale is binary.
+Adversarial review. Same pipeline as `review` but reviewer agents apply the strictest interpretation and the verdict scale is binary.
 
-1. Invoke the `review` workflow above with this explicit instruction passed to each reviewer agent: **"Adversarial mode — apply the strictest interpretation. Default to NEEDS WORK unless every issue is conclusively resolved."**
+1. Invoke the `review` workflow from `code/review.md` with this explicit instruction passed to each reviewer agent: **"Adversarial mode — apply the strictest interpretation. Default to NEEDS WORK unless every issue is conclusively resolved."** Under `grill`, do **not** pin reviewer agents to Haiku — the verdict-shifting judgment is stronger on the default model.
 2. Override the summary verdict with the SHIP IT / NEEDS WORK / BLOCK scale defined in `rules/findings-format.md` (Verdict labels) — authoritative there; do not restate the thresholds here.
 3. On NEEDS WORK or BLOCK, list every issue with file, line, and the specific fix. **Quote the reviewer agent verbatim — do not paraphrase.**
 4. After fixes are applied, re-run from step 1. Loop a maximum of 5 passes. **On pass 5, if issues remain: mark them "Needs Manual Fix" and stop — do not proceed to another loop iteration.**
@@ -173,87 +63,11 @@ Adversarial review. Same pipeline as `review` but the reviewer agents are instru
 
 ### 4. Dispatch — `refactor`
 
-Structural improvement without behavior change. Distinct from `migrate` (which replaces deprecated patterns).
-
-1. **Understand before changing.** Read target file(s). Answer: what is this responsible for? Why was it written this way (`git log --follow -p <file>`)? What constraints drove the current design? Do not refactor what you do not yet understand.
-
-2. **Identify the smell** by language:
-
-   *Go:* god struct/package, layering violation, interface too wide (>5 methods, callers use 2-3), concrete dependency, implicit coupling, duplicated logic (Rule of Three), shallow abstraction.
-
-   *Python:* god module/class, layering violation (domain imports FastAPI/SQLAlchemy/requests), concrete dependency (not Protocol), circular imports, duplicated logic, mutable shared state, fat route handler.
-
-   *Neovim/Lua:* god `init.lua`, global state pollution, vimscript leakage (`vim.cmd` where Lua API exists), missing idempotency, unchecked API calls (no `pcall`), hardcoded buffer numbers, hot-path `require()`.
-
-3. **Plan and confirm.** State what changes, what does not change (behavior, public API), what tests need writing first. Get user confirmation before proceeding.
-
-4. **Write characterization tests first (mandatory).** Do not touch production code until the current behavior is pinned by tests. Use `t.Run`/`pytest`/plenary `describe` to capture *current* behavior, not ideal.
-
-5. **Refactor in small steps.** Apply one change at a time, run tests after each.
-
-   *Go:* extract a package (`go test ./... && go vet ./...`), narrow an interface to its consumer (`UserStore`, `SessionStore` instead of one big `Store`), fix layering by moving logic into the domain service and injecting interfaces via constructor.
-
-   *Python:* extract a module (`python -c "import mypackage" && pytest`), replace concrete dep with `Protocol`, fat-route-handler fix (body ≤5 lines — delegate to service).
-
-   *Neovim/Lua:* split god `init.lua` into `config.lua` / `commands.lua` / `keymaps.lua` / `autocmds.lua` / `core.lua` (no `vim.api` imports in core); fix global state with module-local `local _config = {}` and a `vim.deepcopy` accessor; make `setup()` idempotent with `_initialized` flag and `{ clear = true }` augroup.
-
-6. **Verify.**
-
-   ```bash
-   # Go
-   go test ./... -race && go vet ./... && golangci-lint run
-
-   # Python
-   pytest && ruff check . && ruff format --check .
-   # Run `mypy .` only if mypy is configured (mypy.ini, [tool.mypy] in pyproject.toml, or .mypy.ini present)
-
-   # Neovim/Lua
-   nvim --headless -u tests/minimal_init.lua \
-     -c "PlenaryBustedDirectory tests/ {minimal_init = 'tests/minimal_init.lua'}"
-   stylua --check lua/ && luacheck lua/   # luacheck if configured
-   ```
-
-   Confirm public API is unchanged, or explicitly note what changed and why.
-
-**Refactor checklist.** No behavior changes; tests written before refactoring; all tests pass after; Go layers respected and interfaces at consumer side; Python domain has no framework/I/O imports; Neovim `setup()` idempotent and no global state exported; no circular imports/requires; no new mutable module-level state.
+Read `~/.claude/skills/code/refactor.md` and follow it. Structural improvement without behavior change: understand-first, identify-the-smell (per language), plan-and-confirm, characterization tests, small-step refactor, verify.
 
 ### 5. Dispatch — `migrate`
 
-Replaces deprecated APIs/idioms with current equivalents. Behavior must be identical before and after.
-
-**Scope.** File-level when invoked mid-task on a specific file (replace patterns in that file only, verify, do not expand without asking). Codebase-level when invoked standalone.
-
-**Workflow (codebase-level).**
-
-1. **Scan.**
-   ```bash
-   python3 ~/.claude/scripts/migrate_scan.py [--language go|py|lua|gherkin|all] [--root <path>]
-   ```
-   The script walks the target (excluding `.git`, `node_modules`, `.venv`, `vendor`, `__pycache__`, build dirs), matches each pattern's regex against extension-matching files, emits a Markdown table per language: `file | line | category | deprecated → modern`.
-
-   **If the script reports no findings: stop and report "no deprecated patterns found".**
-
-2. **Plan replacements per finding.**
-   - *Mechanical* (e.g. `ioutil.ReadAll` → `io.ReadAll`) — apply directly with Edit.
-   - *Context-aware* (e.g. `unittest.TestCase` → pytest functions) — plan the rewrite per file.
-   - *Not actually deprecated in context* (generated file, Windows-specific branch) — skip and note why.
-
-3. **Apply replacements, verify per language:**
-
-   | Language | Verify command |
-   |---|---|
-   | Go | `go test ./... -race` |
-   | Python | `pytest && ruff check .` |
-   | Neovim | `:checkhealth` in nvim |
-   | Gherkin | Run all scenarios in isolation, then the full suite |
-
-   **If any verify fails: stop and revert that language's changes.** Do not proceed to the next language until tests pass.
-
-4. **Re-scan.** Remaining findings must be either (a) intentionally left (noted in commit body) or (b) zero. If new findings appear that weren't in the original report, you introduced new deprecated patterns — investigate before declaring done.
-
-**Adding new deprecation patterns:** edit `PATTERNS` at the top of `~/.claude/scripts/migrate_scan.py`. Each entry: `{category, regex, deprecated, modern}`. No SKILL.md edit needed.
-
-**Rules for `migrate`.** Behavior must be identical — never combine migration with a behavior change. Always run the language's verify command after replacements. Skip findings in vendored/generated/third-party code — note them in the report.
+Read `~/.claude/skills/code/migrate.md` and follow it. Replaces deprecated APIs/idioms via `migrate_scan.py`; behavior identical before and after.
 
 ### 6. Dispatch — `techdebt`
 
@@ -281,7 +95,7 @@ Delegate to the external `/simplify` skill (which reviews changed code for reuse
 
 ### 8. Final verification step
 
-Each dispatch block above ends with its own verification gate. Confirm the gate fired before exiting:
+Each dispatch (or its Level 3 file) ends with its own verification gate. Confirm the gate fired before exiting:
 
 - `review` / `grill` → report compiled, summary printed
 - `refactor` → tests pass and the verify command for the language ran clean
