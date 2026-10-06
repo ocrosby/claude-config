@@ -1,0 +1,84 @@
+# 01-good — a correctly-wired hello app.
+# Lesson: labels agree three ways (template → matchLabels → Service selector),
+# ports are named end-to-end, resources.requests set, readinessProbe present.
+#
+# Expected outcome after apply:
+#   kubectl get pods -n hello-app        # STATUS Running, READY 1/1
+#   kubectl get endpoints -n hello-app   # ADDRESSES column populated (two IPs)
+#   kubectl port-forward -n hello-app svc/hello 8080:80 &
+#   curl -s localhost:8080                # echo-server response
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: hello-app
+  labels:
+    # Pod Security Admission label omitted here on purpose — k8s-reviewer will
+    # flag this as always-flagged Must Fix per rules/k8s-conventions.md. The
+    # apply still proceeds; the flag demonstrates the apply-blocking vs
+    # always-flagged split.
+    app.kubernetes.io/name: hello-app
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: hello-config
+  namespace: hello-app
+data:
+  GREETING: "hello from kubernetes"
+  LOG_LEVEL: "info"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hello
+  namespace: hello-app
+  labels:
+    app.kubernetes.io/name: hello
+    app.kubernetes.io/instance: hello
+    app.kubernetes.io/version: "1.0"
+    app.kubernetes.io/component: frontend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: hello
+  template:
+    metadata:
+      labels:
+        app: hello
+        app.kubernetes.io/name: hello
+    spec:
+      containers:
+        - name: app
+          image: kicbase/echo-server:1.0
+          ports:
+            - name: http
+              containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: hello-config
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              memory: 128Mi
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+            periodSeconds: 2
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: hello
+  namespace: hello-app
+spec:
+  selector:
+    app: hello
+  ports:
+    - port: 80
+      targetPort: http
+  type: ClusterIP

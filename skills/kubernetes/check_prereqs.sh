@@ -118,6 +118,15 @@ fi
 if have kubectl; then
   ctx="$(kubectl config current-context 2>/dev/null || echo 'none')"
   echo "- kubectl current-context: $ctx"
+  # Warn (not fail) when context points at a non-minikube cluster. Running
+  # `/kubernetes start` will reset the context to minikube; running destructive
+  # subcommands without that reset silently targets whatever cluster this is.
+  case "$ctx" in
+  minikube | none | "") ;;
+  *)
+    echo "- ⚠ current-context '$ctx' is not minikube. /kubernetes start will reset it; destructive subcommands will refuse to run until it matches the active minikube profile."
+    ;;
+  esac
 fi
 
 echo

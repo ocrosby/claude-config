@@ -125,8 +125,10 @@ One kind per file. Co-locate the Deployment and its Service — they refer to ea
 
 **Pin images by digest or an immutable tag.** `latest` is a bug.
 
-**When reviewing manifests**, apply `rules/findings-format.md`'s three buckets:
-- **Must Fix**: `kind: Pod` without a controller; Deployment/Service selector mismatch; real secret value committed; `image: *:latest`; `cluster-admin` grant to an application ServiceAccount; `hostNetwork`/`hostPath` without documented justification; namespace without a Pod Security enforce label on anything beyond `kube-system`
+**When reviewing manifests**, apply `rules/findings-format.md`'s three buckets. Must Fix items are further split into two tiers — the split matters for `/kubernetes apply`, which hard-blocks on apply-blocking Must Fix items and only displays always-flagged ones. The reviewer still reports both tiers under the same **Must Fix** heading.
+
+- **Must Fix (apply-blocking)** — manifest is destructive or structurally broken: Deployment/Service selector mismatch; real secret value committed to Git; `cluster-admin` grant to an application ServiceAccount; `hostNetwork`/`hostPath` without documented justification.
+- **Must Fix (always-flagged, non-blocking for apply)** — habit-forming correctness issues that fire on nearly every tutorial manifest and shouldn't stop a learner from running their first apply: `kind: Pod` without a controller; `image: *:latest`; namespace without a Pod Security enforce label on anything beyond `kube-system`.
 - **Should Fix**: missing `resources.requests` or `limits.memory`; missing `readinessProbe` on a traffic-serving container; identical liveness and readiness probes; `automountServiceAccountToken` unset on Pods that don't call the API; shared `default` ServiceAccount
 - **Consider**: missing recommended labels (`app.kubernetes.io/name` etc.); `targetPort` as a number instead of a named port; `limits.cpu` on a latency-sensitive service
 

@@ -108,3 +108,18 @@ Once Kubernetes patterns are confirmed, locate and list:
 ## Output format
 
 Report findings per `rules/findings-format.md` (authoritative) — its three buckets **Must Fix → Should Fix → Consider**, per-finding shape, and verdict labels. Do not restate the definitions inline.
+
+### Must Fix tiering (apply-blocking vs always-flagged)
+
+Within Must Fix, label each finding with one of two tiers. The tier does not change severity in the review itself — both are Must Fix — but it determines whether `/kubernetes apply` is allowed to proceed. See `rules/k8s-conventions.md` for the authoritative split.
+
+- **(apply-blocking)**: Deployment/Service selector mismatch; real secret value committed to Git; `cluster-admin` grant to an application ServiceAccount; `hostNetwork`/`hostPath` without documented justification.
+- **(always-flagged)**: `kind: Pod` without a controller; `image: *:latest`; namespace without a Pod Security enforce label.
+
+Finding format:
+
+```
+### Must Fix
+- `path/to/file.yaml:LN` **(apply-blocking)** — <what>. **Why:** <why>. **Fix:** <fix>.
+- `path/to/file.yaml:LN` **(always-flagged)** — <what>. **Why:** <why>. **Fix:** <fix>.
+```

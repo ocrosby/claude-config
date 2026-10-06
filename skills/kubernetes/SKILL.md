@@ -31,6 +31,27 @@ Use this skill whenever Kubernetes is in play — learning the concepts, running
 /kubernetes cheatsheet              # print the kubectl + minikube cheatsheet
 ```
 
+## Shared helper — context assertion (used by every destructive subcommand)
+
+Every subcommand that mutates the cluster (`start`, `stop`, `apply`) or asserts cluster health as truth (`status`) must verify the active kubectl context matches the expected minikube cluster/profile **before** doing its work. The helper:
+
+```bash
+# Expected profile defaults to "minikube"; override with the active -p flag if the
+# user passed one earlier in the session.
+expected="${MINIKUBE_PROFILE:-minikube}"
+actual="$(kubectl config current-context 2>/dev/null || echo '')"
+if [ "$actual" != "$expected" ]; then
+  echo "✗ kubectl context is '$actual', expected '$expected'."
+  echo "  Switch with: kubectl config use-context $expected"
+  echo "  Or if the cluster isn't running: /kubernetes start"
+  exit 1
+fi
+```
+
+**If the actual context does not equal the expected profile: stop and surface the switch command.** Do not proceed to the subcommand's work. The user may be targeting a different cluster deliberately — the fix is to switch context explicitly, not to override from inside this skill.
+
+**Exception:** `start` runs this check *after* `minikube start` completes (because `minikube start` is itself what sets the context). All other destructive subcommands run the check **before** any cluster mutation.
+
 ## Workflow
 
 ### 1. Parse the subcommand
@@ -44,6 +65,8 @@ Split `$ARGUMENTS` on the first space. The first word is the subcommand.
 ### 2. Dispatch — `learn`
 
 Must read `~/.claude/skills/kubernetes/learn.md` and present the concept index. If the user named a topic after `learn`, scroll to that topic and present only its section. Learning content is Level 3 — the skill does not duplicate it inline.
+
+**For hands-on practice** rather than reading, point the user at `skills/kubernetes/examples/hello-app/` — a three-tier working/broken-selector/missing-probe fixture. The intended loop is `/kubernetes apply skills/kubernetes/examples/hello-app/01-good` → observe success → `/kubernetes apply skills/kubernetes/examples/hello-app/02-broken-selector` → observe empty endpoints → `/kubernetes debug` on the symptom. See `skills/kubernetes/examples/hello-app/README.md`.
 
 ### 3. Dispatch — `setup`
 
@@ -85,13 +108,14 @@ If it exits `1`, present the gaps and their install commands from `rules/minikub
    ```bash
    kubectl cluster-info
    kubectl get nodes
-   kubectl config current-context
    ```
-   **If any of the three fail: stop and dispatch to `debug`.**
+   **If either fails: stop and dispatch to `debug`.**
+6. Must run the shared context assertion (see **Shared helper — context assertion** above) with `expected` set to the active profile. `minikube start` sets context to the started profile by default — if the assertion fails here, `minikube start` returned success but did not switch context (rare; usually a `--keep-context` config leak), and the user needs to run `kubectl config use-context $expected` manually.
 
 ### 5. Dispatch — `stop`
 
-Must run:
+1. Must run the shared context assertion first — refuse to stop a cluster the user isn't currently targeting.
+2. Then run:
 
 ```bash
 minikube stop
@@ -102,7 +126,8 @@ minikube status --format='{{.Host}}'
 
 ### 6. Dispatch — `status`
 
-Run and report, in parallel:
+1. Must run the shared context assertion first — `status` reports cluster health as truth; reporting on the wrong cluster is a correctness defect.
+2. Then run and report, in parallel:
 
 ```bash
 kubectl config current-context
@@ -111,7 +136,7 @@ kubectl get nodes
 kubectl get pods -A | head -20
 ```
 
-Must flag any `NotReady` node, `CrashLoopBackOff` Pod, or context pointing somewhere other than the expected minikube cluster. If any surface, dispatch to `debug` with the specific symptom.
+Must flag any `NotReady` node or `CrashLoopBackOff` Pod. If any surface, dispatch to `debug` with the specific symptom. (Context mismatch is already handled by the assertion in step 1.)
 
 ### 7. Dispatch — `design`
 
@@ -121,7 +146,10 @@ Invoke the `k8s-architect` agent. Must gather first: the app's purpose, workload
 
 **Precondition:** a path to one or more manifest files or a directory was given. **If missing: stop and ask.**
 
-1. Must invoke `k8s-reviewer` on the paths first. **If any Must Fix findings: stop and present them.** Do not apply manifests with known Must Fix issues.
+0. Must run the shared context assertion first — `kubectl apply` targets whichever cluster the current context names; refuse to apply unless the user is on the expected minikube cluster/profile.
+1. Must invoke `k8s-reviewer` on the paths first. The reviewer labels every Must Fix finding as either **(apply-blocking)** or **(always-flagged)** per `rules/k8s-conventions.md`.
+   - **If any apply-blocking Must Fix findings: stop and present them.** Do not apply manifests with destructive or structurally-broken issues (selector mismatch, real secret committed, cluster-admin grant, `hostNetwork`/`hostPath` without justification).
+   - **If only always-flagged Must Fix findings (`:latest`, bare Pod, missing PSA label): display them prominently as warnings and proceed.** These are habit-forming learner traps, not apply-blockers — learners need to feel the real failure, not be stopped by a review gate.
 2. Run:
    ```bash
    kubectl apply -f <path> --dry-run=client
@@ -158,9 +186,9 @@ Must read `~/.claude/skills/kubernetes/cheatsheet.md` and print it. Reference ma
 
 - `learn` → the requested topic (or the index) was presented from `learn.md`
 - `setup` → prerequisite check report delivered; gaps named with their install commands
-- `start` → `kubectl cluster-info`, `get nodes`, and `current-context` all pass before reporting success
-- `stop` → `minikube status` confirms stopped
-- `status` → the four parallel reports were presented, any abnormal signal was flagged
+- `start` → `kubectl cluster-info` and `get nodes` pass AND the context assertion matches the active profile before reporting success
+- `stop` → context assertion passed before `minikube stop` ran, and `minikube status` confirms stopped
+- `status` → context assertion passed before any report, the four parallel reports were presented, any abnormal signal was flagged
 - `design` → user has explicitly approved the proposal before any implementation starts
 - `apply` → review passed with no Must Fix, dry-run passed, live apply succeeded, every rollout and endpoint verified
 - `review` → findings reported per `rules/findings-format.md`, or the "no Kubernetes patterns" skip message if scope didn't match
@@ -174,5 +202,5 @@ If any of the above is incomplete, do not report the subcommand as done.
 - `rules/minikube-setup.md` is authoritative for prerequisite detection, driver choice, resource floors, addons, and the macOS access-path quirks — do not restate its content here.
 - `rules/k8s-conventions.md` is authoritative for manifest shape, labels, probes, resources, RBAC, and image hygiene — do not restate its checklist here.
 - `design` never proceeds to writing manifests before the user has explicitly approved the proposal.
-- `apply` is gated on a passing review and a passing dry-run; Must Fix findings are not overridable from this skill.
+- `apply` is gated on a passing dry-run and no apply-blocking Must Fix findings. Always-flagged Must Fix items (`:latest`, bare Pod, missing PSA label per `rules/k8s-conventions.md`) are surfaced as warnings but do not block apply — the split exists so learners can run tutorial manifests through the skill without hitting a review wall.
 - **`disable-model-invocation` is deliberately unset.** `start` and `apply` have real side effects (starts a VM; applies manifests to a cluster), which would normally argue for it — but the whole point of this skill is that Claude auto-invokes it when Kubernetes is in play; blocking model invocation would silently defeat that. The side effects are instead gated inline: explicit confirmation before any `sudo`/system-wide install (step 3), explicit user approval before `design` proceeds, review-passes-before-apply (step 8). Do not add `disable-model-invocation: true` without re-confirming this trade-off with the user first.

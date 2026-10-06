@@ -346,15 +346,16 @@ For greenfield production apps, start with `restricted` — it forces habits (no
 
 1. **Install the toolchain** → `/kubernetes setup`, then `/kubernetes start`. Confirm `kubectl cluster-info` + `kubectl get nodes` pass.
 2. **Inspection vocabulary** → `get`, `describe`, `logs`, `events`, `explain`, `api-resources`. No creating yet. Spend 15 minutes just poking at the control plane.
-3. **First real workload** → `kubectl create deployment hello --image=nginx`, then `kubectl expose deployment hello --port=80`. Convert both to YAML with `-o yaml --dry-run=client`. This is the imperative-to-declarative transition.
-4. **Services and reachability** → ClusterIP + `port-forward`, then NodePort (teach the minikube quirk), then LoadBalancer with `minikube tunnel`.
-5. **ConfigMap and Secret** → env vs volume mount tradeoffs; the config-change rollout gotcha.
-6. **Rollouts and rollbacks** → `kubectl set image`, `rollout status`, `rollout undo`. Watch ReplicaSets scale.
-7. **Resources and probes** → set requests/limits; deliberately set a limit too low to see OOMKilled; deliberately break a readiness probe to see traffic get withdrawn.
-8. **Storage** → emptyDir → PVC with `standard` StorageClass → StatefulSet.
-9. **Networking depth** → cluster DNS (`<svc>.<ns>.svc.cluster.local`), headless Services, Ingress addon.
-10. **Debugging drills** → deliberately break something from the symptom table in `k8s-debugger`; practice the first-command loop.
-11. **Security** → ServiceAccount, Role, RoleBinding; Pod Security `baseline`.
-12. **Workload variety** → Jobs, CronJobs, DaemonSets, StatefulSets as narrower patterns off the Deployment foundation.
+3. **Run the hello-app fixture** → `/kubernetes apply skills/kubernetes/examples/hello-app/01-good` applies a correctly-wired Deployment + Service. Confirm Pods go Ready, endpoints populate, and `curl` through `port-forward` returns a response. Then `02-broken-selector` and `03-missing-probe` as structured failures with their own `/kubernetes debug` loops — see `skills/kubernetes/examples/hello-app/README.md`.
+4. **First hand-authored workload** → `kubectl create deployment hello --image=nginx`, then `kubectl expose deployment hello --port=80`. Convert both to YAML with `-o yaml --dry-run=client`. This is the imperative-to-declarative transition.
+5. **Services and reachability** → ClusterIP + `port-forward`, then NodePort (teach the minikube quirk), then LoadBalancer with `minikube tunnel`.
+6. **ConfigMap and Secret** → env vs volume mount tradeoffs; the config-change rollout gotcha.
+7. **Rollouts and rollbacks** → `kubectl set image`, `rollout status`, `rollout undo`. Watch ReplicaSets scale.
+8. **Resources and probes** → set requests/limits; deliberately set a limit too low to see OOMKilled; deliberately break a readiness probe to see traffic get withdrawn.
+9. **Storage** → emptyDir → PVC with `standard` StorageClass → StatefulSet.
+10. **Networking depth** → cluster DNS (`<svc>.<ns>.svc.cluster.local`), headless Services, Ingress addon.
+11. **Debugging drills** → deliberately break something from the symptom table in `k8s-debugger`; practice the first-command loop (the fixture's `02-broken-selector` and `03-missing-probe` are starting points).
+12. **Security** → ServiceAccount, Role, RoleBinding; Pod Security `baseline`.
+13. **Workload variety** → Jobs, CronJobs, DaemonSets, StatefulSets as narrower patterns off the Deployment foundation.
 
 Keep the `cheatsheet` next to your terminal. The ability to go from symptom to first command without thinking is the single highest-leverage skill a learner builds.

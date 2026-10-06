@@ -1,0 +1,82 @@
+# 02-broken-selector — the single highest-ROI label-match bug.
+# Lesson: Service.spec.selector does not match Pod labels. Pods run normally,
+# but the Service's EndpointSlice is empty — traffic has nowhere to go.
+#
+# The ONLY difference from 01-good: Service selector reads `app: hello-wrong`
+# instead of `app: hello`. kubectl diff -f against 01-good/ to see the one-line delta.
+#
+# Expected outcome after apply:
+#   kubectl get pods -n hello-app                    # STATUS Running, READY 1/1
+#   kubectl get endpoints hello -n hello-app         # ENDPOINTS column: <none>
+#   kubectl port-forward -n hello-app svc/hello 8080:80 &
+#   curl -s localhost:8080                            # hangs / connection refused
+#
+# Then: /kubernetes debug "svc/hello has no endpoints"
+# The debugger's symptom table routes this to the three-way label match check.
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: hello-app
+  labels:
+    app.kubernetes.io/name: hello-app
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: hello-config
+  namespace: hello-app
+data:
+  GREETING: "hello from kubernetes"
+  LOG_LEVEL: "info"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hello
+  namespace: hello-app
+  labels:
+    app.kubernetes.io/name: hello
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: hello
+  template:
+    metadata:
+      labels:
+        app: hello
+    spec:
+      containers:
+        - name: app
+          image: kicbase/echo-server:1.0
+          ports:
+            - name: http
+              containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: hello-config
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              memory: 128Mi
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+            periodSeconds: 2
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: hello
+  namespace: hello-app
+spec:
+  selector:
+    app: hello-wrong    # ← THE BUG: Pod labels are `app: hello`, not `hello-wrong`
+  ports:
+    - port: 80
+      targetPort: http
+  type: ClusterIP
