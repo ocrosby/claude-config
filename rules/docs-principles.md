@@ -1,5 +1,8 @@
 ---
 description: Enforces Write-the-Docs principles (skimmable, addressable, cumulative, complete, discoverable, exemplary, consistent, current, ARID) across READMEs, tutorials, API docs, and UI copy. Consultation-only — routed via `/docs review` and the docs skill.
+paths:
+  - "**/*.md"
+  - "**/docs/**"
 ---
 
 # Documentation Principles

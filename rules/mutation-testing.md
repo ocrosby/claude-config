@@ -1,5 +1,13 @@
 ---
 description: Grades assertion strength by seeding small faults and counting surviving mutants — a killed mutant means the tests would catch the bug. Gate CI on 'no new survivors in the diff', never a percentage floor. Tools: mutmut (Python), gremlins (Go), cargo-mutants (Rust).
+paths:
+  - "**/tests/**"
+  - "**/test_*.py"
+  - "**/*_test.go"
+  - "**/*_spec.lua"
+  - "**/*.test.{ts,tsx,js,jsx}"
+  - "**/*.spec.{ts,tsx,js,jsx}"
+  - "**/conftest.py"
 ---
 
 # Mutation Testing

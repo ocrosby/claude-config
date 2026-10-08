@@ -1,5 +1,14 @@
 ---
 description: Every non-trivial function carries at least one precondition, postcondition, or invariant check. Assertions must be side-effect-free. Every non-void return value must be used or explicitly discarded with a one-line reason. Never silently discard an error return.
+paths:
+  - "**/*.py"
+  - "**/*.go"
+  - "**/*.lua"
+  - "**/*.ts"
+  - "**/*.tsx"
+  - "**/*.js"
+  - "**/*.jsx"
+  - "**/*.rs"
 ---
 
 # Defensive Assertions

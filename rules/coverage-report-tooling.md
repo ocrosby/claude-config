@@ -1,3 +1,9 @@
+---
+paths:
+  - ".github/workflows/*.yml"
+  - ".github/workflows/*.yaml"
+---
+
 # Coverage Report Tooling
 
 **When configuring a workflow that renders coverage as HTML, use `genhtml` from the `lcov` package. Do not use ReportGenerator (`dotnet tool install --global dotnet-reportgenerator-globaltool`).**
