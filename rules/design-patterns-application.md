@@ -1,5 +1,14 @@
 ---
-description: Recognition signals and mandatory behaviors for the 22 GoF design patterns across Go/Python/Lua/TS. Consultation-only — no `paths` glob; referenced by architect and reviewer agents when a code-shape signal fires (telescoping constructor, large type-switch, scattered cross-cutting logic).
+description: Recognition signals and mandatory behaviors for the 22 GoF design patterns across Go/Python/Lua/TS. Path-scoped to source files; referenced by architect and reviewer agents when a code-shape signal fires (telescoping constructor, large type-switch, scattered cross-cutting logic).
+paths:
+  - "**/*.py"
+  - "**/*.go"
+  - "**/*.lua"
+  - "**/*.ts"
+  - "**/*.tsx"
+  - "**/*.js"
+  - "**/*.jsx"
+  - "**/*.rs"
 ---
 
 # Design Patterns Application

@@ -1,5 +1,14 @@
 ---
-description: OWASP Top 10 recognition signals and mandatory behaviors. Consultation-only — no `paths` glob. Reviewer agents (go-reviewer, py-reviewer, nvim-reviewer, rest-reviewer) reference this rule and load it on demand when the code under review touches auth, input parsing, deserialization, secrets, or network I/O. Also loaded when the user invokes `/security-review` or asks for a security-oriented review explicitly.
+description: OWASP Top 10 recognition signals and mandatory behaviors. Path-scoped to source files (loads only when one is read). Reviewer agents (go-reviewer, py-reviewer, nvim-reviewer, rest-reviewer) reference this rule and load it on demand when the code under review touches auth, input parsing, deserialization, secrets, or network I/O. Also loaded when the user invokes `/security-review` or asks for a security-oriented review explicitly.
+paths:
+  - "**/*.py"
+  - "**/*.go"
+  - "**/*.lua"
+  - "**/*.ts"
+  - "**/*.tsx"
+  - "**/*.js"
+  - "**/*.jsx"
+  - "**/*.rs"
 ---
 
 # OWASP Top 10 Application Security

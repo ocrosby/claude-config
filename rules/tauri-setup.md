@@ -1,3 +1,9 @@
+---
+paths:
+  - "**/src-tauri/**"
+  - "**/tauri.conf.json"
+---
+
 # Tauri Development Environment Setup
 
 Tauri apps fail to build for reasons that have nothing to do with the app's code — a missing system webview package, an unpinned Rust toolchain, or a Node version mismatch. Diagnosing that mid-build wastes a cycle that a five-second prerequisite check would have caught. This rule is the single source of truth for detecting and installing Tauri's dependencies; `skills/tauri/SKILL.md` invokes it, it does not restate it.

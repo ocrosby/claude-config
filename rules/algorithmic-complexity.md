@@ -1,5 +1,14 @@
 ---
 description: Enforces lowest time/space complexity that solves the problem. Signals: nested loops over the same collection, `in list` inside a loop, recomputed subproblems, wrong container choice, unbounded loops on external input. Every user-controlled loop must reference a named cap.
+paths:
+  - "**/*.py"
+  - "**/*.go"
+  - "**/*.lua"
+  - "**/*.ts"
+  - "**/*.tsx"
+  - "**/*.js"
+  - "**/*.jsx"
+  - "**/*.rs"
 ---
 
 # Algorithmic Complexity

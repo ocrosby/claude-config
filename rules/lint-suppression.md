@@ -1,5 +1,14 @@
 ---
 description: Every `# noqa`, `//nolint`, `# type: ignore`, `eslint-disable`, `-- luacheck: ignore` must have an inline reason on the same line — the specific rule code AND why the code is correct despite the warning. Bare or unjustified suppression is a Must Fix finding.
+paths:
+  - "**/*.py"
+  - "**/*.go"
+  - "**/*.lua"
+  - "**/*.ts"
+  - "**/*.tsx"
+  - "**/*.js"
+  - "**/*.jsx"
+  - "**/*.rs"
 ---
 
 # Lint Suppression

@@ -1,3 +1,9 @@
+---
+paths:
+  - "**/src-tauri/**"
+  - "**/tauri.conf.json"
+---
+
 # Tauri Application Conventions
 
 Tauri apps have two runtimes talking to each other across a trust boundary: a Rust backend with OS-level privileges and a webview frontend rendering arbitrary HTML/JS. Every convention below exists because that boundary is where Tauri apps actually break — either a capability grants more than the frontend needs (security), or a command panics and takes the whole IPC round-trip down with it (correctness), or the two sides drift out of sync on what a message means (integration bugs unique to this framework, not to Rust or to JS alone).

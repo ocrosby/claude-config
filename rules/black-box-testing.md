@@ -1,5 +1,13 @@
 ---
 description: Unit tests verify behavior through the public surface, not implementation. Diagnostic: if refactoring internals breaks the test, the test measures shape not behavior. Mocks live at system edges (DB, HTTP, filesystem, clock), not at class edges inside your own module.
+paths:
+  - "**/tests/**"
+  - "**/test_*.py"
+  - "**/*_test.go"
+  - "**/*_spec.lua"
+  - "**/*.test.{ts,tsx,js,jsx}"
+  - "**/*.spec.{ts,tsx,js,jsx}"
+  - "**/conftest.py"
 ---
 
 # Black-Box Unit Testing
