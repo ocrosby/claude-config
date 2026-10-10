@@ -68,6 +68,7 @@ These skills are single-purpose primitives with unique triggers — they intenti
 
 | Skill | Purpose |
 |---|---|
+| `/image-book` | Generate a printable multi-page image book (coloring book, workbook, sticker sheet) end-to-end — scenes → Everygen batches → sorted-filename download → PDF combine → open. |
 | `/obsidian` | Read / create / edit notes in the PARA-organized vault at `~/src/github.com/ocrosby/obsidian`. |
 | `/proof` | Back up a claim with a verifiable citation (file:line, version-pinned URL, commit SHA, test result), or honestly downgrade the claim. |
 
