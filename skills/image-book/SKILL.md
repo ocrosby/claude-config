@@ -62,6 +62,7 @@ rest="${ARGUMENTS#* }"
 
 3. **Read `rules/everygen-image-conventions.md` in full.** Extract:
    - The list of available style packs (every `### <pack-name> — ...` heading under the "Style packs" section).
+   - The age-tier table under `coloring-book` (tier → `AGE_RANGE` / `INTERIOR_STYLE` / `COVER_TYPOGRAPHY` / `COVER_STYLE`), when the chosen pack is `coloring-book`.
    - The aspect-ratio table (paper size → `aspectRatio` enum).
    - The resolution table (resolution → use case).
    - The credit-cost table (model → credits per image).
@@ -74,10 +75,11 @@ rest="${ARGUMENTS#* }"
 4. **Collect parameters via a single `AskUserQuestion` call** with these fields, drawing option lists from step 3:
    - **Interior page count** — default `15`. Valid range: 1 to `max_pages` computed in step 3.
    - **Style pack** — default `coloring-book`. Options are the pack headings extracted in step 3.
+   - **Age tier** — only when the chosen pack has an age-tier table (currently `coloring-book`). Options are the tier names from the table (`toddler`, `kid`, `tween`, `adult`). Default: `kid`.
    - **Paper size** — default `8.5x11`. Options are the paper sizes in step 3's aspect-ratio table.
-   - **Output directory** — default `~/Downloads/<slug>`.
+   - **Output directory** — default `~/Downloads/image-books/<slug>`. All images and the PDF for this book land in this one directory, so multiple books stay cleanly separated under `~/Downloads/image-books/`.
 
-5. **Resolve pack, aspect ratio, resolution, and credit cost** from the tables in step 3. Apply the matching values for the selected paper size and intended-print target. Never hardcode these values in this skill — the rule file is the single source of truth.
+5. **Resolve pack, age tier, aspect ratio, resolution, and credit cost** from the tables in step 3. For `coloring-book`, substitute the age-tier row into the pack's `{AGE_RANGE}`, `{INTERIOR_STYLE}`, `{COVER_TYPOGRAPHY}`, and `{COVER_STYLE}` placeholders. Apply the matching aspect-ratio and resolution values for the selected paper size and intended-print target. Never hardcode these values in this skill — the rule file is the single source of truth.
 
 6. **Design the scene list.**
    - 1 cover scene — a one- to two-sentence scene featuring the hero elements of the theme. Pick a title based on the theme (e.g. theme `fairy coloring book` → title `My Magical Fairy Coloring Book`).
@@ -91,10 +93,11 @@ rest="${ARGUMENTS#* }"
 
    **If the batch plan produces a final remainder of exactly 1 image:** load `generate_image` via `ToolSearch` and issue a single-image call for that one remainder. **If `generate_image` is also unavailable: stop and do not proceed.** Report the image count and the unavailable tool so the user can re-run with a different page count.
 
-9. **Download each result to the output directory in a loop.**
+9. **Download each result into the per-book directory in a loop.**
    ```bash
-   OUTDIR="${HOME}/Downloads/${slug}"   # or whatever step 4 produced
+   OUTDIR="${HOME}/Downloads/image-books/${slug}"   # or whatever step 4 produced
    mkdir -p "$OUTDIR"
+   PDF="${OUTDIR}/${slug}.pdf"
 
    # Scenes and urls are two parallel arrays built from step 8's results,
    # index 0 is the cover, 1..N are interior pages.
@@ -105,7 +108,7 @@ rest="${ARGUMENTS#* }"
      curl -sS -o "$OUTDIR/${idx}-${scene_slug}.jpg" "${urls[$i]}"
    done
    ```
-   The 2-digit prefix guarantees `*.jpg` globs expand in cover-first page order.
+   The 2-digit prefix guarantees `*.jpg` globs expand in cover-first page order. The PDF path is inside `OUTDIR` so each book is self-contained — multiple books under `~/Downloads/image-books/` do not cross-pollute.
 
 10. **Verify all N+1 downloads completed, counting only image files.**
     ```bash
@@ -113,7 +116,7 @@ rest="${ARGUMENTS#* }"
     ```
     **If `count` does not equal N+1: stop and do not proceed.** Report which indices are missing (compare `ls $OUTDIR/*.jpg` against expected `00..NN`). Never proceed to combine with a short set — a partial PDF silently loses pages.
 
-11. **Combine into a PDF alongside the output directory.** Detect which image types are present:
+11. **Combine the images into `$PDF` (inside `$OUTDIR`).** Detect which image types are present:
     ```bash
     has_jpg=$(ls "$OUTDIR"/*.jpg 2>/dev/null | head -1)
     has_png=$(ls "$OUTDIR"/*.png 2>/dev/null | head -1)
@@ -122,21 +125,21 @@ rest="${ARGUMENTS#* }"
     ```bash
     if [ -n "$has_jpg" ] && [ -n "$has_png" ]; then
       mapfile -t files < <(ls "$OUTDIR"/*.jpg "$OUTDIR"/*.png 2>/dev/null | sort)
-      magick "${files[@]}" "${OUTDIR}.pdf"
+      magick "${files[@]}" "$PDF"
     elif [ -n "$has_jpg" ]; then
-      magick "$OUTDIR"/*.jpg "${OUTDIR}.pdf"
+      magick "$OUTDIR"/*.jpg "$PDF"
     else
-      magick "$OUTDIR"/*.png "${OUTDIR}.pdf"
+      magick "$OUTDIR"/*.png "$PDF"
     fi
     ```
 
 12. **Open and verify the PDF** via the extracted helper:
     ```bash
-    bash ~/.claude/skills/image-book/open_and_verify.sh "${OUTDIR}.pdf"
+    bash ~/.claude/skills/image-book/open_and_verify.sh "$PDF"
     ```
     The helper exits non-zero if the file is missing, empty, or if `magick` is unavailable. **If it exits non-zero: stop and do not proceed.**
 
-13. **Report.** Print the PDF path, image count, output directory, and total credits used.
+13. **Report.** Print the PDF path (`$PDF`), image count, per-book directory (`$OUTDIR`), and total credits used.
 
 ### 3. Dispatch — `combine`
 
@@ -161,11 +164,10 @@ rest="${ARGUMENTS#* }"
    ```
    **If both are empty: stop and do not proceed.** Report the empty folder.
 
-4. **Derive the output PDF path alongside the folder.**
+4. **Derive the output PDF path inside the folder.** Each book is self-contained — the PDF lives next to its own images:
    ```bash
    base=$(basename "$rest")
-   parent=$(dirname "$rest")
-   out="${parent}/${base}.pdf"
+   out="${rest}/${base}.pdf"
    ```
 
 5. **Combine with a globally sorted file list** so numeric prefixes order correctly across mixed formats. Use an array (not an unquoted string) to survive filenames containing spaces:
