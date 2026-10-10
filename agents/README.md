@@ -52,6 +52,9 @@ Use this prompt to create a role-based reviewer agent:
 | `go-architect` | Designs Go application architecture following clean architecture patterns |
 | `go-debugger` | Diagnoses bugs in Go applications and proposes targeted fixes |
 | `go-reviewer` | Reviews Go code for correctness, idiomatic patterns, and concurrency safety |
+| `k8s-architect` | Designs Kubernetes application topology — workload controller, Service shape, config/secret split, probes, resources, RBAC |
+| `k8s-debugger` | Diagnoses Pending/CrashLoopBackOff/ImagePullBackOff Pods, empty Service endpoints, RBAC denials, and minikube-specific access-path quirks |
+| `k8s-reviewer` | Reviews Kubernetes manifests for the Deployment/Service label three-way match, probe strategy, resource requests, image hygiene, RBAC scope, Pod Security |
 | `nvim-architect` | Designs Neovim plugin architecture and module structure |
 | `nvim-debugger` | Diagnoses bugs in Neovim plugins and proposes targeted fixes |
 | `nvim-reviewer` | Reviews Neovim plugin code for correctness and idiomatic Lua patterns |
