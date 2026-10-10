@@ -5,3 +5,7 @@ Reusable prompts for auditing and building Claude skills. Each file is a single,
 ## Verifiers
 
 - [Build verifier skill](build_verifier_skill.md) — walks through building one new verification skill from scratch for a named target, from objective verdict to check steps to output format.
+
+## Creative
+
+- [Fairy coloring book](fairy_coloring_book.md) — generate a 15-page kids' coloring book (ages 3–8) of magical fairy houses, mushrooms, flowers, butterflies, and woodland scenes with a colorful cover.
