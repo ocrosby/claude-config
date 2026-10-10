@@ -74,29 +74,29 @@ Each style pack is a prompt-template pair: one for interior pages, one for the c
 ### `coloring-book` — interior page template (black-and-white line art)
 
 ```
-Coloring book page for ages {AGE_RANGE}. Black and white line art only, no color, no shading, no grayscale, no gray fills. {INTERIOR_STYLE}. Scene: {SCENE}. Portrait orientation for {SIZE} printing.
+Coloring book page for ages {AGE_RANGE}. Black and white line art only, no color, no shading, no grayscale, no gray fills. {INTERIOR_STYLE}. The entire scene is enclosed by a decorative black line-art border frame that spans the full page edges: {BORDER_STYLE}. Scene inside the frame: {SCENE}. Portrait orientation for {SIZE} printing.
 ```
 
-Substitute `{AGE_RANGE}` and `{INTERIOR_STYLE}` from the age-tier table below. Substitute `{SCENE}` with a one- to two-sentence scene description. Substitute `{SIZE}` with the paper dimensions (e.g. `8.5x11 inch`).
+Substitute `{AGE_RANGE}`, `{INTERIOR_STYLE}`, and `{BORDER_STYLE}` from the age-tier table below. Substitute `{SCENE}` with a one- to two-sentence scene description. Substitute `{SIZE}` with the paper dimensions (e.g. `8.5x11 inch`). **Every generated page must have the border — this is non-optional, do not strip it even if the model would otherwise omit it on an occasional run.**
 
 ### `coloring-book` — cover template (full color)
 
 ```
-Coloring book front cover design for ages {AGE_RANGE}. Title at top in {COVER_TYPOGRAPHY}: '{TITLE}'. Scene below: {COVER_SCENE}. {COVER_STYLE}. Portrait orientation for {SIZE} printing.
+Coloring book front cover design for ages {AGE_RANGE}. The entire cover artwork is enclosed by a decorative border frame that spans the full page edges: {BORDER_STYLE}. Title at top inside the frame in {COVER_TYPOGRAPHY}: '{TITLE}'. Scene below the title, inside the frame: {COVER_SCENE}. {COVER_STYLE}. Portrait orientation for {SIZE} printing.
 ```
 
-Substitute `{AGE_RANGE}`, `{COVER_TYPOGRAPHY}`, and `{COVER_STYLE}` from the age-tier table below. Substitute `{TITLE}` with the book title. Substitute `{COVER_SCENE}` with a one- to two-sentence scene featuring the hero elements of the theme. Substitute `{SIZE}` with the paper dimensions.
+Substitute `{AGE_RANGE}`, `{BORDER_STYLE}`, `{COVER_TYPOGRAPHY}`, and `{COVER_STYLE}` from the age-tier table below. Substitute `{TITLE}` with the book title. Substitute `{COVER_SCENE}` with a one- to two-sentence scene featuring the hero elements of the theme. Substitute `{SIZE}` with the paper dimensions.
 
 ### `coloring-book` — age tiers
 
-| Tier | `AGE_RANGE` | `INTERIOR_STYLE` | `COVER_TYPOGRAPHY` | `COVER_STYLE` |
-|---|---|---|---|---|
-| `toddler` | `2-5` | Very thick bold outlines on pure white background. Huge simple shapes with big smiling faces. Minimal detail per page — one or two large hero objects. Kawaii cartoon style, no scary elements | bold chunky playful cartoon letters | Bright primary colors — red, blue, yellow, grass green. Chunky bold outlines, happy smiling faces, extra-simple shapes, cheerful mood |
-| `kid` | `6-9` | Thick bold outlines on pure white background. Cute simple kawaii cartoon style with large shapes and smiling faces. Moderate detail — one scene with 2–4 objects | bold whimsical cartoon letters | Bright pastel colors — soft pink, mint green, lavender, sunny yellow, sky blue. Thick bold outlines, cute kawaii cartoon style, friendly expressions, cheerful, no scary elements |
-| `tween` | `10-13` | Medium outlines on pure white background. Playful illustrated style with moderate detail, pattern accents, and expressive characters. More complex compositions with 3–6 elements per scene | stylized hand-lettered display font | Vibrant color palette with contrasting accents (teal, coral, mustard). Medium outlines, dynamic composition, pattern elements, slightly more mature cartoon style |
-| `adult` | `14+` | Fine detailed line art on pure white background. Intricate patterns, mandalas, geometric decoration, zentangle-inspired fill motifs. Dense but balanced composition — the subject is recognizable but surrounded by decorative detail | elegant serif or script typography | Sophisticated color palette (deep jewel tones, muted earths). Fine linework preview of the interior style, pattern-rich composition, no juvenile cartoon elements |
+| Tier | `AGE_RANGE` | `INTERIOR_STYLE` | `COVER_TYPOGRAPHY` | `COVER_STYLE` | `BORDER_STYLE` |
+|---|---|---|---|---|---|
+| `toddler` | `2-5` | Very thick bold outlines on pure white background. Huge simple shapes with big smiling faces. Minimal detail per page — one or two large hero objects. Kawaii cartoon style, no scary elements | bold chunky playful cartoon letters | Bright primary colors — red, blue, yellow, grass green. Chunky bold outlines, happy smiling faces, extra-simple shapes, cheerful mood | thick single-line rectangular frame with large chunky corner decorations — big simple hearts, stars, suns, or flowers in each corner; bold outer line, nothing fiddly |
+| `kid` | `6-9` | Thick bold outlines on pure white background. Cute simple kawaii cartoon style with large shapes and smiling faces. Moderate detail — one scene with 2–4 objects | bold whimsical cartoon letters | Bright pastel colors — soft pink, mint green, lavender, sunny yellow, sky blue. Thick bold outlines, cute kawaii cartoon style, friendly expressions, cheerful, no scary elements | playful rounded rectangular frame with gently curved edges, small flowers, stars, or hearts scattered along the border, cute cartoon flourishes at the corners |
+| `tween` | `10-13` | Medium outlines on pure white background. Playful illustrated style with moderate detail, pattern accents, and expressive characters. More complex compositions with 3–6 elements per scene | stylized hand-lettered display font | Vibrant color palette with contrasting accents (teal, coral, mustard). Medium outlines, dynamic composition, pattern elements, slightly more mature cartoon style | patterned geometric border with repeating motifs — chevrons, dot bands, triangles, waves — plus medium-detailed ornamental corner pieces |
+| `adult` | `14+` | Fine detailed line art on pure white background. Intricate patterns, mandalas, geometric decoration, zentangle-inspired fill motifs. Dense but balanced composition — the subject is recognizable but surrounded by decorative detail | elegant serif or script typography | Sophisticated color palette (deep jewel tones, muted earths). Fine linework preview of the interior style, pattern-rich composition, no juvenile cartoon elements | ornate intricate border with zentangle fill, filigree scrollwork along the sides, elaborate mandala or rosette motifs at each corner, fine detailed linework matching the interior density |
 
-The age tier is the `--age` parameter in `/image-book` and surfaces in the skill's `AskUserQuestion`. Each row produces one consistent style across every page of a book — never mix tiers within one book.
+The age tier is the `--age` parameter in `/image-book` and surfaces in the skill's `AskUserQuestion`. Each row produces one consistent style across every page of a book — never mix tiers within one book. The border motif stays consistent across every page of a given book so the set reads as a coherent product.
 
 ### Adding a new style pack
 

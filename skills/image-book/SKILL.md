@@ -62,7 +62,7 @@ rest="${ARGUMENTS#* }"
 
 3. **Read `rules/everygen-image-conventions.md` in full.** Extract:
    - The list of available style packs (every `### <pack-name> — ...` heading under the "Style packs" section).
-   - The age-tier table under `coloring-book` (tier → `AGE_RANGE` / `INTERIOR_STYLE` / `COVER_TYPOGRAPHY` / `COVER_STYLE`), when the chosen pack is `coloring-book`.
+   - The age-tier table under `coloring-book` (tier → `AGE_RANGE` / `INTERIOR_STYLE` / `COVER_TYPOGRAPHY` / `COVER_STYLE` / `BORDER_STYLE`), when the chosen pack is `coloring-book`.
    - The aspect-ratio table (paper size → `aspectRatio` enum).
    - The resolution table (resolution → use case).
    - The credit-cost table (model → credits per image).
@@ -79,7 +79,7 @@ rest="${ARGUMENTS#* }"
    - **Paper size** — default `8.5x11`. Options are the paper sizes in step 3's aspect-ratio table.
    - **Output directory** — default `~/Downloads/image-books/<slug>`. All images and the PDF for this book land in this one directory, so multiple books stay cleanly separated under `~/Downloads/image-books/`.
 
-5. **Resolve pack, age tier, aspect ratio, resolution, and credit cost** from the tables in step 3. For `coloring-book`, substitute the age-tier row into the pack's `{AGE_RANGE}`, `{INTERIOR_STYLE}`, `{COVER_TYPOGRAPHY}`, and `{COVER_STYLE}` placeholders. Apply the matching aspect-ratio and resolution values for the selected paper size and intended-print target. Never hardcode these values in this skill — the rule file is the single source of truth.
+5. **Resolve pack, age tier, aspect ratio, resolution, and credit cost** from the tables in step 3. For `coloring-book`, substitute the age-tier row into the pack's `{AGE_RANGE}`, `{INTERIOR_STYLE}`, `{COVER_TYPOGRAPHY}`, `{COVER_STYLE}`, and `{BORDER_STYLE}` placeholders. The border is mandatory on every page and the cover — never strip it. Apply the matching aspect-ratio and resolution values for the selected paper size and intended-print target. Never hardcode these values in this skill — the rule file is the single source of truth.
 
 6. **Design the scene list.**
    - 1 cover scene — a one- to two-sentence scene featuring the hero elements of the theme. Pick a title based on the theme (e.g. theme `fairy coloring book` → title `My Magical Fairy Coloring Book`).

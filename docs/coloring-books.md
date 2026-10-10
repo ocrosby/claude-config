@@ -61,14 +61,14 @@ The result:
 
 The four age tiers produce visibly different pages. Each tier parameterizes line thickness, shape complexity, and tonal maturity. Pick the one that matches your audience; never mix tiers in one book.
 
-| Tier | Ages | Interior | Cover |
-|---|---|---|---|
-| `toddler` | 2-5 | Very thick outlines, huge simple shapes, 1-2 hero objects, kawaii, no scary elements | Primary colors, chunky bold outlines, happy faces |
-| `kid` | 6-9 | Thick bold outlines, large shapes, 2-4 objects per scene, kawaii cartoon | Bright pastels, whimsical cartoon letters |
-| `tween` | 10-13 | Medium outlines, moderate detail, pattern accents, 3-6 elements | Vibrant palette with contrasting accents |
-| `adult` | 14+ | Fine line art, intricate patterns, mandalas, zentangle fill motifs | Jewel tones, elegant serif/script typography |
+| Tier | Ages | Interior | Cover | Border |
+|---|---|---|---|---|
+| `toddler` | 2-5 | Very thick outlines, huge simple shapes, 1-2 hero objects, kawaii, no scary elements | Primary colors, chunky bold outlines, happy faces | Thick rectangular frame with chunky corner hearts/stars/suns |
+| `kid` | 6-9 | Thick bold outlines, large shapes, 2-4 objects per scene, kawaii cartoon | Bright pastels, whimsical cartoon letters | Playful rounded frame with flowers/stars/hearts scattered along edges |
+| `tween` | 10-13 | Medium outlines, moderate detail, pattern accents, 3-6 elements | Vibrant palette with contrasting accents | Geometric patterned border (chevrons, dots, triangles) with corner ornaments |
+| `adult` | 14+ | Fine line art, intricate patterns, mandalas, zentangle fill motifs | Jewel tones, elegant serif/script typography | Ornate zentangle/filigree border with mandala corner motifs |
 
-The source of truth is the age-tier table inside `rules/everygen-image-conventions.md` — update that file to tune tier definitions globally.
+Every page and the cover carry a decorative border by convention — the border motif stays consistent across every page of a given book so the set reads as a coherent product. The source of truth is the age-tier table inside `rules/everygen-image-conventions.md` — update that file to tune tier definitions globally.
 
 ## Running multiple books
 
