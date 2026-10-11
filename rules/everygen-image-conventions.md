@@ -25,27 +25,32 @@ Pick the aspect-ratio enum closest to the target paper's actual ratio. The right
 
 For non-paper outputs (social media, screen, cinematic), the enum choices `9:16`, `16:9`, `21:9` apply directly.
 
-## Resolution
+## Resolution and credit cost per model
 
-| Resolution | Use case |
-|---|---|
-| `1K` | Screen preview, social post, inline doc image |
-| `2K` | Draft print proof only; **insufficient for KDP paperback** at any trim size (≤234 DPI across 8.75" trim+bleed) |
-| `3K` | KDP paperback up to 8.5×11 / 8.5×8.5 trim — ≥300 DPI across trim+bleed |
-| `4K` | Large-format print (A3, 11×17, poster), oversize covers, archival |
+Not every model supports every resolution, and credit cost varies by model **and** by resolution. The matrix below is the single source of truth; the table at the top of each column is "credits per image at that resolution" and `—` means the model does not support that resolution. Verify against `list_supported_models` whenever a model is added or Everygen's price list shifts.
 
-Pick the smallest resolution that meets the **final trim+bleed size at 300 DPI**, not the raw paper size. For KDP paperback, 3K is the floor on US-letter-and-smaller trims; 4K is the floor on anything larger. Model credit cost does not vary with resolution for Nano Banana / Nano Banana 2, so raising the tier is free when the model is already fixed.
+| Model | 1K | 2K | 3K | 4K | KDP paperback (8.5×11, 3:4) |
+|---|---|---|---|---|---|
+| Nano Banana (gemini-2.5-flash-image) | 1 | — | — | — | — too low for print |
+| **Nano Banana 2** (default) | 2 | 2 | — | 3 | **4K at 3 credits** (2K ≈ 234 DPI, below 300 floor; no 3K support) |
+| Nano Banana Pro | 3 | 3 | — | 4 | 4K at 4 credits — highest-quality fallback |
+| Nano Banana 2 Lite | 1 | — | — | — | — too low for print |
+| **Seedream 5 Lite** | — | 1 | 1 | 1 | **3K at 1 credit** — cheapest KDP-grade option |
+| Seedream 5 Pro | 1 | 2 | — | — | — too low for print |
+| Seedream 5 Flash | 1 | 1 | — | — | — too low for print |
+| GPT Image 2 | 4 | 4 | — | 4 | 4K at 4 credits |
+| GPT Image 2.5 Flare | 4 | 4 | — | 4 | 4K at 4 credits |
+| GPT Image 2.5 Sunburst | 4 | 4 | — | 4 | 4K at 4 credits |
 
-## Credit cost per image
+**DPI math behind the floor.** 8.5×11 trim + 0.125" bleed on all sides = 8.75×11.25" final page. At 300 DPI the floor is 2,625×3,375 pixels. 2K (≈2,048×2,731) delivers ~234 DPI — below spec. 3K (≈3,072×4,096) delivers ~351 DPI — comfortably over. 4K is always sufficient.
 
-| Model | Credits per image |
-|---|---|
-| Nano Banana 2 (default) | 2 |
-| Nano Banana | 1 |
-| Nano Banana Pro | 4 |
-| GPT Image 2 | 2 |
+**Choose by signal:**
 
-Credit costs are an Everygen product constant — verify against the Everygen docs when a model is changed or added. Multiply by image count for the per-batch cost; multiply by `N+1` (cover + N interior) for a full image-book cost.
+- **Lowest cost that meets the floor** → Seedream 5 Lite at 3K (1 credit/image). Use when credit budget is the binding constraint and the subject matter is well within Seedream's strengths.
+- **Known-good coloring-book line-art style** → Nano Banana 2 at 4K (3 credits/image). Use when the pack requires the clean black-and-white line style the `coloring-book` pack is tuned for.
+- **Highest quality** → Nano Banana Pro at 4K (4 credits/image). Reserved for covers where the extra credit buys a visible gain.
+
+Multiply by image count for the per-batch cost; multiply by `N+1` (cover + N interior) for a full image-book cost. For a 26-image book: Seedream 5 Lite 3K = 26 credits; Nano Banana 2 4K = 78 credits; Nano Banana Pro 4K = 104 credits.
 
 ## Batch sizing
 
@@ -111,7 +116,8 @@ When a new printed-image product is wanted (recipe card, workbook, sticker sheet
 
 - **Apply the style pack verbatim.** When generating a themed image set, read the template from this file and substitute placeholders. Never re-derive style strings per image — drift between pages is the failure mode.
 - **Match aspect ratio to final paper size** using the table above. A page intended for 8.5×11 print must request `3:4`, not `1:1` or `9:16`.
-- **Match resolution to print target** using the table above. Never pick `4K` for a thumbnail; never pick `1K` for 11×17 print. For any image set destined for `/kdp compose`, 3K is the floor on 8.5×11 and smaller trims; 2K is a Must Fix finding because it falls below KDP's 300 DPI requirement after trim+bleed.
+- **Match resolution to print target using the model matrix.** Never pick `4K` for a thumbnail; never pick `1K` for 11×17 print. For any image set destined for `/kdp compose`, the output must meet 300 DPI at trim+bleed. On Nano Banana 2 that means 4K (3 credits/image) because the model does not support 3K and 2K sits at ~234 DPI; on Seedream 5 Lite that means 3K (1 credit/image). 2K with any model for KDP paperback is a Must Fix finding.
+- **Pre-flight credit balance before firing a batch.** Compute expected cost from the model-matrix above: `expected = images × credits_per_image_for_resolution`. Call `get_credit_balance` and confirm `remaining >= expected`. **If `remaining < expected`: stop and do not proceed.** Report the shortfall and the two options — top up, or switch to a lower-cost model (e.g. Seedream 5 Lite at 1 credit/image for 3K) if the pack is model-compatible. Failed generations charge 0 credits but waste a user turn and the batch has to be re-fired after the top-up.
 - **Set `ai_disclosure.images: true` in `book.yaml`** whenever the set is destined for `/kdp compose`. Every Everygen image is AI-generated; KDP has required disclosure since 2023 and false negatives are a terms-of-service violation.
 - **Scene prompts must be specific, not generic.** On KDP, targeted themes average 156 reviews; generic themes average 38. Name 2+ concrete objects, a specific action or arrangement, and spatial layout per scene. "Cat" is a Must Fix; "British shorthair kitten batting a daisy on a sunlit windowsill" is right. "Flowers" is a Must Fix; "cluster of three peonies in a jam jar with a trailing ribbon" is right. The specificity applies to the scene *description* that fills the pack template's `{SCENE}` placeholder — the pack's style (bold outlines, no shading, etc.) stays verbatim.
 - **Batch when the count is ≥2 and the images are independent.** Repeated `generate_image` calls on independent prompts are a Must Fix finding during review.
