@@ -1,7 +1,7 @@
 ---
-description: Use when the user wants to ship a branch or commit (ship), rebase onto main (sync), return to a clean main (main), return to a clean stage (stage), merge PRs (merge), create parallel worktrees (worktree), generate release notes (release-notes), sweep reviewer comments (reviewer), or invoke gh CLI reference (cli). Invoke as /git <subcommand>. Subcommands ship, merge, worktree, and reviewer mutate remote state; human-gated.
+description: Use when the user wants to ship a branch or commit (ship), rebase onto main (sync), return to a clean main (main), return to a clean stage (stage), merge PRs (merge), create parallel worktrees (worktree), generate release notes (release-notes), sweep reviewer comments (reviewer), view a consolidated status display (status), or invoke gh CLI reference (cli). Invoke as /git <subcommand>. Subcommands ship, merge, worktree, and reviewer mutate remote state; human-gated. status is read-only.
 argument-hint: "<subcommand> [arguments]"
-aliases: git-ship, git-cpr, git-sync, git-main, git-stage, worktree, release-notes, ship, sync, main, stage, commit-push-pr, gh-cli, reviewer, pr-reviewer
+aliases: git-ship, git-cpr, git-sync, git-main, git-stage, git-status, worktree, release-notes, ship, sync, main, stage, status, commit-push-pr, gh-cli, reviewer, pr-reviewer
 allowed-tools: Bash(git *) Bash(gh *) Bash(uv lock) Bash(uuidgen *) Bash(find *) Read Edit Write Agent
 # Human-gated: ship pushes commits, worktree mutates parallel checkouts. Block model auto-invocation; users invoke the slash command explicitly.
 disable-model-invocation: true
@@ -11,7 +11,7 @@ disable-model-invocation: true
 
 Use this skill for any git-graph or GitHub-CLI operation: shipping a branch (creating it from main or committing onto your existing branch), rebasing, switching to main or stage, creating a parallel worktree, generating release notes, or looking up `gh` commands that the workflow subcommands do not already wrap.
 
-The orchestration delegates to atomic building blocks: `/branch-from-main`, `/conventional-commit-msg`, `/open-pr`, and the shared scripts at `~/.claude/scripts/git_group.py` and `~/.claude/scripts/classify_commits.py`. This skill never re-implements their mechanics.
+The orchestration delegates to atomic building blocks: `/branch-from-main`, `/conventional-commit-msg`, `/open-pr`, and the shared scripts at `~/.claude/scripts/git_group.py`, `~/.claude/scripts/classify_commits.py`, and `~/.claude/scripts/git_status.py`. This skill never re-implements their mechanics.
 
 **Commit messages.** Every commit produced by this skill uses the **Angular Conventional Commits** convention — `<type>(<scope>): <subject>`, lowercase type/scope, imperative-present subject, no trailing period, optional body explaining *why*, optional `BREAKING CHANGE:` footer. Allowed types: `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `build`, `ci`, `chore`, `revert`. The canonical format lives in `~/.claude/commands/conventional-commit-msg.md`; every commit step below routes through `/conventional-commit-msg` or quotes a header that conforms to it.
 
@@ -29,6 +29,9 @@ The orchestration delegates to atomic building blocks: `/branch-from-main`, `/co
 /git sync [<base>]                    # rebase current branch onto main (or <base>)
 /git main                             # checkout main, pull, prune merged branches
 /git stage                            # checkout stage, pull, prune merged branches (repos with a stage-as-trunk workflow)
+/git status                           # branch, tracking, tree state, stash, recent commits, open PR + checks
+/git status --no-pr                   # same, skip the gh pr view lookup (faster, no network)
+/git status --json                    # same, raw data as JSON instead of the rendered display
 /git worktree [<name>]                # create parallel worktree under .claude/worktrees/
 /git release-notes [<range>]          # generate changelog (default: since last tag)
 /git cli                              # GitHub CLI quick reference (gh api, runs, reviews, issues)
@@ -58,7 +61,7 @@ Split `$ARGUMENTS` on the first space. The first word is the subcommand; everyth
 
 - If the subcommand is empty or `help`: print the **Usage** block above and stop.
 - If the subcommand is `cpr`: print `/git cpr was merged into /git ship — for the daily-iteration ergonomics use /git ship --quick`, then dispatch to `ship` with `--quick` prepended to the remaining argument string. If `--quick` is already present in the remaining argument string, do not prepend a duplicate — treat the argument string as-is.
-- If the subcommand is not one of `ship`, `sync`, `main`, `stage`, `merge`, `worktree`, `release-notes`, `cli`, `reviewer`: stop and print the **Usage** block.
+- If the subcommand is not one of `ship`, `sync`, `main`, `stage`, `merge`, `worktree`, `release-notes`, `cli`, `reviewer`, `status`: stop and print the **Usage** block.
 - Dispatch to the matching step below. `ship`, `reviewer`, and `merge` load their dispatch from Level 3 files — read the named file and follow it. The other subcommands are short enough to inline here.
 
 ### 2. Dispatch — `ship`
@@ -200,17 +203,35 @@ Read `~/.claude/skills/git/cli.md` and apply what the user is asking for from it
 
 **This subcommand is read/lookup oriented — do not push, comment, approve, or otherwise mutate remote state without the user explicitly asking for that action.** For routine PR creation use `/open-pr`; for branch → commit → push → PR use `/git ship`; for review with agent feedback use `/code review`.
 
-### 9. Dispatch — `reviewer`
+### 9. Dispatch — `status`
+
+Read-only consolidated status display. No pre-flight, no mutation, no human gating.
+
+```bash
+~/.claude/scripts/git_status.py [--json] [--no-pr]
+```
+
+Run the script and print its stdout verbatim as the report — do not re-derive branch/tracking/tree state by hand in chat; the script owns that parsing so the display is deterministic across runs. It covers:
+
+- Current branch (or short SHA + "detached HEAD"), upstream, ahead/behind counts
+- Working tree state: staged, unstaged, and untracked files, grouped and labeled
+- Stash list (up to 5 most recent entries)
+- Last 5 commits (`<short-sha> <subject>`)
+- The open PR for the current branch, if any, via `gh pr view` — number, title, draft/state, check-rollup summary (passing/failing/total), URL
+
+Pass through `--json` (raw structured data instead of the rendered text) or `--no-pr` (skip the `gh pr view` network call) if the user asks for either. If `gh` is not authenticated or the branch has no open PR, the script reports "PR: none open for this branch" rather than erroring — do not treat that as a failure.
+
+### 10. Dispatch — `reviewer`
 
 Read `~/.claude/skills/git/reviewer.md` and follow it. Handles PR enumeration, pre-flight worktree cleanup, per-PR work-list collection, plan confirmation, parallel sub-agent fanout, cleanup verification, and the final summary.
 
-### 10. Dispatch — `merge`
+### 11. Dispatch — `merge`
 
 Read `~/.claude/skills/git/merge.md` and follow it. Handles flag parsing, PR list resolution, confirmation, per-PR state and check inspection, merge, sync-between, and stop semantics.
 
-### 11. Final verification step
+### 12. Final verification step
 
-For every subcommand, the dispatch block above (or its Level 3 file) ends with its own verification gate. Before this skill exits, confirm the gate fired (PR URL reachable, branch pruned report emitted, worktree listed, the requested `gh` command surfaced from the reference, the `reviewer` per-PR summary printed, the `merge` summary table printed with every merged PR showing MERGED, etc.) — if any verification was skipped, re-run it.
+For every subcommand, the dispatch block above (or its Level 3 file) ends with its own verification gate. Before this skill exits, confirm the gate fired (PR URL reachable, branch pruned report emitted, worktree listed, the requested `gh` command surfaced from the reference, the `status` display printed in full, the `reviewer` per-PR summary printed, the `merge` summary table printed with every merged PR showing MERGED, etc.) — if any verification was skipped, re-run it.
 
 ## Rules (apply across all subcommands)
 
