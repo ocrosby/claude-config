@@ -72,16 +72,16 @@ rest="${ARGUMENTS#* }"
    ```bash
    ~/.claude/scripts/kdp_compose.py "$rest"
    ```
-   The script writes `interior.pdf`, `cover.pdf`, and `metadata.json` into `<image-dir>` and prints a one-line summary for each. Any DPI preflight advisories or page-count warnings are emitted to stderr — surface them verbatim to the user.
+   The script writes `interior.pdf`, `cover.pdf`, `review.pdf`, and `metadata.json` into `<image-dir>` and prints a one-line summary for each. Any DPI preflight advisories or page-count warnings are emitted to stderr — surface them verbatim to the user.
 
    **If the script exits non-zero: stop and do not proceed.** Report the exact stderr line so the user can fix the metadata or page count.
 
 4. **Open the PDFs for inspection.**
    ```bash
-   open "$rest/interior.pdf" "$rest/cover.pdf" 2>/dev/null || true
+   open "$rest/interior.pdf" "$rest/cover.pdf" "$rest/review.pdf" 2>/dev/null || true
    ```
 
-5. **Report.** Print the three output paths, the interior page count, and the computed spine width from `metadata.json`. Remind the user that the cover is a plain template — they may replace `cover.pdf` with a hand-designed spread before upload. Suggest `/kdp publish <image-dir>` as the next step once the PDFs look right.
+5. **Report.** Print the four output paths, the interior page count, and the computed spine width from `metadata.json`. Explicitly distinguish the files: `interior.pdf` and `cover.pdf` go to KDP; `review.pdf` is a single portrait PDF (front cover → full interior → back cover) for sharing with reviewers; `_preview.pdf` (if present) is a legacy image-bundle from `/image-book` not for upload. Remind the user that the cover is a plain template — they may replace `cover.pdf` with a hand-designed spread before upload. Suggest `/kdp publish <image-dir>` as the next step once the PDFs look right.
 
 ### 3. Dispatch — `publish`
 
