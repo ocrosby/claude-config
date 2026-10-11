@@ -1,6 +1,8 @@
-# Rapidly generating coloring books
+# Rapidly generating printable image books
 
-End-to-end guide for producing printable coloring books with the `/image-book` skill. One short command designs the scenes, generates every page, downloads the images into a per-book folder, combines them into a PDF, and opens it. Supports toddler through adult tiers; multiple books stay cleanly separated under one parent directory.
+End-to-end guide for producing any printable multi-page image product — coloring books, workbooks, sticker sheets, recipe cards — with the `/image-book` skill. One short command designs the scenes, generates every page, downloads the images into a per-book folder, combines them into a PDF, and opens it. Coloring books are the canonical worked example below (and currently the only shipping style pack), but every step generalizes.
+
+When the resulting PDFs are destined for Kindle Direct Publishing paperback, continue with `docs/kdp-publishing.md` for the compose-and-upload stage.
 
 Audience: anyone with the Claude Code CLI, the Everygen MCP server connected, and ImageMagick installed.
 
@@ -146,4 +148,8 @@ The skill always prints an estimated credit total before any generation call and
 - Rule / style packs / age tiers: `rules/everygen-image-conventions.md`
 - Helpers: `skills/image-book/slugify.sh`, `skills/image-book/open_and_verify.sh`
 - Default output root: `~/Downloads/image-books/`
-- This doc: `docs/coloring-books.md`
+- This doc: `docs/image-books.md`
+
+## Next: publish to KDP
+
+Once the PDF looks right and the paper size is a KDP paperback trim (anything in the aspect-ratio table), the next step is `docs/kdp-publishing.md`. That doc covers composing a KDP-ready interior + cover spread via `/kdp compose`, pre-filling a draft in the KDP wizard via `/kdp publish --draft`, and the fields you still fill by hand (categories, pricing, final Submit).
