@@ -153,3 +153,5 @@ The skill always prints an estimated credit total before any generation call and
 ## Next: publish to KDP
 
 Once the PDF looks right and the paper size is a KDP paperback trim (anything in the aspect-ratio table), the next step is `docs/kdp-publishing.md`. That doc covers composing a KDP-ready interior + cover spread via `/kdp compose`, pre-filling a draft in the KDP wizard via `/kdp publish --draft`, and the fields you still fill by hand (categories, pricing, final Submit).
+
+For niche and pricing decisions driven by 2026 KDP bestseller data (anxiety-relief, profession-specific, breed-specific; $9.99 royalty tier; 40–60-page sweet spot; the bold-and-easy style), see `docs/coloring-book-market-signals.md` — the data behind the defaults.

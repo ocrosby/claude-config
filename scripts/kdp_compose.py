@@ -231,37 +231,85 @@ def _draw_image_fit(
     )
 
 
-def build_interior(
-    interiors: list[Path], trim: tuple[float, float], outpath: Path
-) -> int:
-    """Write a KDP-ready interior PDF with one image per page.
+INNER_SAFE_MARGIN_IN = 0.25
 
-    Each page is sized (trim + 2*bleed) and the image is centered scale-to-fit
-    on a white background so the full image is preserved. Pages with content
-    extending to the trim edge should have the border already inset slightly
-    inside the image (the /image-book border template does this).
+
+def physical_page_count(*, image_count: int, single_sided: bool) -> int:
+    """Return the number of printed pages for a given image count and layout.
+
+    Args:
+        image_count: Number of coloring-image pages (one image per visible page).
+        single_sided: When True, a blank backing page is inserted after each image
+            so markers do not bleed through onto the next design. KDP reports this
+            doubled page count on the paperback listing.
+
+    Returns:
+        The physical page count KDP will see on upload.
+    """
+    assert image_count > 0, "image_count must be positive"
+    return image_count * 2 if single_sided else image_count
+
+
+def build_interior(
+    interiors: list[Path],
+    trim: tuple[float, float],
+    outpath: Path,
+    *,
+    single_sided: bool = True,
+    bleed: bool = True,
+) -> int:
+    """Write a KDP-ready interior PDF with one image per visible page.
+
+    When `single_sided=True` (the default for coloring books), a blank page is
+    inserted after each image so markers do not bleed through onto the next
+    design — KDP requires this layout for coloring books.
+
+    When `bleed=True`, each page is sized `trim + 2*0.125"` and the image fills
+    the full bleed box, so decoration can extend past the trim line. When
+    `bleed=False` (the market default for ~95% of adult coloring books), the
+    page is sized exactly to trim and the image is inset by a 0.25" safe
+    margin so no content is trimmed off at the edge.
 
     Args:
         interiors: Interior page images, in print order.
         trim: (width_in, height_in) of the final trim.
         outpath: Destination PDF path.
+        single_sided: Insert a blank backing page after each image. Default True.
+        bleed: Extend the page by 0.125" on all sides; otherwise inset the image
+            by a 0.25" safe margin inside the trim. Default True.
 
     Returns:
-        Page count written.
+        Physical page count written (image_count × 2 when single_sided, else image_count).
     """
     assert interiors, "interiors must be non-empty"
-    page_w_pt = _in_to_pt(trim[0] + 2 * BLEED_IN)
-    page_h_pt = _in_to_pt(trim[1] + 2 * BLEED_IN)
+    if bleed:
+        page_w_pt = _in_to_pt(trim[0] + 2 * BLEED_IN)
+        page_h_pt = _in_to_pt(trim[1] + 2 * BLEED_IN)
+        image_box = (0.0, 0.0, page_w_pt, page_h_pt)
+    else:
+        page_w_pt = _in_to_pt(trim[0])
+        page_h_pt = _in_to_pt(trim[1])
+        margin_pt = _in_to_pt(INNER_SAFE_MARGIN_IN)
+        image_box = (
+            margin_pt,
+            margin_pt,
+            page_w_pt - 2 * margin_pt,
+            page_h_pt - 2 * margin_pt,
+        )
     c = Canvas(str(outpath), pagesize=(page_w_pt, page_h_pt))
     for img in interiors:
-        # White background so letterbox strips (if any) blend into the page.
         c.setFillColorRGB(1, 1, 1)
         c.rect(0, 0, page_w_pt, page_h_pt, stroke=0, fill=1)
-        _draw_image_fit(c, img, (0, 0, page_w_pt, page_h_pt))
+        _draw_image_fit(c, img, image_box)
         c.showPage()
+        if single_sided:
+            # Blank backing page — same size and background, no image.
+            c.setFillColorRGB(1, 1, 1)
+            c.rect(0, 0, page_w_pt, page_h_pt, stroke=0, fill=1)
+            c.showPage()
     c.save()
     assert outpath.is_file() and outpath.stat().st_size > 0, "interior PDF not written"
-    return len(interiors)
+    return physical_page_count(image_count=len(interiors), single_sided=single_sided)
 
 
 def build_cover(
@@ -442,7 +490,12 @@ def main(argv: list[str] | None = None) -> int:
         return 2
 
     trim = trim_box(metadata["trim_size"])
-    page_count = int(metadata.get("page_count") or len(interiors))
+    single_sided = bool(metadata.get("single_sided", True))
+    bleed = bool(metadata.get("bleed", True))
+    computed_pages = physical_page_count(
+        image_count=len(interiors), single_sided=single_sided
+    )
+    page_count = int(metadata.get("page_count") or computed_pages)
     try:
         spine_in = compute_spine(page_count, metadata["paper"])
     except ValueError as e:
@@ -450,26 +503,37 @@ def main(argv: list[str] | None = None) -> int:
         return 2
 
     warnings: list[str] = []
-    warnings.extend(_preflight_dpi(cover, trim[0] + BLEED_IN, trim[1] + 2 * BLEED_IN))
+    cover_target_w = trim[0] + BLEED_IN
+    cover_target_h = trim[1] + 2 * BLEED_IN
+    warnings.extend(_preflight_dpi(cover, cover_target_w, cover_target_h))
+    if bleed:
+        interior_target_w = trim[0] + 2 * BLEED_IN
+        interior_target_h = trim[1] + 2 * BLEED_IN
+    else:
+        interior_target_w = trim[0] - 2 * INNER_SAFE_MARGIN_IN
+        interior_target_h = trim[1] - 2 * INNER_SAFE_MARGIN_IN
     for p in interiors:
-        warnings.extend(
-            _preflight_dpi(p, trim[0] + 2 * BLEED_IN, trim[1] + 2 * BLEED_IN)
-        )
+        warnings.extend(_preflight_dpi(p, interior_target_w, interior_target_h))
 
     interior_pdf = outdir / "interior.pdf"
     cover_pdf = outdir / "cover.pdf"
     metadata_json = outdir / "metadata.json"
 
-    pages = build_interior(interiors, trim, interior_pdf)
+    pages = build_interior(
+        interiors, trim, interior_pdf, single_sided=single_sided, bleed=bleed
+    )
     build_cover(cover, metadata, trim, spine_in, cover_pdf)
 
     normalized = {
         **metadata,
         "page_count": page_count,
+        "image_count": len(interiors),
+        "single_sided": single_sided,
+        "bleed": bleed,
         "spine_width_in": round(spine_in, 4),
         "trim_width_in": trim[0],
         "trim_height_in": trim[1],
-        "bleed_in": BLEED_IN,
+        "bleed_in": BLEED_IN if bleed else 0.0,
         "interior_pdf": str(interior_pdf.resolve()),
         "cover_pdf": str(cover_pdf.resolve()),
         "cover_source_image": str(cover.resolve()),

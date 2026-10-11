@@ -73,9 +73,9 @@ rest="${ARGUMENTS#* }"
    Compute the maximum interior page count from the batch-sizing table: `max_pages = (max_batch_size × max_sensible_batches) - 1`. The rule's current math is 8 × 6 - 1 = 47; always derive from the current table rather than hardcoding.
 
 4. **Collect parameters via a single `AskUserQuestion` call** with these fields, drawing option lists from step 3:
-   - **Interior page count** — default `15`. Valid range: 1 to `max_pages` computed in step 3.
+   - **Interior page count** — default `40`. KDP paperback minimum is 24 physical pages; with single-sided printing (standard for coloring books), 20 images → 40 physical pages, which clears the minimum. The 2026 bestseller sweet spot is 20–30 images (40–60 physical pages). Valid range: 1 to `max_pages` computed in step 3.
    - **Style pack** — default `coloring-book`. Options are the pack headings extracted in step 3.
-   - **Age tier** — only when the chosen pack has an age-tier table (currently `coloring-book`). Options are the tier names from the table (`toddler`, `kid`, `tween`, `adult`). Default: `kid`.
+   - **Age tier** — only when the chosen pack has an age-tier table (currently `coloring-book`). Options are the tier names from the table (`toddler`, `kid`, `tween`, `adult`, `adult-intricate`). Default: `kid`.
    - **Paper size** — default `8.5x11`. Options are the paper sizes in step 3's aspect-ratio table.
    - **Output directory** — default `~/Downloads/image-books/<slug>`. All images and the PDF for this book land in this one directory, so multiple books stay cleanly separated under `~/Downloads/image-books/`.
 

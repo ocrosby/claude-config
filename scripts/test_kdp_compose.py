@@ -1,7 +1,7 @@
 #!/usr/bin/env -S uv run --script
 # /// script
 # requires-python = ">=3.11"
-# dependencies = ["pytest>=8", "pyyaml>=6", "pillow>=10", "reportlab>=4"]
+# dependencies = ["pytest>=8", "pyyaml>=6", "pillow>=10", "reportlab>=4", "pypdf>=5"]
 # ///
 """Tests for kdp_compose.py pure helpers.
 
@@ -225,6 +225,85 @@ def test_load_metadata_preserves_optional_fields(tmp_path: Path) -> None:
     assert meta["keywords"] == ["fairy", "kids"]
     assert meta["price_usd"] == 7.99
     assert meta["ai_disclosure"]["images"] is True
+
+
+# --- build_interior: single_sided and bleed ---------------------------------
+
+
+def _make_image(path: Path, size: tuple[int, int] = (2625, 3375)) -> Path:
+    """Write a minimal RGB JPEG at `size` to `path` and return the path."""
+    from PIL import Image
+
+    Image.new("RGB", size, (255, 255, 255)).save(path, "JPEG", quality=70)
+    return path
+
+
+def _pdf_page_count(path: Path) -> int:
+    """Return the number of pages in `path`."""
+    from pypdf import PdfReader
+
+    return len(PdfReader(str(path)).pages)
+
+
+def _pdf_first_page_size_pt(path: Path) -> tuple[float, float]:
+    """Return (width_pt, height_pt) of page 1."""
+    from pypdf import PdfReader
+
+    box = PdfReader(str(path)).pages[0].mediabox
+    return float(box.width), float(box.height)
+
+
+def test_build_interior_single_sided_inserts_blank_backs(tmp_path: Path) -> None:
+    imgs = [_make_image(tmp_path / f"{i:02d}-p.jpg") for i in range(1, 4)]
+    outp = tmp_path / "interior.pdf"
+    pages = kdp_compose.build_interior(
+        imgs, trim=(8.5, 11.0), outpath=outp, single_sided=True
+    )
+    assert pages == 6
+    assert _pdf_page_count(outp) == 6
+
+
+def test_build_interior_two_sided_matches_image_count(tmp_path: Path) -> None:
+    imgs = [_make_image(tmp_path / f"{i:02d}-p.jpg") for i in range(1, 4)]
+    outp = tmp_path / "interior.pdf"
+    pages = kdp_compose.build_interior(
+        imgs, trim=(8.5, 11.0), outpath=outp, single_sided=False
+    )
+    assert pages == 3
+    assert _pdf_page_count(outp) == 3
+
+
+def test_build_interior_with_bleed_sizes_page_including_bleed(tmp_path: Path) -> None:
+    img = _make_image(tmp_path / "01-p.jpg")
+    outp = tmp_path / "interior.pdf"
+    kdp_compose.build_interior(
+        [img], trim=(8.5, 11.0), outpath=outp, single_sided=False, bleed=True
+    )
+    w_pt, h_pt = _pdf_first_page_size_pt(outp)
+    assert w_pt == pytest.approx((8.5 + 0.25) * 72, abs=0.5)
+    assert h_pt == pytest.approx((11.0 + 0.25) * 72, abs=0.5)
+
+
+def test_build_interior_without_bleed_sizes_page_to_trim(tmp_path: Path) -> None:
+    img = _make_image(tmp_path / "01-p.jpg")
+    outp = tmp_path / "interior.pdf"
+    kdp_compose.build_interior(
+        [img], trim=(8.5, 11.0), outpath=outp, single_sided=False, bleed=False
+    )
+    w_pt, h_pt = _pdf_first_page_size_pt(outp)
+    assert w_pt == pytest.approx(8.5 * 72, abs=0.5)
+    assert h_pt == pytest.approx(11.0 * 72, abs=0.5)
+
+
+# --- physical_page_count ----------------------------------------------------
+
+
+def test_physical_page_count_single_sided() -> None:
+    assert kdp_compose.physical_page_count(image_count=20, single_sided=True) == 40
+
+
+def test_physical_page_count_two_sided() -> None:
+    assert kdp_compose.physical_page_count(image_count=20, single_sided=False) == 20
 
 
 if __name__ == "__main__":

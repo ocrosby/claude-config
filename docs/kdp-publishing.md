@@ -156,3 +156,4 @@ That said, running `--draft` ten times in an hour on ten different books will lo
 - Persistent Chrome profile: `~/.cache/kdp-automation/chrome-profile/`
 - This doc: `docs/kdp-publishing.md`
 - Prior stage: `docs/image-books.md`
+- Market signals (niche BSR, pricing math, specificity): `docs/coloring-book-market-signals.md`
