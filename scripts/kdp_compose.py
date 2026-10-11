@@ -233,21 +233,263 @@ def _draw_image_fit(
 
 INNER_SAFE_MARGIN_IN = 0.25
 
+# Default matter page counts when include_matter=True. Front matter:
+# title / copyright / belongs-to / intro. Back matter: thanks + review ask.
+DEFAULT_FRONT_MATTER_COUNT = 4
+DEFAULT_BACK_MATTER_COUNT = 1
 
-def physical_page_count(*, image_count: int, single_sided: bool) -> int:
+DEFAULT_INTRO_TEXT = (
+    "This book uses thick, bold lines designed to work with any marker, "
+    "pencil, or crayon. Each coloring page is printed single-sided so your "
+    "markers won't bleed through to the next design. If you use alcohol "
+    "markers or very wet media, place a sheet of scrap paper or cardstock "
+    "behind the page as an extra safeguard.\n\n"
+    "Take your time — these pages are made for slow, relaxing coloring. "
+    "Happy coloring!"
+)
+
+DEFAULT_THANKS_TEXT = (
+    "Thank you for coloring with us!\n\n"
+    "If you enjoyed this book, please take a moment to leave an honest "
+    "review on Amazon. Reviews help other colorists discover independent "
+    "books like this one, and they mean the world to us.\n\n"
+    "Happy coloring!"
+)
+
+
+def physical_page_count(
+    *,
+    image_count: int,
+    single_sided: bool,
+    front_matter_count: int = 0,
+    back_matter_count: int = 0,
+) -> int:
     """Return the number of printed pages for a given image count and layout.
 
     Args:
         image_count: Number of coloring-image pages (one image per visible page).
-        single_sided: When True, a blank backing page is inserted after each image
-            so markers do not bleed through onto the next design. KDP reports this
+        single_sided: When True, a blank backing page is inserted after each
+            content page so markers do not bleed through. KDP reports this
             doubled page count on the paperback listing.
+        front_matter_count: Content pages at the front (title, copyright,
+            belongs-to, intro). Each follows the same single-sided layout
+            rule as image pages.
+        back_matter_count: Content pages at the back (thanks + review ask).
 
     Returns:
         The physical page count KDP will see on upload.
     """
     assert image_count > 0, "image_count must be positive"
-    return image_count * 2 if single_sided else image_count
+    assert front_matter_count >= 0 and back_matter_count >= 0, (
+        "matter counts must be non-negative"
+    )
+    total_content = image_count + front_matter_count + back_matter_count
+    return total_content * 2 if single_sided else total_content
+
+
+def _draw_blank_page(c: Canvas, page_w_pt: float, page_h_pt: float) -> None:
+    """Draw a plain white page and advance to the next page."""
+    c.setFillColorRGB(1, 1, 1)
+    c.rect(0, 0, page_w_pt, page_h_pt, stroke=0, fill=1)
+    c.showPage()
+
+
+def _draw_centered_text(
+    c: Canvas,
+    text: str,
+    *,
+    cx: float,
+    cy: float,
+    font: str,
+    size: int,
+) -> None:
+    """Draw a single line of text horizontally centered on (cx, cy)."""
+    c.setFont(font, size)
+    c.drawCentredString(cx, cy, text)
+
+
+def _draw_title_page(
+    c: Canvas, metadata: dict[str, Any], page: tuple[float, float]
+) -> None:
+    """Front matter: title + subtitle + author, centered vertically.
+
+    Mirrors the cover's wording but in clean typeset form so the printed
+    book has a proper title page behind the cover.
+    """
+    w, h = page
+    c.setFillColorRGB(1, 1, 1)
+    c.rect(0, 0, w, h, stroke=0, fill=1)
+    c.setFillColorRGB(0.1, 0.1, 0.1)
+    cx = w / 2
+    _draw_centered_text(
+        c, str(metadata["title"]), cx=cx, cy=h * 0.60, font="Helvetica-Bold", size=36
+    )
+    subtitle = str(metadata.get("subtitle") or "").strip()
+    if subtitle:
+        _draw_centered_text(c, subtitle, cx=cx, cy=h * 0.54, font="Helvetica", size=16)
+    _draw_centered_text(
+        c, str(metadata["author"]), cx=cx, cy=h * 0.42, font="Helvetica", size=18
+    )
+    c.showPage()
+
+
+def _draw_copyright_page(
+    c: Canvas, metadata: dict[str, Any], page: tuple[float, float]
+) -> None:
+    """Copyright page: © Year Author, rights notice, optional publisher/ISBN."""
+    w, h = page
+    c.setFillColorRGB(1, 1, 1)
+    c.rect(0, 0, w, h, stroke=0, fill=1)
+    c.setFillColorRGB(0.1, 0.1, 0.1)
+    cx = w / 2
+    year = metadata.get("copyright_year") or _current_year()
+    lines = [
+        (f"Copyright © {year} {metadata['author']}", "Helvetica", 11),
+        ("All rights reserved.", "Helvetica", 10),
+        ("", "Helvetica", 10),
+        (
+            "No part of this book may be reproduced, stored in a retrieval system,",
+            "Helvetica",
+            9,
+        ),
+        (
+            "or transmitted in any form or by any means without prior written",
+            "Helvetica",
+            9,
+        ),
+        ("permission from the author.", "Helvetica", 9),
+    ]
+    if metadata.get("publisher"):
+        lines.extend(
+            [
+                ("", "Helvetica", 10),
+                (f"Published by {metadata['publisher']}", "Helvetica", 10),
+            ]
+        )
+    if metadata.get("isbn"):
+        lines.extend(
+            [
+                ("", "Helvetica", 10),
+                (f"ISBN: {metadata['isbn']}", "Helvetica", 10),
+            ]
+        )
+    y_cursor = h * 0.55
+    for text, font, size in lines:
+        if text:
+            _draw_centered_text(c, text, cx=cx, cy=y_cursor, font=font, size=size)
+        y_cursor -= size + 4
+    c.showPage()
+
+
+def _draw_belongs_to_page(c: Canvas, page: tuple[float, float]) -> None:
+    """Belongs-to page: decorative header + two writable lines (name, date)."""
+    w, h = page
+    c.setFillColorRGB(1, 1, 1)
+    c.rect(0, 0, w, h, stroke=0, fill=1)
+    c.setFillColorRGB(0.1, 0.1, 0.1)
+    cx = w / 2
+    _draw_centered_text(
+        c, "This book belongs to:", cx=cx, cy=h * 0.70, font="Helvetica-Bold", size=22
+    )
+    c.setFont("Helvetica", 14)
+    label_x = w * 0.25
+    line_x_start = w * 0.35
+    line_x_end = w * 0.80
+    for label, y in (("Name:", h * 0.58), ("Date:", h * 0.48)):
+        c.drawString(label_x, y, label)
+        c.setLineWidth(0.75)
+        c.line(line_x_start, y - 3, line_x_end, y - 3)
+    c.showPage()
+
+
+def _draw_intro_page(
+    c: Canvas, metadata: dict[str, Any], page: tuple[float, float]
+) -> None:
+    """Intro page: how-to text block."""
+    w, h = page
+    c.setFillColorRGB(1, 1, 1)
+    c.rect(0, 0, w, h, stroke=0, fill=1)
+    c.setFillColorRGB(0.1, 0.1, 0.1)
+    cx = w / 2
+    _draw_centered_text(
+        c, "How to Color", cx=cx, cy=h * 0.80, font="Helvetica-Bold", size=22
+    )
+    text = str(metadata.get("intro_text") or DEFAULT_INTRO_TEXT)
+    _draw_wrapped_paragraph(
+        c,
+        text,
+        x=w * 0.15,
+        y=h * 0.70,
+        width=w * 0.70,
+        font="Helvetica",
+        size=12,
+        leading=16,
+    )
+    c.showPage()
+
+
+def _draw_thanks_page(
+    c: Canvas, metadata: dict[str, Any], page: tuple[float, float]
+) -> None:
+    """Back matter: thank you + review ask."""
+    w, h = page
+    c.setFillColorRGB(1, 1, 1)
+    c.rect(0, 0, w, h, stroke=0, fill=1)
+    c.setFillColorRGB(0.1, 0.1, 0.1)
+    cx = w / 2
+    _draw_centered_text(
+        c, "Thank You!", cx=cx, cy=h * 0.75, font="Helvetica-Bold", size=28
+    )
+    text = str(metadata.get("thanks_text") or DEFAULT_THANKS_TEXT)
+    _draw_wrapped_paragraph(
+        c,
+        text,
+        x=w * 0.15,
+        y=h * 0.65,
+        width=w * 0.70,
+        font="Helvetica",
+        size=13,
+        leading=18,
+    )
+    c.showPage()
+
+
+def _draw_wrapped_paragraph(
+    c: Canvas,
+    text: str,
+    *,
+    x: float,
+    y: float,
+    width: float,
+    font: str,
+    size: int,
+    leading: int,
+) -> None:
+    """Draw a word-wrapped paragraph with blank-line paragraph breaks."""
+    c.setFont(font, size)
+    cursor_y = y
+    for paragraph in text.split("\n\n"):
+        words = paragraph.split()
+        line: list[str] = []
+        for w in words:
+            trial = " ".join([*line, w])
+            if c.stringWidth(trial, font, size) <= width:
+                line.append(w)
+                continue
+            c.drawString(x, cursor_y, " ".join(line))
+            cursor_y -= leading
+            line = [w]
+        if line:
+            c.drawString(x, cursor_y, " ".join(line))
+            cursor_y -= leading
+        cursor_y -= leading / 2
+
+
+def _current_year() -> int:
+    """Return the current calendar year — isolated so tests can patch it."""
+    from datetime import datetime
+
+    return datetime.now().year
 
 
 def build_interior(
@@ -257,12 +499,14 @@ def build_interior(
     *,
     single_sided: bool = True,
     bleed: bool = True,
+    metadata: dict[str, Any] | None = None,
+    include_matter: bool = False,
 ) -> int:
     """Write a KDP-ready interior PDF with one image per visible page.
 
     When `single_sided=True` (the default for coloring books), a blank page is
-    inserted after each image so markers do not bleed through onto the next
-    design — KDP requires this layout for coloring books.
+    inserted after each content page so markers do not bleed through — KDP
+    requires this layout for coloring books.
 
     When `bleed=True`, each page is sized `trim + 2*0.125"` and the image fills
     the full bleed box, so decoration can extend past the trim line. When
@@ -270,18 +514,30 @@ def build_interior(
     page is sized exactly to trim and the image is inset by a 0.25" safe
     margin so no content is trimmed off at the edge.
 
+    When `include_matter=True`, prepends 4 front-matter pages (title, copyright,
+    "this book belongs to", intro) and appends 1 back-matter page (thanks + review
+    ask). All matter pages follow the same `single_sided` layout rule as image
+    pages. `metadata` is required when `include_matter=True`.
+
     Args:
         interiors: Interior page images, in print order.
         trim: (width_in, height_in) of the final trim.
         outpath: Destination PDF path.
-        single_sided: Insert a blank backing page after each image. Default True.
+        single_sided: Insert a blank backing page after each content page.
         bleed: Extend the page by 0.125" on all sides; otherwise inset the image
-            by a 0.25" safe margin inside the trim. Default True.
+            by a 0.25" safe margin inside the trim.
+        metadata: Book metadata dict. Required when `include_matter=True`.
+        include_matter: Prepend front matter + append back matter.
 
     Returns:
-        Physical page count written (image_count × 2 when single_sided, else image_count).
+        Physical page count written.
+
+    Raises:
+        ValueError: If `include_matter=True` but `metadata` is None.
     """
     assert interiors, "interiors must be non-empty"
+    if include_matter and metadata is None:
+        raise ValueError("metadata is required when include_matter=True")
     if bleed:
         page_w_pt = _in_to_pt(trim[0] + 2 * BLEED_IN)
         page_h_pt = _in_to_pt(trim[1] + 2 * BLEED_IN)
@@ -296,20 +552,49 @@ def build_interior(
             page_w_pt - 2 * margin_pt,
             page_h_pt - 2 * margin_pt,
         )
-    c = Canvas(str(outpath), pagesize=(page_w_pt, page_h_pt))
+    page_size = (page_w_pt, page_h_pt)
+    c = Canvas(str(outpath), pagesize=page_size)
+
+    front_count = DEFAULT_FRONT_MATTER_COUNT if include_matter else 0
+    back_count = DEFAULT_BACK_MATTER_COUNT if include_matter else 0
+
+    if include_matter:
+        assert metadata is not None  # for the type checker; validated above
+        _draw_title_page(c, metadata, page_size)
+        if single_sided:
+            _draw_blank_page(c, page_w_pt, page_h_pt)
+        _draw_copyright_page(c, metadata, page_size)
+        if single_sided:
+            _draw_blank_page(c, page_w_pt, page_h_pt)
+        _draw_belongs_to_page(c, page_size)
+        if single_sided:
+            _draw_blank_page(c, page_w_pt, page_h_pt)
+        _draw_intro_page(c, metadata, page_size)
+        if single_sided:
+            _draw_blank_page(c, page_w_pt, page_h_pt)
+
     for img in interiors:
         c.setFillColorRGB(1, 1, 1)
         c.rect(0, 0, page_w_pt, page_h_pt, stroke=0, fill=1)
         _draw_image_fit(c, img, image_box)
         c.showPage()
         if single_sided:
-            # Blank backing page — same size and background, no image.
-            c.setFillColorRGB(1, 1, 1)
-            c.rect(0, 0, page_w_pt, page_h_pt, stroke=0, fill=1)
-            c.showPage()
+            _draw_blank_page(c, page_w_pt, page_h_pt)
+
+    if include_matter:
+        assert metadata is not None
+        _draw_thanks_page(c, metadata, page_size)
+        if single_sided:
+            _draw_blank_page(c, page_w_pt, page_h_pt)
+
     c.save()
     assert outpath.is_file() and outpath.stat().st_size > 0, "interior PDF not written"
-    return physical_page_count(image_count=len(interiors), single_sided=single_sided)
+    return physical_page_count(
+        image_count=len(interiors),
+        single_sided=single_sided,
+        front_matter_count=front_count,
+        back_matter_count=back_count,
+    )
 
 
 def build_cover(
@@ -492,8 +777,14 @@ def main(argv: list[str] | None = None) -> int:
     trim = trim_box(metadata["trim_size"])
     single_sided = bool(metadata.get("single_sided", True))
     bleed = bool(metadata.get("bleed", True))
+    include_matter = bool(metadata.get("include_matter", True))
+    front_matter_count = DEFAULT_FRONT_MATTER_COUNT if include_matter else 0
+    back_matter_count = DEFAULT_BACK_MATTER_COUNT if include_matter else 0
     computed_pages = physical_page_count(
-        image_count=len(interiors), single_sided=single_sided
+        image_count=len(interiors),
+        single_sided=single_sided,
+        front_matter_count=front_matter_count,
+        back_matter_count=back_matter_count,
     )
     page_count = int(metadata.get("page_count") or computed_pages)
     try:
@@ -520,7 +811,13 @@ def main(argv: list[str] | None = None) -> int:
     metadata_json = outdir / "metadata.json"
 
     pages = build_interior(
-        interiors, trim, interior_pdf, single_sided=single_sided, bleed=bleed
+        interiors,
+        trim,
+        interior_pdf,
+        single_sided=single_sided,
+        bleed=bleed,
+        metadata=metadata,
+        include_matter=include_matter,
     )
     build_cover(cover, metadata, trim, spine_in, cover_pdf)
 
@@ -530,6 +827,9 @@ def main(argv: list[str] | None = None) -> int:
         "image_count": len(interiors),
         "single_sided": single_sided,
         "bleed": bleed,
+        "include_matter": include_matter,
+        "front_matter_count": front_matter_count,
+        "back_matter_count": back_matter_count,
         "spine_width_in": round(spine_in, 4),
         "trim_width_in": trim[0],
         "trim_height_in": trim[1],

@@ -121,15 +121,15 @@ rest="${ARGUMENTS#* }"
     has_jpg=$(ls "$OUTDIR"/*.jpg 2>/dev/null | head -1)
     has_png=$(ls "$OUTDIR"/*.png 2>/dev/null | head -1)
     ```
-    Combine with a globally sorted file list so the 2-digit prefix order is preserved across mixed formats. Use an array (not an unquoted string) to survive filenames containing spaces:
+    Combine with a globally sorted file list so the 2-digit prefix order is preserved across mixed formats. The `-units pixelsperinch -density 72` flags force a uniform DPI during combine, which is non-optional because `generate_image_batch` returns 72-DPI JPEGs while a single `generate_image` call returns 300-DPI JPEGs — mixing both without normalization produces a PDF where single-source pages render ~4× larger than batch-source pages (see `rules/everygen-image-conventions.md` → Returned-image DPI gotcha). Use an array (not an unquoted string) to survive filenames containing spaces:
     ```bash
     if [ -n "$has_jpg" ] && [ -n "$has_png" ]; then
       mapfile -t files < <(ls "$OUTDIR"/*.jpg "$OUTDIR"/*.png 2>/dev/null | sort)
-      magick "${files[@]}" "$PDF"
+      magick -units pixelsperinch -density 72 "${files[@]}" "$PDF"
     elif [ -n "$has_jpg" ]; then
-      magick "$OUTDIR"/*.jpg "$PDF"
+      magick -units pixelsperinch -density 72 "$OUTDIR"/*.jpg "$PDF"
     else
-      magick "$OUTDIR"/*.png "$PDF"
+      magick -units pixelsperinch -density 72 "$OUTDIR"/*.png "$PDF"
     fi
     ```
 
@@ -170,15 +170,15 @@ rest="${ARGUMENTS#* }"
    out="${rest}/${base}.pdf"
    ```
 
-5. **Combine with a globally sorted file list** so numeric prefixes order correctly across mixed formats. Use an array (not an unquoted string) to survive filenames containing spaces:
+5. **Combine with a globally sorted file list** so numeric prefixes order correctly across mixed formats. The `-units pixelsperinch -density 72` flags force a uniform DPI during combine so mixed-source bundles (e.g. a batch run plus a single-image cover regen) render all pages at the same size — see the "Returned-image DPI gotcha" in `rules/everygen-image-conventions.md`. Use an array (not an unquoted string) to survive filenames containing spaces:
    ```bash
    if [ -n "$has_jpg" ] && [ -n "$has_png" ]; then
      mapfile -t files < <(ls "$rest"/*.jpg "$rest"/*.png 2>/dev/null | sort)
-     magick "${files[@]}" "$out"
+     magick -units pixelsperinch -density 72 "${files[@]}" "$out"
    elif [ -n "$has_jpg" ]; then
-     magick "$rest"/*.jpg "$out"
+     magick -units pixelsperinch -density 72 "$rest"/*.jpg "$out"
    else
-     magick "$rest"/*.png "$out"
+     magick -units pixelsperinch -density 72 "$rest"/*.png "$out"
    fi
    ```
 

@@ -87,10 +87,18 @@ Substitute `{AGE_RANGE}`, `{INTERIOR_STYLE}`, and `{BORDER_STYLE}` from the age-
 ### `coloring-book` — cover template (full color)
 
 ```
-Coloring book front cover design for ages {AGE_RANGE}. The entire cover artwork is enclosed by a decorative border frame that spans the full page edges: {BORDER_STYLE}. Title at top inside the frame in {COVER_TYPOGRAPHY}: '{TITLE}'. Scene below the title, inside the frame: {COVER_SCENE}. {COVER_STYLE}. Portrait orientation for {SIZE} printing.
+FULL COLOR illustrated book cover for a coloring book, ages {AGE_RANGE}. This is the FRONT COVER, not an interior coloring page — fully painted and colored illustration, NOT black-and-white line art, NOT a coloring page to be filled in. The entire cover artwork is enclosed by a decorative colored border frame that spans the full page edges: {BORDER_STYLE}. Title at top inside the frame in {COVER_TYPOGRAPHY}: '{TITLE}'. Scene below the title, inside the frame, rendered fully in color: {COVER_SCENE}. {COVER_STYLE}. Portrait orientation for {SIZE} printing.
 ```
 
 Substitute `{AGE_RANGE}`, `{BORDER_STYLE}`, `{COVER_TYPOGRAPHY}`, and `{COVER_STYLE}` from the age-tier table below. Substitute `{TITLE}` with the book title. Substitute `{COVER_SCENE}` with a one- to two-sentence scene featuring the hero elements of the theme. Substitute `{SIZE}` with the paper dimensions.
+
+**The leading "FULL COLOR" assertion and the explicit "NOT black-and-white line art, NOT a coloring page" negation are load-bearing.** Without them, the model anchors on the dominant "coloring book" context from the surrounding interior-page prompts and regresses to grayscale line art for the cover. First documented regression: 2026-10-11 on the "25 Days of Cozy" advent countdown, where the cover came back as line art despite `{COVER_STYLE}` specifying a bright palette — the color instruction was too far down the prompt to overcome the earlier framing. Do not shorten the leading negation.
+
+### Returned-image DPI gotcha
+
+`generate_image_batch` returns images with **72 DPI** metadata embedded in the JPEG; the single `generate_image` call returns images with **300 DPI** metadata embedded. The underlying pixel dimensions are identical, but tools that compute physical page size from `pixels / DPI` (notably ImageMagick's `magick ... pdf` combine) will render the two kinds of pages at wildly different physical sizes in the same PDF — a 4K image at 72 DPI → ~50×67" page; at 300 DPI → ~12×16" page. On a 2-up PDF viewer the batch-image pages appear ~4× larger than any `generate_image` cover added via a separate single call.
+
+**Mandatory behavior when combining mixed-source images into a PDF:** force a uniform DPI with `magick -units pixelsperinch -density 72 "$dir"/*.jpg "$pdf"` (or `mogrify -units pixelsperinch -density 72 "$dir"/<single-image>.jpg` before combining). The `/image-book combine` subcommand does this automatically; manual recombines must do it too.
 
 ### `coloring-book` — age tiers
 
