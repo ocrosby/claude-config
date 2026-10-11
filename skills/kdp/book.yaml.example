@@ -26,12 +26,26 @@ language: English
 # Interior layout — these control how /kdp compose builds interior.pdf.
 single_sided: true       # KDP requires blank backing pages for coloring books so
                          # markers do not bleed through. The composer inserts a
-                         # blank page after each image when true. Physical page
-                         # count = 2 x image_count.
+                         # blank page after each content page when true.
 bleed: false             # 95% of adult coloring books use NO bleed with a 0.25"
                          # inner safe margin — buyers prefer the margin to grip
                          # the book without smudging. Set true only if your
                          # designs intentionally extend to the trim edge.
+include_matter: true     # Prepend 4 front-matter pages (title, copyright,
+                         # "this book belongs to", intro) and append 1 back-matter
+                         # page (thanks + review ask). Professional self-published
+                         # coloring books all have these. Composer renders them from
+                         # the metadata fields below — zero credits, perfect text.
+
+# Front/back-matter content — only read when include_matter is true.
+copyright_year: 2026     # Defaults to the current year if omitted.
+publisher: ""            # Optional "Published by X" line on the copyright page.
+isbn: ""                 # Leave blank to let KDP assign a free ISBN at upload.
+intro_text: ""           # Optional override of the default "How to Color"
+                         # paragraph. Leave empty to use the sensible default
+                         # (marker-friendly thick lines + bleed-through tip).
+thanks_text: ""          # Optional override of the default "Thank You" + review
+                         # ask on the back-matter page.
 
 # Marketing — read by /kdp publish --draft to pre-fill the KDP Details step.
 # Replace these with keywords that match your specific niche. Top-performing

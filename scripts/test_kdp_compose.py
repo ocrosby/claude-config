@@ -306,5 +306,107 @@ def test_physical_page_count_two_sided() -> None:
     assert kdp_compose.physical_page_count(image_count=20, single_sided=False) == 20
 
 
+def test_physical_page_count_with_matter_single_sided() -> None:
+    # 20 images + 4 front + 1 back = 25 image-equivalent, x2 single-sided = 50
+    assert (
+        kdp_compose.physical_page_count(
+            image_count=20,
+            single_sided=True,
+            front_matter_count=4,
+            back_matter_count=1,
+        )
+        == 50
+    )
+
+
+def test_physical_page_count_with_matter_two_sided() -> None:
+    assert (
+        kdp_compose.physical_page_count(
+            image_count=20,
+            single_sided=False,
+            front_matter_count=4,
+            back_matter_count=1,
+        )
+        == 25
+    )
+
+
+# --- build_interior: matter pages ------------------------------------------
+
+
+_META = {
+    "title": "Test Book",
+    "author": "Jane Doe",
+    "copyright_year": 2026,
+    "publisher": "Test Press",
+}
+
+
+def test_build_interior_with_matter_single_sided_counts_pages(tmp_path: Path) -> None:
+    imgs = [_make_image(tmp_path / f"{i:02d}-p.jpg") for i in range(1, 4)]
+    outp = tmp_path / "interior.pdf"
+    pages = kdp_compose.build_interior(
+        imgs,
+        trim=(8.5, 11.0),
+        outpath=outp,
+        single_sided=True,
+        bleed=False,
+        metadata=_META,
+        include_matter=True,
+    )
+    # 4 front matter + 3 image + 1 back matter = 8 content pages, x2 single-sided = 16
+    assert pages == 16
+    assert _pdf_page_count(outp) == 16
+
+
+def test_build_interior_with_matter_two_sided_counts_pages(tmp_path: Path) -> None:
+    imgs = [_make_image(tmp_path / f"{i:02d}-p.jpg") for i in range(1, 4)]
+    outp = tmp_path / "interior.pdf"
+    pages = kdp_compose.build_interior(
+        imgs,
+        trim=(8.5, 11.0),
+        outpath=outp,
+        single_sided=False,
+        bleed=False,
+        metadata=_META,
+        include_matter=True,
+    )
+    # 4 front + 3 image + 1 back = 8 pages, no backing
+    assert pages == 8
+    assert _pdf_page_count(outp) == 8
+
+
+def test_build_interior_include_matter_false_omits_matter(tmp_path: Path) -> None:
+    imgs = [_make_image(tmp_path / f"{i:02d}-p.jpg") for i in range(1, 4)]
+    outp = tmp_path / "interior.pdf"
+    pages = kdp_compose.build_interior(
+        imgs,
+        trim=(8.5, 11.0),
+        outpath=outp,
+        single_sided=True,
+        bleed=False,
+        metadata=_META,
+        include_matter=False,
+    )
+    # 3 images x2 single-sided = 6; no matter
+    assert pages == 6
+
+
+def test_build_interior_matter_requires_metadata(tmp_path: Path) -> None:
+    imgs = [_make_image(tmp_path / f"{i:02d}-p.jpg") for i in range(1, 4)]
+    outp = tmp_path / "interior.pdf"
+    # include_matter=True but metadata=None → raise, since title/author are needed
+    with pytest.raises(ValueError, match="metadata"):
+        kdp_compose.build_interior(
+            imgs,
+            trim=(8.5, 11.0),
+            outpath=outp,
+            single_sided=True,
+            bleed=False,
+            metadata=None,
+            include_matter=True,
+        )
+
+
 if __name__ == "__main__":
     sys.exit(pytest.main([__file__, "-v"]))
