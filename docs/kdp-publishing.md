@@ -47,16 +47,18 @@ After the last command, a Chrome window stays open on the KDP wizard with Detail
 ├── 00-cover.jpg               ← from /image-book
 ├── 01-fairy-house.jpg
 ├── ... (interior pages)
-├── fairy_coloring_book.pdf    ← bundle PDF from /image-book combine (optional, ignored by KDP)
+├── _preview.pdf               ← legacy image bundle from /image-book (renamed; not for upload)
 ├── book.yaml                  ← you fill this in
 ├── interior.pdf               ← ADDED: KDP-ready interior, trim + 0.125" bleed
 ├── cover.pdf                  ← ADDED: back + spine + front spread with outer bleed
+├── review.pdf                 ← ADDED: single portrait PDF for sharing with reviewers
 └── metadata.json              ← ADDED: normalized metadata + computed spine width
 ```
 
-- **Interior PDF.** One image per page sized at trim + 0.125" bleed on all four sides. Images are centered scale-to-fit on a white background; the decorative border from the generation stage sits just inside the trim.
-- **Cover PDF.** A single spread sized `(2 × trim_width + spine) × trim_height` plus outer bleed. Back cover gets the description on a solid-color background; spine gets the title if wide enough (≥ 0.125"); front cover is the generated cover image. For a hand-designed cover, replace `cover.pdf` with your own file before uploading — KDP cares only about the file dimensions.
-- **metadata.json.** Normalized form of `book.yaml` plus the computed spine width and absolute paths to the two PDFs. Read by `/kdp publish --draft`.
+- **Interior PDF.** One image per page sized at trim + 0.125" bleed on all four sides. Images are centered scale-to-fit on a white background; the decorative border from the generation stage sits just inside the trim. Includes composer-generated front matter (title, copyright, belongs-to, intro) and back matter (thanks + review ask) when `include_matter: true` in `book.yaml`.
+- **Cover PDF.** A single spread sized `(2 × trim_width + spine) × trim_height` plus outer bleed. Back cover is a framed layout with title echo, subtitle, divider, description, author bio, and byline (lower-right 2.0×1.2" kept clear for KDP's auto-barcode); spine gets the title if wide enough (≥ 0.125"); front cover is the generated cover image. For a hand-designed cover, replace `cover.pdf` with your own file before uploading — KDP cares only about the file dimensions.
+- **Review PDF.** A single portrait-oriented PDF (same page size as the interior) that stitches front cover → full interior → back cover into one scrollable file. Reviewers see what the final product will look like end-to-end. **Not for KDP upload** — KDP requires `interior.pdf` + `cover.pdf` as separate files.
+- **metadata.json.** Normalized form of `book.yaml` plus the computed spine width and absolute paths to all three output PDFs. Read by `/kdp publish --draft`.
 
 Spine width comes from the KDP cover calculator formula: `page_count × paper_factor`, where `paper_factor` is `0.002252"` for white, `0.0025"` for cream, `0.002252"` for standard color, `0.002347"` for premium color. KDP's own calculator must agree before Submit; if the spread is off the composer and KDP disagree, re-run with the correct `page_count` in `book.yaml`.
 

@@ -5,6 +5,7 @@
 #   "pillow>=10",
 #   "reportlab>=4",
 #   "pyyaml>=6",
+#   "pypdf>=5",
 # ]
 # ///
 """Compose KDP-ready paperback PDFs from an image-book output directory.
@@ -669,7 +670,11 @@ def build_cover(
     c.setFillColor(HexColor(bg_hex))
     c.rect(0, 0, full_w, full_h, stroke=0, fill=1)
 
-    _draw_back_cover(c, metadata, trim, spine_in, bg_hex, text_hex)
+    # Back panel occupies the left side of the spread, inside the outer bleed:
+    # from x=bleed to x=bleed+trim_w, y=bleed to y=bleed+trim_h.
+    bleed_pt = _in_to_pt(BLEED_IN)
+    back_panel = (bleed_pt, bleed_pt, _in_to_pt(trim_w), _in_to_pt(trim_h))
+    _draw_back_cover(c, metadata, back_panel, bg_hex, text_hex)
 
     # Spine text: only if spine is wide enough to be legible (≥ 0.125").
     if spine_in >= 0.125:
@@ -697,6 +702,89 @@ def build_cover(
     assert outpath.is_file() and outpath.stat().st_size > 0, "cover PDF not written"
 
 
+def build_review_pdf(
+    *,
+    cover_image: Path,
+    interior_pdf: Path,
+    metadata: dict[str, Any],
+    trim: tuple[float, float],
+    outpath: Path,
+) -> int:
+    """Build a single portrait-oriented PDF for sharing with reviewers.
+
+    Stitches the front cover (as a trim-sized page using the generated cover
+    image), the full interior.pdf (matter pages + coloring pages with blank
+    backs), and the back cover (as a standalone trim-sized page using the
+    same framed layout the real cover.pdf uses) into one PDF reviewers can
+    scroll through to see the whole product end-to-end.
+
+    This is **not for KDP upload** — KDP requires separate interior.pdf and
+    cover.pdf (spread). Use review.pdf only for sharing with others.
+
+    Args:
+        cover_image: Path to the Everygen-generated front cover image.
+        interior_pdf: Path to the composed interior.pdf.
+        metadata: Normalized book metadata (same dict passed to build_cover).
+        trim: (width_in, height_in) of the final trim.
+        outpath: Destination PDF path.
+
+    Returns:
+        Total page count (1 front cover + N interior pages + 1 back cover).
+
+    Raises:
+        FileNotFoundError: If `cover_image` or `interior_pdf` is missing.
+    """
+    from pypdf import PdfReader, PdfWriter
+
+    if not cover_image.is_file():
+        raise FileNotFoundError(f"cover image missing: {cover_image}")
+    if not interior_pdf.is_file():
+        raise FileNotFoundError(f"interior.pdf missing: {interior_pdf}")
+
+    trim_w_pt = _in_to_pt(trim[0])
+    trim_h_pt = _in_to_pt(trim[1])
+    page_size = (trim_w_pt, trim_h_pt)
+
+    bg_hex = metadata.get("cover_bg_color", "#FFFFFF")
+    text_hex = metadata.get("cover_text_color", "#1A1A1A")
+
+    # Temp PDF holds the two cover pages (front + back) which get spliced
+    # around interior.pdf by pypdf below.
+    covers_tmp = outpath.parent / "_review_covers.pdf"
+    c = Canvas(str(covers_tmp), pagesize=page_size)
+
+    # Page 1: front cover image fills the trim.
+    c.setFillColorRGB(1, 1, 1)
+    c.rect(0, 0, trim_w_pt, trim_h_pt, stroke=0, fill=1)
+    _draw_image_fit(c, cover_image, (0, 0, trim_w_pt, trim_h_pt))
+    c.showPage()
+
+    # Page 2: back cover on a trim-sized panel with the solid frame color
+    # filling the margin area around the inner card.
+    c.setFillColor(HexColor(bg_hex))
+    c.rect(0, 0, trim_w_pt, trim_h_pt, stroke=0, fill=1)
+    _draw_back_cover(c, metadata, (0, 0, trim_w_pt, trim_h_pt), bg_hex, text_hex)
+    c.showPage()
+
+    c.save()
+
+    writer = PdfWriter()
+    covers_reader = PdfReader(str(covers_tmp))
+    interior_reader = PdfReader(str(interior_pdf))
+    writer.add_page(covers_reader.pages[0])  # front cover
+    for p in interior_reader.pages:
+        writer.add_page(p)
+    writer.add_page(covers_reader.pages[1])  # back cover
+
+    with open(outpath, "wb") as f:
+        writer.write(f)
+
+    covers_tmp.unlink()
+
+    assert outpath.is_file() and outpath.stat().st_size > 0, "review PDF not written"
+    return 1 + len(interior_reader.pages) + 1
+
+
 # KDP reserves a 2.0" × 1.2" clear zone in the lower-right of the back cover
 # for the auto-added barcode. Draw nothing inside this box.
 BARCODE_CLEAR_W_IN = 2.0
@@ -707,25 +795,22 @@ BARCODE_CLEAR_MARGIN_IN = 0.25  # distance from trim edge to the barcode zone
 def _draw_back_cover(
     c: Canvas,
     metadata: dict[str, Any],
-    trim: tuple[float, float],
-    spine_in: float,  # noqa: ARG001  # reserved for future spine-aware layouts
+    panel: tuple[float, float, float, float],
     bg_hex: str,
     text_hex: str,
 ) -> None:
-    """Draw a professional back-cover panel: inset frame, title echo, subtitle,
-    divider, description paragraphs, author byline, with the KDP barcode zone
-    kept clear.
+    """Draw a professional back-cover panel inside the given rect.
 
-    Layout coordinates are in PDF points. The back cover occupies the left
-    panel of the spread, inset by one bleed from the outer-left edge and
-    extending to just before the spine on the inner-right edge.
+    `panel` is (x, y, width, height) in PDF points. The function fills the
+    panel with a cream inner card, draws an outer accent rule, and lays out
+    the title echo, subtitle, divider, description, author bio, and byline
+    inside the inner card. The lower-right 2.0 × 1.2 in of the panel is left
+    clear for KDP's auto-added barcode.
+
+    Called from `build_cover` with the back-panel region of the spread, and
+    from `build_review_pdf` with a trim-sized standalone page.
     """
-    trim_w, trim_h = trim
-    bleed_pt = _in_to_pt(BLEED_IN)
-    panel_x = bleed_pt  # outer-left of the back trim
-    panel_y = bleed_pt  # bottom of the trim
-    panel_w = _in_to_pt(trim_w)
-    panel_h = _in_to_pt(trim_h)
+    panel_x, panel_y, panel_w, panel_h = panel
 
     # Inset inner card — 0.4" cream rectangle inside the solid background,
     # giving the back a framed look that echoes the front cover.
@@ -957,6 +1042,15 @@ def main(argv: list[str] | None = None) -> int:
     )
     build_cover(cover, metadata, trim, spine_in, cover_pdf)
 
+    review_pdf = outdir / "review.pdf"
+    review_pages = build_review_pdf(
+        cover_image=cover,
+        interior_pdf=interior_pdf,
+        metadata=metadata,
+        trim=trim,
+        outpath=review_pdf,
+    )
+
     normalized = {
         **metadata,
         "page_count": page_count,
@@ -972,6 +1066,7 @@ def main(argv: list[str] | None = None) -> int:
         "bleed_in": BLEED_IN if bleed else 0.0,
         "interior_pdf": str(interior_pdf.resolve()),
         "cover_pdf": str(cover_pdf.resolve()),
+        "review_pdf": str(review_pdf.resolve()),
         "cover_source_image": str(cover.resolve()),
     }
     metadata_json.write_text(json.dumps(normalized, indent=2, sort_keys=True) + "\n")
@@ -980,6 +1075,7 @@ def main(argv: list[str] | None = None) -> int:
 
     print(f"interior: {interior_pdf} ({pages} pages)")
     print(f'cover:    {cover_pdf} (spine {spine_in:.3f}")')
+    print(f"review:   {review_pdf} ({review_pages} pages) — share with reviewers")
     print(f"metadata: {metadata_json}")
     if renamed_preview is not None:
         print(

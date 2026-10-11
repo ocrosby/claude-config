@@ -455,5 +455,69 @@ def test_build_interior_matter_requires_metadata(tmp_path: Path) -> None:
         )
 
 
+# --- build_review_pdf -------------------------------------------------------
+
+
+def _write_interior_fixture(tmp_path: Path, image_count: int = 3) -> Path:
+    """Build a minimal interior.pdf by running build_interior on synthetic images."""
+    imgs = [_make_image(tmp_path / f"{i:02d}-p.jpg") for i in range(1, image_count + 1)]
+    outp = tmp_path / "interior.pdf"
+    kdp_compose.build_interior(
+        imgs, trim=(8.5, 11.0), outpath=outp, single_sided=False, bleed=False
+    )
+    return outp
+
+
+def test_build_review_pdf_page_count_is_cover_plus_interior_plus_back(
+    tmp_path: Path,
+) -> None:
+    cover_img = _make_image(tmp_path / "00-cover.jpg")
+    interior_pdf = _write_interior_fixture(tmp_path, image_count=3)
+    out = tmp_path / "review.pdf"
+    pages = kdp_compose.build_review_pdf(
+        cover_image=cover_img,
+        interior_pdf=interior_pdf,
+        metadata=_META,
+        trim=(8.5, 11.0),
+        outpath=out,
+    )
+    # 1 front cover + 3 interior pages + 1 back cover = 5
+    assert pages == 5
+    assert _pdf_page_count(out) == 5
+
+
+def test_build_review_pdf_pages_all_trim_sized(tmp_path: Path) -> None:
+    cover_img = _make_image(tmp_path / "00-cover.jpg")
+    interior_pdf = _write_interior_fixture(tmp_path, image_count=2)
+    out = tmp_path / "review.pdf"
+    kdp_compose.build_review_pdf(
+        cover_image=cover_img,
+        interior_pdf=interior_pdf,
+        metadata=_META,
+        trim=(8.5, 11.0),
+        outpath=out,
+    )
+    from pypdf import PdfReader
+
+    sizes = {
+        (round(float(p.mediabox.width), 1), round(float(p.mediabox.height), 1))
+        for p in PdfReader(str(out)).pages
+    }
+    expected = (round(8.5 * 72, 1), round(11.0 * 72, 1))
+    assert sizes == {expected}
+
+
+def test_build_review_pdf_requires_cover_image_and_interior(tmp_path: Path) -> None:
+    out = tmp_path / "review.pdf"
+    with pytest.raises(FileNotFoundError):
+        kdp_compose.build_review_pdf(
+            cover_image=tmp_path / "missing.jpg",
+            interior_pdf=tmp_path / "interior.pdf",
+            metadata=_META,
+            trim=(8.5, 11.0),
+            outpath=out,
+        )
+
+
 if __name__ == "__main__":
     sys.exit(pytest.main([__file__, "-v"]))
