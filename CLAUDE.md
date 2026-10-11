@@ -102,3 +102,48 @@ When `$NVIM` is set, Claude Code runs inside a Neovim terminal and can talk to t
 - **Install/reinstall (stow):** see `README.md`. Never add a `.claude/` wrapper inside this repo — the repo root *is* the stow package.
 - **Plan mode / session mgmt / parallel work (worktrees, subagents) / multi-repo (`--add-dir`, `additionalDirectories`):** see `docs/OPERATING.md`.
 - **External references for prior-art lookup:** `worldflowai/everything-claude-code`, `obra/superpowers`.
+
+## MCP server configuration
+
+Three scopes, three storage locations — pick the scope by who else needs the server, not by habit:
+
+| Scope | Flag | Stored where | Use for |
+|---|---|---|---|
+| **User** | `--scope user` | `~/.claude.json` → top-level `mcpServers` | Personal servers usable from any directory (API backends, personal Jenkins/Grafana/Slack). This machine's `insights`, `oapi`, `location`, `grafana`, `jenkins-useast1` all live here. |
+| **Project** | `--scope project` | `<repo>/.mcp.json` (committed, shared with the team) | Servers the whole team needs for this repo (e.g. `sun-fastly-terraform/.mcp.json`'s `fastly`, `wx-next/.mcp.json`'s `contentful-*`/`payload-cms-*`). Never bake real secrets in here — use `${ENV_VAR}` interpolation as `wx-next` does for `CONTENTFUL_MANAGEMENT_ACCESS_TOKEN`. |
+| **Local** | `--scope local` (default) | `~/.claude.json` → `projects["<dir>"].mcpServers` | One-off, machine-local, per-directory overrides. Not shared, not committed. |
+
+**Add a new one** (never hand-edit `~/.claude.json` — use the CLI so scope/shape stay correct):
+
+```bash
+# HTTP transport with auth header (e.g. another Jenkins region/env)
+# NOTE: --header is variadic — pass it as --header="..." (equals sign), never
+# --header "..." (space), or it silently swallows the name/url positional args
+# that follow ("error: missing required argument 'name'").
+claude mcp add --transport http \
+  --header="Authorization: Basic <base64-ocrosby:token>" \
+  --scope user \
+  jenkins-uswest2 \
+  https://qajenkins-prod-uswest2.sun.weather.com/mcp-server/stateless
+
+# stdio transport with env vars
+claude mcp add --scope project fastly bunx -- -p @fastly/mcp fastly-mcp
+```
+
+Verify with `claude mcp get <name>` — should report `Status: ✔ Connected`.
+
+**Naming convention for regional/multi-instance servers:** `<service>-<region>`, e.g. `jenkins-useast1`, `jenkins-uswest2` — the `jenkins-analyze`/`jenkins-failures` skills discover all configured regions via `ToolSearch(query="+mcp__jenkins")` and treat each distinct server name as one region.
+
+**Known drift on this machine (cleanup candidate):** `~/.claude.json` also has stray **local**-scope `jenkins` entries under `projects["/Users/omar.crosby/.claude"]` and `projects["/Users/omar.crosby"]` pointing at `/mcp-server/mcp` — one is missing the `Authorization` header entirely (broken). These predate the `jenkins-useast1` user-scope entry and duplicate it; prefer the single user-scope `jenkins-useast1` and remove the local overrides with `claude mcp remove jenkins --scope local`.
+
+**Jenkins — current state:** (user scope, all in `mcpServers`)
+- `jenkins-useast1` → `https://qajenkins-prod-useast1.sun.weather.com/mcp-server/stateless` (prod, us-east-1)
+- `jenkins-uswest2` → `https://qajenkins-prod-uswest2.sun.weather.com/mcp-server/stateless` (prod, us-west-2)
+- `jenkins-euwest1` → `https://qajenkins-prod-euwest1.sun.weather.com/mcp-server/stateless` (prod, eu-west-1)
+- `jenkins-qa-useast1` → `https://qajenkins-qa-useast1.qa.sun.weather.com/mcp-server/mcp` (qa env, us-east-1)
+
+Endpoint path convention observed so far: prod hosts use `/mcp-server/stateless`; the qa host uses `/mcp-server/mcp`. Confirm which path a new host actually serves (`claude mcp get <name>` reports `Status: ✔ Connected` only if right) rather than assuming by env.
+
+Naming disambiguates env when it's not prod: `jenkins-<region>` for prod, `jenkins-<env>-<region>` otherwise (mirrors the host's own `qajenkins-<env>-<region>.<env>.sun.weather.com` shape). See `skills/jenkins-analyze/SKILL.md` and `skills/jenkins-failures/SKILL.md` for the discovery pattern and per-region `--region` argument convention.
+
+**Jenkins auth convention:** the Basic auth header is `base64(username:token)` where **username is always `ocrosby`** across every Jenkins MCP server/region — only the token half differs per server (each region issues its own API token). When adding a new Jenkins region, reuse `ocrosby` as the username and generate/fetch that region's own token; never reuse a token across regions.
