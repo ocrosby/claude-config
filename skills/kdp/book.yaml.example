@@ -90,11 +90,19 @@ ai_disclosure:
   images: true
   translation: false
 
-# Cover appearance (phase 1 generates a plain template cover you can replace
-# with a hand-designed spread before upload). Bestseller covers use strong
-# contrast, large sans-serif title typography, and a hero subject.
-cover_bg_color: "#FFE066"     # Hex color for back cover + spine background.
-cover_text_color: "#1A1A1A"   # Hex color for back-cover description text.
+# Cover appearance. The front cover uses the generated image under
+# 00-cover.jpg. The back cover is a framed layout with a title echo, subtitle,
+# divider, description, author bio, and byline, with the lower-right 2x1.2"
+# left clear for KDP's auto-added barcode.
+cover_bg_color: "#FFE066"       # Outer frame / spine background. Pick a color
+                                # that echoes the front cover's dominant tone.
+cover_text_color: "#1A1A1A"     # Back cover and spine text color.
+cover_inner_bg_color: "#FFF8EC" # Inner cream panel on the back cover —
+                                # should contrast cover_bg_color.
+author_bio: ""                  # Optional 1-2 sentence "About the Author"
+                                # paragraph shown above the byline on the back
+                                # cover. Keep short — the barcode zone eats the
+                                # bottom-right 2x1.2 inches.
 
 # Interior page count — overrides the auto-count. Usually leave commented;
 # the composer derives physical page count from image_count × 2 (when
