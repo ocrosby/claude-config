@@ -161,6 +161,33 @@ def discover_images(image_dir: Path) -> tuple[Path, list[Path]]:
     return cover, interiors
 
 
+def rename_image_book_preview(image_dir: Path) -> Path | None:
+    """Rename `/image-book`'s preview bundle to `_preview.pdf`.
+
+    `/image-book create` concatenates all generated images into
+    `<image_dir>/<basename>.pdf` as a review-only preview. After
+    `/kdp compose` runs, the authoritative files are `interior.pdf`
+    and `cover.pdf`; the preview bundle is redundant and misleading
+    (users have mistaken it for the final product). Rename it with
+    an underscore prefix so (a) it's visually marked as internal and
+    (b) `discover_images` skips it on subsequent runs.
+
+    Args:
+        image_dir: Directory that was composed.
+
+    Returns:
+        The new path (`<image_dir>/_preview.pdf`) if a rename happened,
+        else `None`.
+    """
+    assert image_dir.is_dir(), f"not a directory: {image_dir}"
+    candidate = image_dir / f"{image_dir.name}.pdf"
+    if not candidate.is_file():
+        return None
+    target = image_dir / "_preview.pdf"
+    candidate.replace(target)  # Path.replace overwrites target if present
+    return target
+
+
 _REQUIRED_FIELDS = ("title", "author", "trim_size", "paper")
 _DEFAULTS: dict[str, Any] = {"language": "English"}
 
@@ -949,9 +976,15 @@ def main(argv: list[str] | None = None) -> int:
     }
     metadata_json.write_text(json.dumps(normalized, indent=2, sort_keys=True) + "\n")
 
+    renamed_preview = rename_image_book_preview(image_dir)
+
     print(f"interior: {interior_pdf} ({pages} pages)")
     print(f'cover:    {cover_pdf} (spine {spine_in:.3f}")')
     print(f"metadata: {metadata_json}")
+    if renamed_preview is not None:
+        print(
+            f"renamed:  {image_dir.name}.pdf → _preview.pdf (image-book bundle; not for upload)"
+        )
     if page_count < MIN_PAGES:
         print(
             f"warning: page_count {page_count} < KDP minimum {MIN_PAGES} — "

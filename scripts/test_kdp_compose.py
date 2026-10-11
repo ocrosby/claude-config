@@ -317,6 +317,42 @@ def test_physical_page_count_two_sided() -> None:
     assert kdp_compose.physical_page_count(image_count=20, single_sided=False) == 20
 
 
+# --- rename_image_book_preview ---------------------------------------------
+
+
+def test_rename_image_book_preview_renames_slug_pdf(tmp_path: Path) -> None:
+    bundle = tmp_path / f"{tmp_path.name}.pdf"
+    bundle.write_bytes(b"%PDF-1.4\n")
+    result = kdp_compose.rename_image_book_preview(tmp_path)
+    assert result is not None
+    assert result.name == "_preview.pdf"
+    assert not bundle.exists()
+    assert (tmp_path / "_preview.pdf").is_file()
+
+
+def test_rename_image_book_preview_no_slug_pdf_is_noop(tmp_path: Path) -> None:
+    assert kdp_compose.rename_image_book_preview(tmp_path) is None
+
+
+def test_rename_image_book_preview_overwrites_existing_target(tmp_path: Path) -> None:
+    bundle = tmp_path / f"{tmp_path.name}.pdf"
+    bundle.write_bytes(b"NEW")
+    (tmp_path / "_preview.pdf").write_bytes(b"OLD")
+    kdp_compose.rename_image_book_preview(tmp_path)
+    assert (tmp_path / "_preview.pdf").read_bytes() == b"NEW"
+    assert not bundle.exists()
+
+
+def test_rename_image_book_preview_leaves_interior_and_cover_alone(
+    tmp_path: Path,
+) -> None:
+    (tmp_path / "interior.pdf").write_bytes(b"I")
+    (tmp_path / "cover.pdf").write_bytes(b"C")
+    assert kdp_compose.rename_image_book_preview(tmp_path) is None
+    assert (tmp_path / "interior.pdf").read_bytes() == b"I"
+    assert (tmp_path / "cover.pdf").read_bytes() == b"C"
+
+
 def test_physical_page_count_with_matter_single_sided() -> None:
     # 20 images + 4 front + 1 back = 25 image-equivalent, x2 single-sided = 50
     assert (
