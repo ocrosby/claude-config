@@ -1,0 +1,52 @@
+# KDP paperback metadata — fill in before running /kdp compose.
+# Required fields are marked REQUIRED; everything else is optional.
+
+# REQUIRED --------------------------------------------------------------
+title: My Magical Fairy Coloring Book
+author: Jane Doe
+trim_size: 8.5x11        # Known sizes: 5x8, 5.25x8, 5.5x8.5, 6x9, 6.14x9.21,
+                         # 6.69x9.61, 7x10, 7.44x9.69, 7.5x9.25, 8x10,
+                         # 8.25x6, 8.25x8.25, 8.5x8.5, 8.5x11, 8.27x11.69 (A4)
+paper: white             # white | cream | color-standard | color-premium
+
+# OPTIONAL --------------------------------------------------------------
+subtitle: 25 Enchanted Scenes for Ages 6-9
+description: |
+  A multi-paragraph description used as back-cover copy and as the Amazon
+  product-page description. Keep the first sentence punchy — it's what shows
+  in search results above the fold.
+language: English
+
+# Marketing — used by the phase-2 upload automation (not yet implemented).
+keywords:
+  - fairy coloring book
+  - kids coloring book
+  - coloring book for girls
+  - magical fairy
+  - kawaii coloring
+  - ages 6-9
+  - gift for kids
+categories:
+  # BISAC codes — see https://www.bisg.org/complete-bisac-subject-headings-list
+  - JUV017160              # Juvenile Nonfiction / Activity Books / Coloring
+age_range: "6-9"
+
+# Pricing — one entry per marketplace. Phase 2 reads these; phase 1 just stores.
+price_usd: 7.99
+price_gbp: 6.99
+price_eur: 7.99
+
+# AI disclosure — required by KDP for any AI-generated content. Set honestly.
+ai_disclosure:
+  text: false
+  images: true
+  translation: false
+
+# Cover appearance (phase 1 generates a plain template cover).
+cover_bg_color: "#FFE066"     # Hex color for back cover + spine background.
+cover_text_color: "#1A1A1A"   # Hex color for back-cover description text.
+
+# Interior page count — defaults to the number of discovered interior images.
+# Override only when the printed interior will differ (e.g. you plan to insert
+# a title page and copyright page before upload, bringing the total above 24).
+# page_count: 28

@@ -139,7 +139,7 @@ rest="${ARGUMENTS#* }"
     ```
     The helper exits non-zero if the file is missing, empty, or if `magick` is unavailable. **If it exits non-zero: stop and do not proceed.**
 
-13. **Report.** Print the PDF path (`$PDF`), image count, per-book directory (`$OUTDIR`), and total credits used.
+13. **Report.** Print the PDF path (`$PDF`), image count, per-book directory (`$OUTDIR`), and total credits used. If the paper size chosen in step 4 is a KDP paperback trim (any size in the aspect-ratio table), add a one-line hint: `Next: /kdp compose $OUTDIR` to produce KDP-ready interior.pdf, cover.pdf, and metadata.json.
 
 ### 3. Dispatch — `combine`
 

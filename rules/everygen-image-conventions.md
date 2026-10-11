@@ -30,11 +30,11 @@ For non-paper outputs (social media, screen, cinematic), the enum choices `9:16`
 | Resolution | Use case |
 |---|---|
 | `1K` | Screen preview, social post, inline doc image |
-| `2K` | Print quality for US letter / A4 and smaller |
-| `3K` | Large-format print (A3, poster) |
-| `4K` | Oversize print, archival, high-DPI covers |
+| `2K` | Draft print proof only; **insufficient for KDP paperback** at any trim size (≤234 DPI across 8.75" trim+bleed) |
+| `3K` | KDP paperback up to 8.5×11 / 8.5×8.5 trim — ≥300 DPI across trim+bleed |
+| `4K` | Large-format print (A3, 11×17, poster), oversize covers, archival |
 
-Pick the smallest resolution that meets the print target. Higher resolutions cost more credits per image.
+Pick the smallest resolution that meets the **final trim+bleed size at 300 DPI**, not the raw paper size. For KDP paperback, 3K is the floor on US-letter-and-smaller trims; 4K is the floor on anything larger. Model credit cost does not vary with resolution for Nano Banana / Nano Banana 2, so raising the tier is free when the model is already fixed.
 
 ## Credit cost per image
 
@@ -106,7 +106,8 @@ When a new printed-image product is wanted (recipe card, workbook, sticker sheet
 
 - **Apply the style pack verbatim.** When generating a themed image set, read the template from this file and substitute placeholders. Never re-derive style strings per image — drift between pages is the failure mode.
 - **Match aspect ratio to final paper size** using the table above. A page intended for 8.5×11 print must request `3:4`, not `1:1` or `9:16`.
-- **Match resolution to print target** using the table above. Never pick `4K` for a thumbnail; never pick `1K` for 11×17 print.
+- **Match resolution to print target** using the table above. Never pick `4K` for a thumbnail; never pick `1K` for 11×17 print. For any image set destined for `/kdp compose`, 3K is the floor on 8.5×11 and smaller trims; 2K is a Must Fix finding because it falls below KDP's 300 DPI requirement after trim+bleed.
+- **Set `ai_disclosure.images: true` in `book.yaml`** whenever the set is destined for `/kdp compose`. Every Everygen image is AI-generated; KDP has required disclosure since 2023 and false negatives are a terms-of-service violation.
 - **Batch when the count is ≥2 and the images are independent.** Repeated `generate_image` calls on independent prompts are a Must Fix finding during review.
 - **Issue independent batches in parallel.** Serial-only when a later batch inputs a prior batch's output.
 - **Follow Everygen MCP talk-rules exactly.** Do not restate them; obey them.
