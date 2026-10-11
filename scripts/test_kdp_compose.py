@@ -468,34 +468,54 @@ def _write_interior_fixture(tmp_path: Path, image_count: int = 3) -> Path:
     return outp
 
 
-def test_build_review_pdf_page_count_is_cover_plus_interior_plus_back(
-    tmp_path: Path,
-) -> None:
+def test_build_review_pdf_page_count_no_matter(tmp_path: Path) -> None:
     cover_img = _make_image(tmp_path / "00-cover.jpg")
-    interior_pdf = _write_interior_fixture(tmp_path, image_count=3)
+    interiors = [_make_image(tmp_path / f"{i:02d}-p.jpg") for i in range(1, 4)]
     out = tmp_path / "review.pdf"
     pages = kdp_compose.build_review_pdf(
         cover_image=cover_img,
-        interior_pdf=interior_pdf,
+        interiors=interiors,
         metadata=_META,
         trim=(8.5, 11.0),
         outpath=out,
+        single_sided=False,
+        include_matter=False,
     )
     # 1 front cover + 3 interior pages + 1 back cover = 5
     assert pages == 5
     assert _pdf_page_count(out) == 5
 
 
-def test_build_review_pdf_pages_all_trim_sized(tmp_path: Path) -> None:
+def test_build_review_pdf_page_count_single_sided_with_matter(tmp_path: Path) -> None:
     cover_img = _make_image(tmp_path / "00-cover.jpg")
-    interior_pdf = _write_interior_fixture(tmp_path, image_count=2)
+    interiors = [_make_image(tmp_path / f"{i:02d}-p.jpg") for i in range(1, 4)]
     out = tmp_path / "review.pdf"
-    kdp_compose.build_review_pdf(
+    pages = kdp_compose.build_review_pdf(
         cover_image=cover_img,
-        interior_pdf=interior_pdf,
+        interiors=interiors,
         metadata=_META,
         trim=(8.5, 11.0),
         outpath=out,
+        single_sided=True,
+        include_matter=True,
+    )
+    # 1 front + (4 matter + 3 images + 1 back-matter) * 2 single-sided + 1 back = 18
+    assert pages == 1 + 16 + 1 == 18
+    assert _pdf_page_count(out) == 18
+
+
+def test_build_review_pdf_pages_all_trim_sized(tmp_path: Path) -> None:
+    cover_img = _make_image(tmp_path / "00-cover.jpg")
+    interiors = [_make_image(tmp_path / f"{i:02d}-p.jpg") for i in range(1, 3)]
+    out = tmp_path / "review.pdf"
+    kdp_compose.build_review_pdf(
+        cover_image=cover_img,
+        interiors=interiors,
+        metadata=_META,
+        trim=(8.5, 11.0),
+        outpath=out,
+        single_sided=False,
+        include_matter=False,
     )
     from pypdf import PdfReader
 
@@ -507,15 +527,51 @@ def test_build_review_pdf_pages_all_trim_sized(tmp_path: Path) -> None:
     assert sizes == {expected}
 
 
-def test_build_review_pdf_requires_cover_image_and_interior(tmp_path: Path) -> None:
+def test_build_review_pdf_target_dpi_reduces_file_size(tmp_path: Path) -> None:
+    # 4K source images (big); low target_dpi should produce a notably smaller PDF
+    cover_img = _make_image(tmp_path / "00-cover.jpg", size=(3584, 4800))
+    interiors = [
+        _make_image(tmp_path / f"{i:02d}-p.jpg", size=(3584, 4800)) for i in range(1, 4)
+    ]
+    full = tmp_path / "review_full.pdf"
+    small = tmp_path / "review_small.pdf"
+    kdp_compose.build_review_pdf(
+        cover_image=cover_img,
+        interiors=interiors,
+        metadata=_META,
+        trim=(8.5, 11.0),
+        outpath=full,
+        single_sided=False,
+        include_matter=False,
+        target_dpi=None,  # no downsampling → embed source images
+    )
+    kdp_compose.build_review_pdf(
+        cover_image=cover_img,
+        interiors=interiors,
+        metadata=_META,
+        trim=(8.5, 11.0),
+        outpath=small,
+        single_sided=False,
+        include_matter=False,
+        target_dpi=150,
+    )
+    assert small.stat().st_size < full.stat().st_size * 0.5, (
+        f"target_dpi=150 should produce a notably smaller PDF than full-res; "
+        f"got {small.stat().st_size} vs {full.stat().st_size}"
+    )
+
+
+def test_build_review_pdf_requires_cover_image(tmp_path: Path) -> None:
     out = tmp_path / "review.pdf"
-    with pytest.raises(FileNotFoundError):
+    with pytest.raises(FileNotFoundError, match="cover"):
         kdp_compose.build_review_pdf(
             cover_image=tmp_path / "missing.jpg",
-            interior_pdf=tmp_path / "interior.pdf",
+            interiors=[_make_image(tmp_path / "01-p.jpg")],
             metadata=_META,
             trim=(8.5, 11.0),
             outpath=out,
+            single_sided=False,
+            include_matter=False,
         )
 
 

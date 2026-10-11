@@ -702,44 +702,84 @@ def build_cover(
     assert outpath.is_file() and outpath.stat().st_size > 0, "cover PDF not written"
 
 
+REVIEW_DEFAULT_DPI = 150
+
+
+def _downsample_image_for_review(
+    src: Path, target_dpi: int, trim: tuple[float, float], out_dir: Path
+) -> Path:
+    """Resize an image to approximately `target_dpi` across the trim and save as JPEG.
+
+    Returns the path of the downsampled copy inside `out_dir`. The source
+    file is not modified. Used by `build_review_pdf` so the reviewer-share
+    PDF isn't bloated by 300+ DPI print-grade images.
+    """
+    assert target_dpi > 0, "target_dpi must be positive"
+    long_side_px = int(target_dpi * max(trim))
+    with Image.open(src) as im:
+        im_copy = im.copy()
+    im_copy.thumbnail((long_side_px, long_side_px), Image.Resampling.LANCZOS)
+    out_path = out_dir / src.name
+    im_copy.convert("RGB").save(out_path, "JPEG", quality=78, optimize=True)
+    return out_path
+
+
 def build_review_pdf(
     *,
     cover_image: Path,
-    interior_pdf: Path,
+    interiors: list[Path],
     metadata: dict[str, Any],
     trim: tuple[float, float],
     outpath: Path,
+    single_sided: bool = True,
+    include_matter: bool = True,
+    target_dpi: int | None = REVIEW_DEFAULT_DPI,
 ) -> int:
     """Build a single portrait-oriented PDF for sharing with reviewers.
 
-    Stitches the front cover (as a trim-sized page using the generated cover
-    image), the full interior.pdf (matter pages + coloring pages with blank
-    backs), and the back cover (as a standalone trim-sized page using the
-    same framed layout the real cover.pdf uses) into one PDF reviewers can
-    scroll through to see the whole product end-to-end.
+    Stitches:
+      1. Front cover — Everygen cover image fit to a trim-sized page.
+      2. Interior — matter pages (if `include_matter`) + coloring pages
+         with blank backs (if `single_sided`), rebuilt via `build_interior`
+         with no bleed (reviewers scroll on screen, not through a cutter).
+      3. Back cover — framed layout drawn via `_draw_back_cover` on a
+         trim-sized standalone page.
 
-    This is **not for KDP upload** — KDP requires separate interior.pdf and
-    cover.pdf (spread). Use review.pdf only for sharing with others.
+    When `target_dpi` is set (default 150), the cover and interior images
+    are downsampled to approximately `target_dpi` across the trim before
+    embedding, so the resulting PDF stays small enough for iMessage / email
+    sharing (typically 10x smaller than embedding print-grade images). Set
+    `target_dpi=None` to embed the originals.
+
+    **Not for KDP upload** — KDP requires separate `interior.pdf` and
+    `cover.pdf` (spread) files. Use review.pdf only for sharing.
 
     Args:
         cover_image: Path to the Everygen-generated front cover image.
-        interior_pdf: Path to the composed interior.pdf.
+        interiors: Source interior images in print order.
         metadata: Normalized book metadata (same dict passed to build_cover).
         trim: (width_in, height_in) of the final trim.
         outpath: Destination PDF path.
+        single_sided: Insert blank backing pages after each content page.
+        include_matter: Prepend front matter + append the thanks back matter.
+        target_dpi: Downsample images to ~this DPI across the trim before
+            embedding. Default 150. Set None to keep source resolution.
 
     Returns:
         Total page count (1 front cover + N interior pages + 1 back cover).
 
     Raises:
-        FileNotFoundError: If `cover_image` or `interior_pdf` is missing.
+        FileNotFoundError: If `cover_image` or any interior image is missing.
     """
+    import tempfile
+
     from pypdf import PdfReader, PdfWriter
 
     if not cover_image.is_file():
         raise FileNotFoundError(f"cover image missing: {cover_image}")
-    if not interior_pdf.is_file():
-        raise FileNotFoundError(f"interior.pdf missing: {interior_pdf}")
+    missing = [p for p in interiors if not p.is_file()]
+    if missing:
+        raise FileNotFoundError(f"interior image(s) missing: {missing}")
 
     trim_w_pt = _in_to_pt(trim[0])
     trim_h_pt = _in_to_pt(trim[1])
@@ -748,41 +788,61 @@ def build_review_pdf(
     bg_hex = metadata.get("cover_bg_color", "#FFFFFF")
     text_hex = metadata.get("cover_text_color", "#1A1A1A")
 
-    # Temp PDF holds the two cover pages (front + back) which get spliced
-    # around interior.pdf by pypdf below.
-    covers_tmp = outpath.parent / "_review_covers.pdf"
-    c = Canvas(str(covers_tmp), pagesize=page_size)
+    with tempfile.TemporaryDirectory(prefix="kdp-review-") as _tmp:
+        tmpdir = Path(_tmp)
+        if target_dpi is not None:
+            cover_for_pdf = _downsample_image_for_review(
+                cover_image, target_dpi, trim, tmpdir
+            )
+            interiors_for_pdf = [
+                _downsample_image_for_review(p, target_dpi, trim, tmpdir)
+                for p in interiors
+            ]
+        else:
+            cover_for_pdf = cover_image
+            interiors_for_pdf = interiors
 
-    # Page 1: front cover image fills the trim.
-    c.setFillColorRGB(1, 1, 1)
-    c.rect(0, 0, trim_w_pt, trim_h_pt, stroke=0, fill=1)
-    _draw_image_fit(c, cover_image, (0, 0, trim_w_pt, trim_h_pt))
-    c.showPage()
+        temp_interior = tmpdir / "_review_interior.pdf"
+        build_interior(
+            interiors_for_pdf,
+            trim,
+            temp_interior,
+            single_sided=single_sided,
+            bleed=False,
+            metadata=metadata,
+            include_matter=include_matter,
+        )
 
-    # Page 2: back cover on a trim-sized panel with the solid frame color
-    # filling the margin area around the inner card.
-    c.setFillColor(HexColor(bg_hex))
-    c.rect(0, 0, trim_w_pt, trim_h_pt, stroke=0, fill=1)
-    _draw_back_cover(c, metadata, (0, 0, trim_w_pt, trim_h_pt), bg_hex, text_hex)
-    c.showPage()
+        covers_tmp = tmpdir / "_review_covers.pdf"
+        c = Canvas(str(covers_tmp), pagesize=page_size)
 
-    c.save()
+        c.setFillColorRGB(1, 1, 1)
+        c.rect(0, 0, trim_w_pt, trim_h_pt, stroke=0, fill=1)
+        _draw_image_fit(c, cover_for_pdf, (0, 0, trim_w_pt, trim_h_pt))
+        c.showPage()
 
-    writer = PdfWriter()
-    covers_reader = PdfReader(str(covers_tmp))
-    interior_reader = PdfReader(str(interior_pdf))
-    writer.add_page(covers_reader.pages[0])  # front cover
-    for p in interior_reader.pages:
-        writer.add_page(p)
-    writer.add_page(covers_reader.pages[1])  # back cover
+        c.setFillColor(HexColor(bg_hex))
+        c.rect(0, 0, trim_w_pt, trim_h_pt, stroke=0, fill=1)
+        _draw_back_cover(c, metadata, (0, 0, trim_w_pt, trim_h_pt), bg_hex, text_hex)
+        c.showPage()
 
-    with open(outpath, "wb") as f:
-        writer.write(f)
+        c.save()
 
-    covers_tmp.unlink()
+        writer = PdfWriter()
+        covers_reader = PdfReader(str(covers_tmp))
+        interior_reader = PdfReader(str(temp_interior))
+        writer.add_page(covers_reader.pages[0])
+        for p in interior_reader.pages:
+            writer.add_page(p)
+        writer.add_page(covers_reader.pages[1])
+
+        with open(outpath, "wb") as f:
+            writer.write(f)
+
+        interior_page_count = len(interior_reader.pages)
 
     assert outpath.is_file() and outpath.stat().st_size > 0, "review PDF not written"
-    return 1 + len(interior_reader.pages) + 1
+    return 1 + interior_page_count + 1
 
 
 # KDP reserves a 2.0" × 1.2" clear zone in the lower-right of the back cover
@@ -1045,10 +1105,12 @@ def main(argv: list[str] | None = None) -> int:
     review_pdf = outdir / "review.pdf"
     review_pages = build_review_pdf(
         cover_image=cover,
-        interior_pdf=interior_pdf,
+        interiors=interiors,
         metadata=metadata,
         trim=trim,
         outpath=review_pdf,
+        single_sided=single_sided,
+        include_matter=include_matter,
     )
 
     normalized = {
