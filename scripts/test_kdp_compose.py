@@ -122,6 +122,17 @@ def test_discover_images_ignores_pdfs_and_yaml(tmp_path: Path) -> None:
     assert len(interiors) == 1
 
 
+def test_discover_images_ignores_underscore_prefixed(tmp_path: Path) -> None:
+    # Underscore-prefixed images (e.g. a preview render of cover.pdf saved
+    # alongside the book) must not be treated as interior pages.
+    (tmp_path / "00-cover.jpg").touch()
+    (tmp_path / "01-page.jpg").touch()
+    (tmp_path / "_cover_preview.png").touch()
+    (tmp_path / "_scratch.jpg").touch()
+    _, interiors = kdp_compose.discover_images(tmp_path)
+    assert [p.name for p in interiors] == ["01-page.jpg"]
+
+
 # --- load_metadata ---------------------------------------------------------
 
 

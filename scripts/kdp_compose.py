@@ -140,8 +140,13 @@ def discover_images(image_dir: Path) -> tuple[Path, list[Path]]:
         FileNotFoundError: If no `00-*` cover or no interior pages are present.
     """
     assert image_dir.is_dir(), f"not a directory: {image_dir}"
+    # Underscore-prefixed files are reserved for internal/preview artifacts
+    # (e.g. a cover.pdf preview PNG rendered next to the book) and must not
+    # be treated as content pages.
     images = sorted(
-        p for p in image_dir.iterdir() if p.is_file() and p.suffix.lower() in IMAGE_EXTS
+        p
+        for p in image_dir.iterdir()
+        if p.is_file() and p.suffix.lower() in IMAGE_EXTS and not p.name.startswith("_")
     )
     cover = next((p for p in images if p.stem.startswith("00")), None)
     if cover is None:
@@ -631,33 +636,20 @@ def build_cover(
     c = Canvas(str(outpath), pagesize=(full_w, full_h))
 
     bg_hex = metadata.get("cover_bg_color", "#FFFFFF")
+    text_hex = metadata.get("cover_text_color", "#1A1A1A")
+
+    # Background spans the entire spread (bleed to bleed).
     c.setFillColor(HexColor(bg_hex))
     c.rect(0, 0, full_w, full_h, stroke=0, fill=1)
 
-    # Back cover text block, inset by 0.5" from the trim edges.
-    back_safe_x = _in_to_pt(BLEED_IN + 0.5)
-    back_safe_y_top = _in_to_pt(trim_h + BLEED_IN - 0.5)
-    back_width_pt = _in_to_pt(trim_w - 1.0)
-    description = str(metadata.get("description", "")).strip()
-    if description:
-        _draw_wrapped_text(
-            c,
-            description,
-            x=back_safe_x,
-            y=back_safe_y_top,
-            width=back_width_pt,
-            font="Helvetica",
-            size=11,
-            leading=14,
-            color_hex=metadata.get("cover_text_color", "#000000"),
-        )
+    _draw_back_cover(c, metadata, trim, spine_in, bg_hex, text_hex)
 
     # Spine text: only if spine is wide enough to be legible (≥ 0.125").
     if spine_in >= 0.125:
         spine_x = _in_to_pt(BLEED_IN + trim_w)
         spine_center_x = spine_x + _in_to_pt(spine_in) / 2
         c.saveState()
-        c.setFillColor(HexColor(metadata.get("cover_text_color", "#000000")))
+        c.setFillColor(HexColor(text_hex))
         c.translate(spine_center_x, full_h / 2)
         c.rotate(90)
         c.setFont("Helvetica-Bold", 10)
@@ -676,6 +668,123 @@ def build_cover(
 
     c.save()
     assert outpath.is_file() and outpath.stat().st_size > 0, "cover PDF not written"
+
+
+# KDP reserves a 2.0" × 1.2" clear zone in the lower-right of the back cover
+# for the auto-added barcode. Draw nothing inside this box.
+BARCODE_CLEAR_W_IN = 2.0
+BARCODE_CLEAR_H_IN = 1.2
+BARCODE_CLEAR_MARGIN_IN = 0.25  # distance from trim edge to the barcode zone
+
+
+def _draw_back_cover(
+    c: Canvas,
+    metadata: dict[str, Any],
+    trim: tuple[float, float],
+    spine_in: float,  # noqa: ARG001  # reserved for future spine-aware layouts
+    bg_hex: str,
+    text_hex: str,
+) -> None:
+    """Draw a professional back-cover panel: inset frame, title echo, subtitle,
+    divider, description paragraphs, author byline, with the KDP barcode zone
+    kept clear.
+
+    Layout coordinates are in PDF points. The back cover occupies the left
+    panel of the spread, inset by one bleed from the outer-left edge and
+    extending to just before the spine on the inner-right edge.
+    """
+    trim_w, trim_h = trim
+    bleed_pt = _in_to_pt(BLEED_IN)
+    panel_x = bleed_pt  # outer-left of the back trim
+    panel_y = bleed_pt  # bottom of the trim
+    panel_w = _in_to_pt(trim_w)
+    panel_h = _in_to_pt(trim_h)
+
+    # Inset inner card — 0.4" cream rectangle inside the solid background,
+    # giving the back a framed look that echoes the front cover.
+    inner_margin = _in_to_pt(0.4)
+    inner_x = panel_x + inner_margin
+    inner_y = panel_y + inner_margin
+    inner_w = panel_w - 2 * inner_margin
+    inner_h = panel_h - 2 * inner_margin
+    inner_bg_hex = metadata.get("cover_inner_bg_color", "#FFF8EC")
+    c.setFillColor(HexColor(inner_bg_hex))
+    c.rect(inner_x, inner_y, inner_w, inner_h, stroke=0, fill=1)
+
+    # A thin accent rule inside the inner panel.
+    c.setStrokeColor(HexColor(bg_hex))
+    c.setLineWidth(3.0)
+    c.rect(inner_x, inner_y, inner_w, inner_h, stroke=1, fill=0)
+
+    # Content layout coordinates within the inner panel.
+    text_margin_x = _in_to_pt(0.35)
+    content_left = inner_x + text_margin_x
+    content_right = inner_x + inner_w - text_margin_x
+    content_width = content_right - content_left
+    content_cx = (content_left + content_right) / 2
+    content_top = inner_y + inner_h - _in_to_pt(0.5)
+
+    c.setFillColor(HexColor(text_hex))
+
+    # Title echo at top-center.
+    title = str(metadata["title"])
+    c.setFont("Helvetica-Bold", 26)
+    c.drawCentredString(content_cx, content_top, title)
+
+    # Subtitle (if present) under the title.
+    cursor_y = content_top - _in_to_pt(0.4)
+    subtitle = str(metadata.get("subtitle") or "").strip()
+    if subtitle:
+        c.setFont("Helvetica-Oblique", 13)
+        c.drawCentredString(content_cx, cursor_y, subtitle)
+        cursor_y -= _in_to_pt(0.3)
+
+    # Decorative divider rule.
+    rule_half = _in_to_pt(1.2)
+    c.setStrokeColor(HexColor(bg_hex))
+    c.setLineWidth(1.5)
+    c.line(content_cx - rule_half, cursor_y, content_cx + rule_half, cursor_y)
+    cursor_y -= _in_to_pt(0.35)
+
+    # Description paragraphs — left-aligned, up to one third of the panel.
+    description = str(metadata.get("description") or "").strip()
+    if description:
+        c.setFont("Helvetica", 11)
+        _draw_wrapped_paragraph(
+            c,
+            description,
+            x=content_left,
+            y=cursor_y,
+            width=content_width,
+            font="Helvetica",
+            size=11,
+            leading=15,
+        )
+
+    # Author bio + byline near the bottom, above the barcode clear zone.
+    byline_y = inner_y + _in_to_pt(BARCODE_CLEAR_H_IN + BARCODE_CLEAR_MARGIN_IN + 0.2)
+    author_bio = str(metadata.get("author_bio") or "").strip()
+    if author_bio:
+        c.setFont("Helvetica", 10)
+        _draw_wrapped_paragraph(
+            c,
+            author_bio,
+            x=content_left,
+            y=byline_y + _in_to_pt(0.5),
+            width=content_width
+            - _in_to_pt(BARCODE_CLEAR_W_IN + BARCODE_CLEAR_MARGIN_IN),
+            font="Helvetica",
+            size=10,
+            leading=13,
+        )
+    c.setFont("Helvetica-Bold", 12)
+    c.drawString(content_left, byline_y, f"By {metadata['author']}")
+
+    # Barcode clear zone — leave the lower-right 2.0 x 1.2 inch area of the
+    # back trim empty. KDP overlays its auto-generated barcode here on upload.
+    # We don't draw anything; we just document the zone and avoid overwriting it.
+    # (This function already respected the zone by placing content above and
+    # to the left of it.)
 
 
 def _draw_wrapped_text(
