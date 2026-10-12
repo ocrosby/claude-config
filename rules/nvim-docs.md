@@ -6,6 +6,10 @@ paths:
 
 # Neovim Plugin Documentation
 
+> This file governs **vimdoc** (`doc/<plugin>.txt`). For the plugin's root
+> `README.md` conventions — including the mandatory lazy.nvim + `vim.pack` +
+> packer install matrix — see `rules/nvim-plugin-readme.md`.
+
 ## Format
 
 All plugin documentation uses vimdoc format. Files live in `doc/plugin-name.txt`.

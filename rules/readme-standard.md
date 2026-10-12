@@ -199,6 +199,12 @@ re-deriving one from scratch.
 6. Confirm all code blocks have language hints
 7. Confirm the H1/H2/H3 hierarchy is correct
 
+## Platform-specific extensions
+
+Some repo shapes impose extra per-section requirements on top of the general standard above. When a specialization applies, both this file and the specialization hold; where they conflict, the specialization wins.
+
+- **Neovim plugins** — repos with `lua/<name>/` + `plugin/<name>.lua` must additionally include an Installation section with three mandated blocks (lazy.nvim, native `vim.pack`, packer.nvim). See `rules/nvim-plugin-readme.md`.
+
 ## See also
 
 - `rules/docs-principles.md` — general documentation principles (skimmable, exemplary, current, human-centered errors). This rule is the root-README specialization; where both apply, both hold.
