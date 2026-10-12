@@ -27,10 +27,16 @@ language: English
 single_sided: true       # KDP requires blank backing pages for coloring books so
                          # markers do not bleed through. The composer inserts a
                          # blank page after each content page when true.
-bleed: false             # 95% of adult coloring books use NO bleed with a 0.25"
-                         # inner safe margin — buyers prefer the margin to grip
-                         # the book without smudging. Set true only if your
-                         # designs intentionally extend to the trim edge.
+bleed: false             # 95% of adult coloring books use NO bleed. Buyers
+                         # prefer the margin to grip the book without smudging.
+                         # Set true only if your designs intentionally extend
+                         # to the trim edge.
+# inner_margin: 0.5      # Inches of safe margin on all sides when bleed=false.
+                         # Default 0.5" — KDP's safe-for-all-page-counts value.
+                         # KDP rejects content closer than 0.375" to the trim
+                         # ("Image is outside the margins"), so this is the
+                         # minimum accepted; the composer errors below 0.375".
+                         # See https://kdp.amazon.com/en_US/help/topic/G201834260#margin.
 include_matter: true     # Prepend 4 front-matter pages (title, copyright,
                          # "this book belongs to", intro) and append 1 back-matter
                          # page (thanks + review ask). Professional self-published

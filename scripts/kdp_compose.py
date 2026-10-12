@@ -35,8 +35,52 @@ from typing import Any
 
 import yaml
 from PIL import Image
-from reportlab.lib.colors import HexColor
-from reportlab.pdfgen.canvas import Canvas
+
+# KDP rejects PDFs whose fonts are not fully embedded. ReportLab's default
+# Helvetica family is a Standard-14 PDF font — the file references the name
+# only, with no embedded glyphs — so a PDF built from it fails KDP's font
+# check. Register Bitstream Vera (shipped with reportlab, BSD-style license,
+# fully embeddable) under neutral family names and point `rl_config` at
+# BookSans *before* `Canvas` is imported, so Canvas captures the embedded
+# family as its base font and no page emits a `/F1 → /Helvetica` resource.
+# See https://kdp.amazon.com/en_US/help/topic/G201834260#font.
+import reportlab  # noqa: E402
+from reportlab import rl_config  # noqa: E402
+from reportlab.pdfbase import pdfmetrics  # noqa: E402
+from reportlab.pdfbase.ttfonts import TTFont  # noqa: E402
+
+BOOK_FONT = "BookSans"
+BOOK_FONT_BOLD = "BookSans-Bold"
+BOOK_FONT_OBLIQUE = "BookSans-Oblique"
+
+
+def _register_fonts() -> None:
+    """Register the embeddable Vera family under the Book* names (idempotent).
+
+    Must run before `reportlab.pdfgen.canvas` is imported, because Canvas
+    captures `rl_config.canvas_basefontname` into its own module-level
+    `_baseFontName` at import time.
+    """
+    if BOOK_FONT in pdfmetrics.getRegisteredFontNames():
+        return
+    font_dir = Path(reportlab.__file__).parent / "fonts"
+    pdfmetrics.registerFont(TTFont(BOOK_FONT, str(font_dir / "Vera.ttf")))
+    pdfmetrics.registerFont(TTFont(BOOK_FONT_BOLD, str(font_dir / "VeraBd.ttf")))
+    pdfmetrics.registerFont(TTFont(BOOK_FONT_OBLIQUE, str(font_dir / "VeraIt.ttf")))
+    pdfmetrics.registerFontFamily(
+        BOOK_FONT,
+        normal=BOOK_FONT,
+        bold=BOOK_FONT_BOLD,
+        italic=BOOK_FONT_OBLIQUE,
+        boldItalic=BOOK_FONT_BOLD,
+    )
+    rl_config.canvas_basefontname = BOOK_FONT
+
+
+_register_fonts()
+
+from reportlab.lib.colors import HexColor  # noqa: E402
+from reportlab.pdfgen.canvas import Canvas  # noqa: E402
 
 BLEED_IN = 0.125
 DPI = 300
@@ -264,7 +308,14 @@ def _draw_image_fit(
     )
 
 
-INNER_SAFE_MARGIN_IN = 0.25
+# KDP's non-bleed interiors require content to sit inside a safe margin. The
+# gutter minimum for 24–150 page books is 0.375" and the outside/top/bottom
+# minimum is 0.25". We default to 0.5" — the "safe for any page count up to
+# 500" value KDP recommends — and let a book override via book.yaml's
+# `inner_margin` field. The old 0.25" default produced files where KDP's
+# previewer flagged "Image is outside the margins". See
+# https://kdp.amazon.com/en_US/help/topic/G201834260#margin.
+INNER_SAFE_MARGIN_IN = 0.5
 
 # Default matter page counts when include_matter=True. Front matter:
 # title / copyright / belongs-to / intro. Back matter: thanks + review ask.
@@ -355,13 +406,13 @@ def _draw_title_page(
     c.setFillColorRGB(0.1, 0.1, 0.1)
     cx = w / 2
     _draw_centered_text(
-        c, str(metadata["title"]), cx=cx, cy=h * 0.60, font="Helvetica-Bold", size=36
+        c, str(metadata["title"]), cx=cx, cy=h * 0.60, font=BOOK_FONT_BOLD, size=36
     )
     subtitle = str(metadata.get("subtitle") or "").strip()
     if subtitle:
-        _draw_centered_text(c, subtitle, cx=cx, cy=h * 0.54, font="Helvetica", size=16)
+        _draw_centered_text(c, subtitle, cx=cx, cy=h * 0.54, font=BOOK_FONT, size=16)
     _draw_centered_text(
-        c, str(metadata["author"]), cx=cx, cy=h * 0.42, font="Helvetica", size=18
+        c, str(metadata["author"]), cx=cx, cy=h * 0.42, font=BOOK_FONT, size=18
     )
     c.showPage()
 
@@ -377,33 +428,33 @@ def _draw_copyright_page(
     cx = w / 2
     year = metadata.get("copyright_year") or _current_year()
     lines = [
-        (f"Copyright © {year} {metadata['author']}", "Helvetica", 11),
-        ("All rights reserved.", "Helvetica", 10),
-        ("", "Helvetica", 10),
+        (f"Copyright © {year} {metadata['author']}", BOOK_FONT, 11),
+        ("All rights reserved.", BOOK_FONT, 10),
+        ("", BOOK_FONT, 10),
         (
             "No part of this book may be reproduced, stored in a retrieval system,",
-            "Helvetica",
+            BOOK_FONT,
             9,
         ),
         (
             "or transmitted in any form or by any means without prior written",
-            "Helvetica",
+            BOOK_FONT,
             9,
         ),
-        ("permission from the author.", "Helvetica", 9),
+        ("permission from the author.", BOOK_FONT, 9),
     ]
     if metadata.get("publisher"):
         lines.extend(
             [
-                ("", "Helvetica", 10),
-                (f"Published by {metadata['publisher']}", "Helvetica", 10),
+                ("", BOOK_FONT, 10),
+                (f"Published by {metadata['publisher']}", BOOK_FONT, 10),
             ]
         )
     if metadata.get("isbn"):
         lines.extend(
             [
-                ("", "Helvetica", 10),
-                (f"ISBN: {metadata['isbn']}", "Helvetica", 10),
+                ("", BOOK_FONT, 10),
+                (f"ISBN: {metadata['isbn']}", BOOK_FONT, 10),
             ]
         )
     y_cursor = h * 0.55
@@ -422,9 +473,9 @@ def _draw_belongs_to_page(c: Canvas, page: tuple[float, float]) -> None:
     c.setFillColorRGB(0.1, 0.1, 0.1)
     cx = w / 2
     _draw_centered_text(
-        c, "This book belongs to:", cx=cx, cy=h * 0.70, font="Helvetica-Bold", size=22
+        c, "This book belongs to:", cx=cx, cy=h * 0.70, font=BOOK_FONT_BOLD, size=22
     )
-    c.setFont("Helvetica", 14)
+    c.setFont(BOOK_FONT, 14)
     label_x = w * 0.25
     line_x_start = w * 0.35
     line_x_end = w * 0.80
@@ -445,7 +496,7 @@ def _draw_intro_page(
     c.setFillColorRGB(0.1, 0.1, 0.1)
     cx = w / 2
     _draw_centered_text(
-        c, "How to Color", cx=cx, cy=h * 0.80, font="Helvetica-Bold", size=22
+        c, "How to Color", cx=cx, cy=h * 0.80, font=BOOK_FONT_BOLD, size=22
     )
     text = str(metadata.get("intro_text") or DEFAULT_INTRO_TEXT)
     _draw_wrapped_paragraph(
@@ -454,7 +505,7 @@ def _draw_intro_page(
         x=w * 0.15,
         y=h * 0.70,
         width=w * 0.70,
-        font="Helvetica",
+        font=BOOK_FONT,
         size=12,
         leading=16,
     )
@@ -471,7 +522,7 @@ def _draw_thanks_page(
     c.setFillColorRGB(0.1, 0.1, 0.1)
     cx = w / 2
     _draw_centered_text(
-        c, "Thank You!", cx=cx, cy=h * 0.75, font="Helvetica-Bold", size=28
+        c, "Thank You!", cx=cx, cy=h * 0.75, font=BOOK_FONT_BOLD, size=28
     )
     text = str(metadata.get("thanks_text") or DEFAULT_THANKS_TEXT)
     _draw_wrapped_paragraph(
@@ -480,7 +531,7 @@ def _draw_thanks_page(
         x=w * 0.15,
         y=h * 0.65,
         width=w * 0.70,
-        font="Helvetica",
+        font=BOOK_FONT,
         size=13,
         leading=18,
     )
@@ -534,6 +585,7 @@ def build_interior(
     bleed: bool = True,
     metadata: dict[str, Any] | None = None,
     include_matter: bool = False,
+    inner_margin_in: float | None = None,
 ) -> int:
     """Write a KDP-ready interior PDF with one image per visible page.
 
@@ -544,8 +596,8 @@ def build_interior(
     When `bleed=True`, each page is sized `trim + 2*0.125"` and the image fills
     the full bleed box, so decoration can extend past the trim line. When
     `bleed=False` (the market default for ~95% of adult coloring books), the
-    page is sized exactly to trim and the image is inset by a 0.25" safe
-    margin so no content is trimmed off at the edge.
+    page is sized exactly to trim and the image is inset by `inner_margin_in`
+    on all sides so no content is trimmed off at the edge.
 
     When `include_matter=True`, prepends 4 front-matter pages (title, copyright,
     "this book belongs to", intro) and appends 1 back-matter page (thanks + review
@@ -558,19 +610,29 @@ def build_interior(
         outpath: Destination PDF path.
         single_sided: Insert a blank backing page after each content page.
         bleed: Extend the page by 0.125" on all sides; otherwise inset the image
-            by a 0.25" safe margin inside the trim.
+            by `inner_margin_in` inside the trim.
         metadata: Book metadata dict. Required when `include_matter=True`.
         include_matter: Prepend front matter + append back matter.
+        inner_margin_in: Safe-margin inset in inches for non-bleed layout.
+            Defaults to `INNER_SAFE_MARGIN_IN` (0.5"). Rejected if below
+            KDP's 0.375" minimum for 24–150 page books.
 
     Returns:
         Physical page count written.
 
     Raises:
-        ValueError: If `include_matter=True` but `metadata` is None.
+        ValueError: If `include_matter=True` but `metadata` is None, or if
+            `inner_margin_in` is below KDP's 0.375" minimum.
     """
     assert interiors, "interiors must be non-empty"
     if include_matter and metadata is None:
         raise ValueError("metadata is required when include_matter=True")
+    margin_in = INNER_SAFE_MARGIN_IN if inner_margin_in is None else inner_margin_in
+    if margin_in < 0.375:
+        raise ValueError(
+            f'inner_margin_in {margin_in}" below KDP\'s 0.375" minimum for '
+            "24–150 page books; KDP will reject the file as 'image outside the margins'"
+        )
     if bleed:
         page_w_pt = _in_to_pt(trim[0] + 2 * BLEED_IN)
         page_h_pt = _in_to_pt(trim[1] + 2 * BLEED_IN)
@@ -578,7 +640,7 @@ def build_interior(
     else:
         page_w_pt = _in_to_pt(trim[0])
         page_h_pt = _in_to_pt(trim[1])
-        margin_pt = _in_to_pt(INNER_SAFE_MARGIN_IN)
+        margin_pt = _in_to_pt(margin_in)
         image_box = (
             margin_pt,
             margin_pt,
@@ -684,7 +746,7 @@ def build_cover(
         c.setFillColor(HexColor(text_hex))
         c.translate(spine_center_x, full_h / 2)
         c.rotate(90)
-        c.setFont("Helvetica-Bold", 10)
+        c.setFont(BOOK_FONT_BOLD, 10)
         c.drawCentredString(0, -3, str(metadata["title"]))
         c.restoreState()
 
@@ -734,6 +796,7 @@ def build_review_pdf(
     single_sided: bool = True,
     include_matter: bool = True,
     target_dpi: int | None = REVIEW_DEFAULT_DPI,
+    inner_margin_in: float | None = None,
 ) -> int:
     """Build a single portrait-oriented PDF for sharing with reviewers.
 
@@ -811,6 +874,7 @@ def build_review_pdf(
             bleed=False,
             metadata=metadata,
             include_matter=include_matter,
+            inner_margin_in=inner_margin_in,
         )
 
         covers_tmp = tmpdir / "_review_covers.pdf"
@@ -900,14 +964,14 @@ def _draw_back_cover(
 
     # Title echo at top-center.
     title = str(metadata["title"])
-    c.setFont("Helvetica-Bold", 26)
+    c.setFont(BOOK_FONT_BOLD, 26)
     c.drawCentredString(content_cx, content_top, title)
 
     # Subtitle (if present) under the title.
     cursor_y = content_top - _in_to_pt(0.4)
     subtitle = str(metadata.get("subtitle") or "").strip()
     if subtitle:
-        c.setFont("Helvetica-Oblique", 13)
+        c.setFont(BOOK_FONT_OBLIQUE, 13)
         c.drawCentredString(content_cx, cursor_y, subtitle)
         cursor_y -= _in_to_pt(0.3)
 
@@ -921,14 +985,14 @@ def _draw_back_cover(
     # Description paragraphs — left-aligned, up to one third of the panel.
     description = str(metadata.get("description") or "").strip()
     if description:
-        c.setFont("Helvetica", 11)
+        c.setFont(BOOK_FONT, 11)
         _draw_wrapped_paragraph(
             c,
             description,
             x=content_left,
             y=cursor_y,
             width=content_width,
-            font="Helvetica",
+            font=BOOK_FONT,
             size=11,
             leading=15,
         )
@@ -937,7 +1001,7 @@ def _draw_back_cover(
     byline_y = inner_y + _in_to_pt(BARCODE_CLEAR_H_IN + BARCODE_CLEAR_MARGIN_IN + 0.2)
     author_bio = str(metadata.get("author_bio") or "").strip()
     if author_bio:
-        c.setFont("Helvetica", 10)
+        c.setFont(BOOK_FONT, 10)
         _draw_wrapped_paragraph(
             c,
             author_bio,
@@ -945,11 +1009,11 @@ def _draw_back_cover(
             y=byline_y + _in_to_pt(0.5),
             width=content_width
             - _in_to_pt(BARCODE_CLEAR_W_IN + BARCODE_CLEAR_MARGIN_IN),
-            font="Helvetica",
+            font=BOOK_FONT,
             size=10,
             leading=13,
         )
-    c.setFont("Helvetica-Bold", 12)
+    c.setFont(BOOK_FONT_BOLD, 12)
     c.drawString(content_left, byline_y, f"By {metadata['author']}")
 
     # Barcode clear zone — leave the lower-right 2.0 x 1.2 inch area of the
@@ -1059,6 +1123,7 @@ def main(argv: list[str] | None = None) -> int:
     single_sided = bool(metadata.get("single_sided", True))
     bleed = bool(metadata.get("bleed", True))
     include_matter = bool(metadata.get("include_matter", True))
+    inner_margin_in = float(metadata.get("inner_margin", INNER_SAFE_MARGIN_IN))
     front_matter_count = DEFAULT_FRONT_MATTER_COUNT if include_matter else 0
     back_matter_count = DEFAULT_BACK_MATTER_COUNT if include_matter else 0
     computed_pages = physical_page_count(
@@ -1082,8 +1147,8 @@ def main(argv: list[str] | None = None) -> int:
         interior_target_w = trim[0] + 2 * BLEED_IN
         interior_target_h = trim[1] + 2 * BLEED_IN
     else:
-        interior_target_w = trim[0] - 2 * INNER_SAFE_MARGIN_IN
-        interior_target_h = trim[1] - 2 * INNER_SAFE_MARGIN_IN
+        interior_target_w = trim[0] - 2 * inner_margin_in
+        interior_target_h = trim[1] - 2 * inner_margin_in
     for p in interiors:
         warnings.extend(_preflight_dpi(p, interior_target_w, interior_target_h))
 
@@ -1099,6 +1164,7 @@ def main(argv: list[str] | None = None) -> int:
         bleed=bleed,
         metadata=metadata,
         include_matter=include_matter,
+        inner_margin_in=inner_margin_in,
     )
     build_cover(cover, metadata, trim, spine_in, cover_pdf)
 
@@ -1111,6 +1177,7 @@ def main(argv: list[str] | None = None) -> int:
         outpath=review_pdf,
         single_sided=single_sided,
         include_matter=include_matter,
+        inner_margin_in=inner_margin_in,
     )
 
     normalized = {
@@ -1126,6 +1193,7 @@ def main(argv: list[str] | None = None) -> int:
         "trim_width_in": trim[0],
         "trim_height_in": trim[1],
         "bleed_in": BLEED_IN if bleed else 0.0,
+        "inner_margin_in": 0.0 if bleed else inner_margin_in,
         "interior_pdf": str(interior_pdf.resolve()),
         "cover_pdf": str(cover_pdf.resolve()),
         "review_pdf": str(review_pdf.resolve()),

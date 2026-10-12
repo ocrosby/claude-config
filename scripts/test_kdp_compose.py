@@ -306,6 +306,108 @@ def test_build_interior_without_bleed_sizes_page_to_trim(tmp_path: Path) -> None
     assert h_pt == pytest.approx(11.0 * 72, abs=0.5)
 
 
+# --- inner_margin_in: KDP requires non-bleed content ≥ 0.375" from trim -----
+
+
+def test_build_interior_default_inner_margin_is_half_inch() -> None:
+    # The module default must stay ≥ 0.5" so a book created without an
+    # inner_margin override meets KDP's safe-for-all margin recommendation.
+    assert kdp_compose.INNER_SAFE_MARGIN_IN >= 0.5
+
+
+def test_build_interior_rejects_inner_margin_below_kdp_minimum(tmp_path: Path) -> None:
+    img = _make_image(tmp_path / "01-p.jpg")
+    outp = tmp_path / "interior.pdf"
+    with pytest.raises(ValueError, match="0.375"):
+        kdp_compose.build_interior(
+            [img],
+            trim=(8.5, 11.0),
+            outpath=outp,
+            single_sided=False,
+            bleed=False,
+            inner_margin_in=0.25,
+        )
+
+
+def test_build_interior_accepts_inner_margin_override(tmp_path: Path) -> None:
+    img = _make_image(tmp_path / "01-p.jpg")
+    outp = tmp_path / "interior.pdf"
+    kdp_compose.build_interior(
+        [img],
+        trim=(8.5, 11.0),
+        outpath=outp,
+        single_sided=False,
+        bleed=False,
+        inner_margin_in=0.75,
+    )
+    assert outp.is_file()
+
+
+# --- Font embedding: KDP rejects PDFs with un-embedded fonts ---------------
+
+
+def _embedded_fonts(path: Path) -> set[tuple[str, bool]]:
+    """Return the set of (BaseFont, is_embedded) tuples across all pages."""
+    from pypdf import PdfReader
+
+    seen: set[tuple[str, bool]] = set()
+    for pg in PdfReader(str(path)).pages:
+        res = pg.get("/Resources")
+        if res is None:
+            continue
+        fdict = res.get("/Font")
+        if fdict is None:
+            continue
+        for _, fref in fdict.items():
+            fobj = fref.get_object()
+            name = str(fobj.get("/BaseFont"))
+            desc = fobj.get("/FontDescriptor")
+            embedded = False
+            if desc is not None:
+                d = desc.get_object()
+                embedded = any(
+                    k in d for k in ("/FontFile", "/FontFile2", "/FontFile3")
+                )
+            seen.add((name, embedded))
+    return seen
+
+
+def test_build_interior_embeds_all_fonts(tmp_path: Path) -> None:
+    imgs = [_make_image(tmp_path / f"{i:02d}-p.jpg") for i in range(1, 3)]
+    outp = tmp_path / "interior.pdf"
+    kdp_compose.build_interior(
+        imgs,
+        trim=(8.5, 11.0),
+        outpath=outp,
+        single_sided=False,
+        bleed=False,
+        metadata=_META,
+        include_matter=True,
+    )
+    fonts = _embedded_fonts(outp)
+    assert fonts, "interior PDF should reference at least one font"
+    unembedded = [name for name, emb in fonts if not emb]
+    assert not unembedded, (
+        f"KDP rejects un-embedded fonts; found: {unembedded}. "
+        f"All fonts referenced in interior.pdf must have a /FontFile*."
+    )
+
+
+def test_build_cover_embeds_all_fonts(tmp_path: Path) -> None:
+    cover_img = _make_image(tmp_path / "00-cover.jpg")
+    outp = tmp_path / "cover.pdf"
+    kdp_compose.build_cover(
+        cover_img, _META, trim=(8.5, 11.0), spine_in=0.15, outpath=outp
+    )
+    fonts = _embedded_fonts(outp)
+    assert fonts, "cover PDF should reference at least one font"
+    unembedded = [name for name, emb in fonts if not emb]
+    assert not unembedded, (
+        f"KDP rejects un-embedded fonts; found: {unembedded}. "
+        f"All fonts referenced in cover.pdf must have a /FontFile*."
+    )
+
+
 # --- physical_page_count ----------------------------------------------------
 
 
