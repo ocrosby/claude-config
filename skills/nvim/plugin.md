@@ -248,6 +248,51 @@ Generate from Markdown using [`panvimdoc`](https://github.com/kdheepak/panvimdoc
 
 Reuse `/docs write` for the Markdown source (it dispatches to language-specific doc generators, including `nvim` → vimdoc).
 
+## README install matrix — mandatory
+
+Every Neovim plugin README **must** include install examples for all three of the mainstream approaches, so a user coming from any ecosystem can copy-paste without translating. These are not alternatives at the author's discretion — they are a mandatory trio.
+
+1. **`lazy.nvim`** — the current community default
+2. **native `vim.pack`** (Neovim ≥ 0.12) — the official in-core manager; many users are migrating here
+3. **`packer.nvim`** — legacy, still widely deployed
+
+Each block must show the actual module name in `require("<module>").setup({...})` (plugin's lua/ directory name, not the repo name — these can differ, e.g. `invoke.nvim` → `require("invoke_nvim")`), and must list every runtime dependency the plugin needs at load time.
+
+### `vim.pack` block — specifics
+
+`vim.pack.add` does **not** run `setup()` or wire keymaps on the user's behalf. The example must therefore be explicit about the follow-up calls, which the other two managers hide inside their `config`/`dependencies` fields:
+
+```lua
+vim.pack.add({
+  { src = "https://github.com/nvim-lua/plenary.nvim" },             -- dep
+  { src = "https://github.com/jedi-knights/<plugin>.nvim", version = "v1.2.3" },
+})
+
+require("<module>").setup({})
+vim.keymap.set("n", "<leader>x", "<Plug>(…)", { desc = "..." })  -- if the plugin exposes <Plug> mappings
+```
+
+Call out in the surrounding prose:
+
+- `vim.pack.add` is idempotent — first call clones, subsequent calls are no-ops.
+- `version = "..."` pins to a tag or branch; omit to track the default branch.
+- Runtime dependencies are added as **separate `src` entries in the same table**, not nested under the plugin — `vim.pack.add` has no `dependencies` field.
+- `:lua vim.pack.update()` pulls new upstream commits across every added source.
+
+### Placement and layout
+
+- The three blocks live inside a single `## Installation` section, in the order above.
+- When the README is long, collapse each block under a `<details>` tag so the Installation section stays scannable; keep **lazy.nvim open by default** (the modal case).
+- Do not substitute other managers in place of this trio (vim-plug, mini.deps, rocks.nvim, dein, lazyvim-extras). Those can be *added* as a fourth/fifth block when relevant to the plugin's audience, never as a *replacement* for one of the mandatory three.
+
+### Reviewer checklist
+
+When reviewing a plugin README (`rules/readme-standard.md` + the per-plugin lens here), flag as findings:
+
+- **Must Fix** — any of the three mandatory blocks missing; `vim.pack` block missing the explicit `setup()` call; the module name used in `require(...)` doesn't match the lua/ directory.
+- **Should Fix** — `vim.pack` block that documents dependencies as nested under the plugin instead of as sibling `src` entries; install block that silently drops a required runtime dep (e.g. plenary).
+- **Consider** — three blocks laid out un-collapsed on a very long README (`<details>` grouping would scan better); missing one-line prose about `vim.pack.update()` for ongoing maintenance.
+
 ## Development workflow
 
 - Use `:restart` to reload plugin changes during development
@@ -293,3 +338,4 @@ Sort requires via `stylua` (it groups and orders them deterministically). Avoid 
 - `setup()` is for overrides; initialization belongs in `plugin/` or `ftplugin/` (Pattern 1 above)
 - Every public API gets a LuaCATS annotation — the IDE-side feedback for users is worth the line cost
 - Every plugin ships `:checkhealth <name>` — even a 10-line health check is better than none
+- Every README ships install examples for **all three** of lazy.nvim, `vim.pack`, and packer.nvim — see "README install matrix — mandatory" above
