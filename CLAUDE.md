@@ -60,11 +60,13 @@ One PR = one `type(scope)` pair. If the description contains "and", split the co
 
 **Never commit while `main`/`master` is checked out.** Even when the user just says "commit this" with no mention of branches or PRs, create/switch to a feature branch first (`git checkout -b <name>`, or `/branch-from-main`) before running `git commit` — do not commit to main and discover only at push time that the repo requires a PR. Moving a commit off main after the fact (branch, push, `reset --hard origin/main`) is avoidable rework; branching first avoids it entirely. This applies regardless of whether main turns out to be protected — branch first, verify protection at push time per the check below.
 
+**Target the repo's integration branch, not blindly `main`.** Some repos land feature work on a staging branch (`stage`, `develop`) and only promote to `main` via release/promote PRs — `sun-oapi-acceptance-tests` is one (feature PRs → `stage`; `main` receives only `promote/*`). Before the first `gh pr create`, check where recent PRs actually went: `gh pr list --state merged --limit 12 --json baseRefName --jq '.[].baseRefName' | sort | uniq -c`. Branch from that branch, pass `--base <branch>` explicitly, and rebase onto it. A PR cut from `main` but opened against `stage` drags `main`'s extra commits into its diff.
+
 **Always self-assign.** Every `gh pr create` call must include `--assignee "@me"` explicitly. Do not rely on repo-side auto-assign automation — it has been observed to fire inconsistently (assigned on some PRs, silently skipped on others, same repo, same call shape). If a PR already exists without an assignee, `gh pr edit <N> --add-assignee "@me"`.
 
-**Mixed concerns mid-stream:** `git stash push -u -m "split: <desc>"` → one branch from main per concern → apply relevant files → PR each targeting main.
+**Mixed concerns mid-stream:** `git stash push -u -m "split: <desc>"` → one branch from the integration branch per concern → apply relevant files → PR each targeting that branch.
 
-**Before pushing:** `git fetch origin main` and rebase if branch's changed files also changed on main.
+**Before pushing:** `git fetch origin <integration-branch>` and rebase if branch's changed files also changed there.
 
 **Before pushing to any protected branch (main/master/etc.):** check **both** legacy branch protection **and** rulesets — separate GitHub features; a 404 from one is not proof of "unprotected."
 
