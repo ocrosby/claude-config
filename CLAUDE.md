@@ -62,6 +62,8 @@ One PR = one `type(scope)` pair. If the description contains "and", split the co
 
 **Always self-assign.** Every `gh pr create` call must include `--assignee "@me"` explicitly. Do not rely on repo-side auto-assign automation — it has been observed to fire inconsistently (assigned on some PRs, silently skipped on others, same repo, same call shape). If a PR already exists without an assignee, `gh pr edit <N> --add-assignee "@me"`.
 
+**Delete the remote branch once its PR is merged.** Merge with `gh pr merge <N> --merge --delete-branch` (or the repo's merge method) so the head branch goes with it; if a PR was merged without it, run `git push origin --delete <branch>`. Not every repo auto-deletes (`delete_branch_on_merge` is `false` on `sun-oapi-acceptance-tests`), so do not assume it. Exceptions: never delete `main`/`master`/`stage`/`develop` or any long-lived branch, and keep a branch another open PR is still based on until that PR is retargeted. Before deleting, confirm the PR shows `MERGED` and the branch still exists (`git ls-remote --heads origin <branch>`) — it may already be gone. After merging, also prune the local ref (`git fetch --prune`; `git branch -d <branch>`).
+
 **Mixed concerns mid-stream:** `git stash push -u -m "split: <desc>"` → one branch from main per concern → apply relevant files → PR each targeting main.
 
 **Before pushing:** `git fetch origin main` and rebase if branch's changed files also changed on main.
