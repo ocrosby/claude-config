@@ -38,7 +38,8 @@ must run in the main repo (worktree cleanup), use `git -C "<original_cwd>"`.
 Failed checks:
 <failed_checks_block>
 
-Unresolved review comments:
+Unresolved review comments (humans: all unresolved; bots: only that bot's most
+recent review, with its reviewed commit shown against the current head):
 <review_comments_block>
 
 ## Rules
@@ -52,6 +53,14 @@ Unresolved review comments:
                        if it fails again on the same step, reclassify as
                        ambiguous.
   - **ambiguous**    → do not guess; record under `needs_input`.
+- **Verify before editing.** For every comment, check the current code in the
+  worktree first. A bot's review may predate your branch's later commits
+  (its `reviewed` SHA differs from `head`), so the finding may already be
+  fixed. If it is, make no change and list it under
+  `comments_already_addressed` with the commit that fixed it. Never re-do a
+  fix that is already present.
+- Only the comments in the block count. Do not go looking for older bot
+  comments; the orchestrator has already discarded superseded reviews.
 - Per review comment: implement it — including nits (naming, wording,
   formatting). For ambiguous, subjective, or behavior-changing comments,
   do not guess — record under `needs_input`.
@@ -91,6 +100,7 @@ Unresolved review comments:
   "outcome":            "clean" | "addressed" | "needs_input" | "failed",
   "checks_fixed":       [{"check": "<name>", "commit": "<sha>"}],
   "comments_addressed": [{"path": "<file>", "line": <n>, "reviewer": "<login>", "commit": "<sha>"}],
+  "comments_already_addressed": [{"path": "<file>", "line": <n>, "reviewer": "<login>", "fixed_in": "<sha>"}],
   "pushed_commits":     ["<sha>", "..."],
   "needs_input":        [{"kind": "ambiguous_check" | "ambiguous_review" | "post_fix_still_red" | "ci_timeout", "excerpt": "..."}],
   "final_check_status": "green" | "red" | "pending" | "timeout" | "n/a",
@@ -114,7 +124,13 @@ One entry per failed check, blank line between. If empty, substitute the literal
 ## `<review_comments_block>` format
 
 One entry per unresolved comment. If empty, substitute the literal string `(none)`.
+Bot feedback is grouped under a header naming the single review it comes from;
+human feedback needs no header.
 
 ```
-- <path>:<line> — <reviewer_login>: <comment body>
+[bot review: <bot_login>, <timestamp>, reviewed <sha>, head <sha>]
+- <path>:<line> — <bot_login>: <finding text>
+- (general) — <bot_login>: <finding text>     # no file anchor
+
+- <path>:<line> — <reviewer_login>: <comment body>          # human
 ```
