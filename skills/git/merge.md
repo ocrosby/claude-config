@@ -44,6 +44,16 @@ Print the ordered list as `#<N> <title> (<headRefName>)` and the resolved option
    gh pr checks <N>
    ```
    If any required check is failing (not pending) → **stop the run** and report which check. Never merge a red PR. Pending checks are fine — step 3's fallback will bounded-poll them.
+2b. **Review gate — mandatory, never skipped.** The review bot (`twc-mercury-reviewer[bot]` and any other bot) posts its findings as a PR comment, and checks being green says nothing about them. Run:
+   ```bash
+   ~/.claude/scripts/review_gate.py <N>
+   ```
+   It takes only each bot's most recent completed review, parses its Critical/Moderate/Minor (or Must Fix/Should Fix/Consider) sections, and exits `0` clean, `2` open findings, `3` cannot assess (review still running, errored, or older than the last commit; the bot re-reviews on every push).
+   - **Exit `2` → stop the run.** Print the findings verbatim with the PR number. Do not merge. Each finding must be fixed (a new commit triggers a fresh review) or declined by the user explicitly, with a reply on the PR giving the reason; Minor findings count, not just Moderate and Critical.
+   - **Exit `3` → wait, do not merge.** Re-run the gate until it returns `0` or `2`. Never treat "pending" as clean.
+   - **Re-run the gate on the new head whenever the branch changes** (step 3's update-branch or rebase pushes a commit and starts a fresh review), and immediately before the final `gh pr merge`. A gate result from an earlier head does not carry over.
+   - **Never use `--auto` while the gate is not `0` on the current head**: auto-merge fires on green checks without looking at the review, which is how #300 was merged with three unaddressed findings. Prefer the bounded-poll path with a gate re-check right before merging.
+   - The gate parses the bot's comment format; if it reports `0` on a PR where you can see unaddressed bot comments, trust the comments and stop.
 3. **Merge — try `--auto` first, fall back to bounded polling.** Server-side auto-merge handles rebase + CI wait + merge without blocking the caller, so a single `/git merge` invocation lands the PR (or queues it) even when the branch is BEHIND or checks are pending. When the repo has `allow_auto_merge` disabled, fall back to a bounded-poll flow so the invocation still completes without a stop.
 
    Build the flag list from parsed args:
@@ -125,4 +135,4 @@ with Result one of `merged` / `skipped (not open)` / `stopped (<reason>)` and Br
 
 ## Rules
 
-Never merge a PR with failing/pending checks or a conflict. Never force. Never reorder the requested PR list. Confirm the set and order before merging when more than one PR is targeted. Only merge PRs in the current repo; for `--all`, only PRs authored by `@me`.
+Never merge a PR with failing/pending checks, a conflict, or open findings in the review bot's current review (`scripts/review_gate.py`, step 2b); never merge from an unattended loop or background job that has not read the review. Never force. Never reorder the requested PR list. Confirm the set and order before merging when more than one PR is targeted. Only merge PRs in the current repo; for `--all`, only PRs authored by `@me`.
