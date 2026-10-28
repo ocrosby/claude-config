@@ -50,6 +50,12 @@ High-quality code communicates **why**, not just **what**. Before changing code,
 
 For multi-step work, create `TODO.md` at the repo root with a checklist; add to `.gitignore` on first write.
 
+# Slack Threads
+
+When I ask you to "create a thread" or "start a thread" in Slack: post a **single-line brief summary** as the thread's root message, then put the detail in **subsequent multi-line replies** to that root (`thread_ts` of the root; one reply per topic, not one wall of text). The root line must stand alone in a channel view. Still draft and get my "post it" first, per the Slack rules in memory (no Claude attribution).
+
+**Why:** my stated preference (2026-10-28): the channel shows only the one-line summary; the detail lives under it.
+
 # Commit Messages
 
 Conventional Commits: `<type>(<scope>): <description>` — lowercase, imperative, no period. Types: `feat|fix|docs|style|refactor|perf|test|build|ci|chore`. Breaking = `!` + `BREAKING CHANGE:` footer.
