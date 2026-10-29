@@ -17,23 +17,21 @@ paths:
 
 ```gherkin
 Feature: User registration
-  As a new visitor
-  I want to create an account
-  So that I can access the platform
+  A new visitor can create an account and access the platform.
 
   Background:
     Given the registration page is open
 
   Scenario: Successful registration with valid details
-    When I register with name "Alice" and email "alice@example.com"
-    Then my account should be created
-    And I should receive a welcome email
+    When the visitor registers with name "Alice" and email "alice@example.com"
+    Then the account is created
+    And a welcome email is sent
 
   Scenario: Registration fails with duplicate email
     Given a user exists with email "alice@example.com"
-    When I register with name "Bob" and email "alice@example.com"
-    Then I should see an error "Email already registered"
-    And no new account should be created
+    When the visitor registers with name "Bob" and email "alice@example.com"
+    Then the error "Email already registered" is shown
+    And no new account is created
 ```
 
 ## Given / When / Then
@@ -50,7 +48,7 @@ Feature: User registration
 
 ```gherkin
 # GOOD: declarative — what, not how
-When I register with name "Alice" and email "alice@example.com"
+When the visitor registers with name "Alice" and email "alice@example.com"
 
 # BAD: imperative — UI mechanics
 When I click the "Name" field
@@ -63,17 +61,18 @@ And I click "Submit"
 ### Consistent voice and tense
 
 - Given: past tense or present state — "a user exists", "the page is open"
-- When: present tense — "I register", "I submit the form"
-- Then: present tense with "should" — "I should see", "the account should be created"
+- When: present tense — "the visitor registers", "the visitor submits the form"
+- Then: plain present tense — "the error is shown", "the account is created"
+- Prefer third person and name the actor; use one person per scenario. Keep first person only where a repo's existing steps already use it
 
 ### Parameterize for reuse
 
 ```gherkin
 # GOOD: parameterized — step definition reusable
-Then I should see an error "<message>"
+Then the error "<message>" is shown
 
 # BAD: hardcoded — new step definition per message
-Then I should see the duplicate email error
+Then the duplicate email error is shown
 ```
 
 ## Scenario Outlines
@@ -82,8 +81,8 @@ Use for data-driven scenarios with multiple examples:
 
 ```gherkin
 Scenario Outline: Password validation
-  When I register with password "<password>"
-  Then I should see "<result>"
+  When the visitor registers with password "<password>"
+  Then "<result>" is shown
 
   Examples:
     | password   | result                        |
@@ -101,12 +100,21 @@ Use only when scenarios share identical steps and differ only in data.
 - `@slow` — long-running scenarios, exclude from fast feedback loops
 - Domain tags: `@auth`, `@billing`, `@onboarding` — group by feature area
 - Never use tags to control step behavior — tags are for filtering and organization
+- Lowercase, hyphenated, short; no near-duplicates. Put shared tags on `Feature:`/`Rule:`, specific ones on the scenario
 
 ## Background
 
 - Use for preconditions shared by **every** scenario in the feature
 - Keep it short — if Background exceeds 3 steps, the scenarios may belong in separate features
 - Never put When or Then in Background — only Given steps
+
+## Rules, Choices and Data
+
+- Group scenarios under `Rule:` when a feature has several business rules; do not list rules in the description or link them with comments
+- No "Or" steps — express variation with a Scenario Outline
+- `Then` asserts something observable; no timed waits
+- Do not assert volatile data (live values, timestamps, counts); assert shape, range or status
+- Keep user stories and open questions out of feature files; resolve questions into rules or examples first
 
 ## Anti-Patterns
 
