@@ -147,3 +147,7 @@ Endpoint path convention observed so far: prod hosts use `/mcp-server/stateless`
 Naming disambiguates env when it's not prod: `jenkins-<region>` for prod, `jenkins-<env>-<region>` otherwise (mirrors the host's own `qajenkins-<env>-<region>.<env>.sun.weather.com` shape). See `skills/jenkins-analyze/SKILL.md` and `skills/jenkins-failures/SKILL.md` for the discovery pattern and per-region `--region` argument convention.
 
 **Jenkins auth convention:** the Basic auth header is `base64(username:token)` where **username is always `ocrosby`** across every Jenkins MCP server/region — only the token half differs per server (each region issues its own API token). When adding a new Jenkins region, reuse `ocrosby` as the username and generate/fetch that region's own token; never reuse a token across regions.
+
+# Documentation Preferences
+
+- **Table of contents:** always a horizontal, centered row of links (`<p align="center">` with links separated by ` · `), never a vertical bulleted list. Omit sections readers rarely need to jump to: Overview, Introduction, License (and similar boilerplate). Applies to every README and doc, in every project.
