@@ -39,28 +39,43 @@ The workflow runs **one sub-agent per PR in parallel, each in its own isolated `
      - **bug** — assertion, type, or compile failure pointing at a specific file/line
      - **flaky** — network timeouts, runner provisioning errors, third-party service errors, no signal that the code is wrong
      - **ambiguous** — anything else (secrets, infra, unclear behavior change)
-   - **Unresolved reviewer feedback** from all three surfaces. Keep only unresolved, actionable items; exclude comments authored by the PR author. Include both human reviewers and review bots (Copilot, `claude-review`, etc.).
+   - **Unresolved reviewer feedback**, split by who wrote it. Exclude comments authored by the PR author.
+
+     **Human reviewers** — every unresolved, actionable item, from all three surfaces (same as before):
      ```bash
      # Inline threads (skip isResolved: true)
      gh api graphql -f query='
        query($owner:String!,$repo:String!,$num:Int!){
          repository(owner:$owner,name:$repo){ pullRequest(number:$num){
            reviewThreads(first:100){ nodes{ isResolved isOutdated
-             comments(first:20){ nodes{ author{login} path line body } } } } } } }' \
+             comments(first:20){ nodes{ author{login __typename} path line body
+               pullRequestReview{ databaseId } } } } } } } }' \
        -F owner=<owner> -F repo=<repo> -F num=<N>
      # Review summaries with a non-empty body
      gh api repos/<owner>/<repo>/pulls/<N>/reviews \
-       --jq '.[] | select(.body != "") | {user:.user.login, state, body}'
+       --jq '.[] | select(.body != "") | {id, user:.user.login, type:.user.type, state, body, commit_id, submitted_at}'
      # PR conversation comments
      gh api repos/<owner>/<repo>/issues/<N>/comments \
-       --jq '.[] | {user:.user.login, body}'
+       --jq '.[] | {id, user:.user.login, type:.user.type, body, created_at}'
      ```
+
+     **Review bots** (author `type == "Bot"` / GraphQL `__typename == "Bot"`, for example `twc-mercury-reviewer[bot]`, Copilot, `claude-review`) — take **only the single most recent completed review per bot** and ignore everything that bot posted earlier. Bots re-review on every push and repeat or supersede their earlier findings, so reading the whole history re-does work that is already done. Per bot login:
+     1. Collect that bot's comments across all three surfaces and sort by timestamp.
+     2. **Drop status-only posts**: bodies containing `encountered an error`, or a progress checklist with unchecked boxes (`- [ ]`), or "is reviewing" / "in progress". They are not reviews. Also drop bots whose latest body has no actionable findings (coverage reports, badge updates, "all prior findings resolved") and treat that bot as having **no open feedback**.
+     3. The **most recent remaining post** is the bot's current review. **If a status-only post (an in-progress review) is newer than it, the current review is still running**: take nothing from that bot, record `review pending: <bot>` against the PR, and tell the user to re-run once it finishes. A bot whose newest post is only an `encountered an error` notice with no completed review after it is reported the same way (pending or failed); the user decides whether to re-trigger it. Do not fall back to its older findings.
+     4. Take that review's findings **in full**, including any it explicitly carries over from earlier rounds ("still unaddressed"), and nothing from older posts. Keep only items under its issue sections (`Must Fix` / `Moderate` / `Minor` / `Should Fix` / `Consider`, or the bot's equivalent). Ignore its "resolved", "no new issues" and score or marker lines.
+     5. Inline threads by that bot count only if unresolved, not outdated, and part of the same review (`pullRequestReview.databaseId` equals the current review's id, when it has one).
+     6. Record the review's reviewed commit if it carries one (for example `<!-- reviewed-commit: <sha> -->`, or the review's `commit_id`) and the PR's current head SHA. The sub-agent uses the gap to check whether fixes already landed.
+
+     Print, per bot, which review was used and how many older posts were ignored.
 
 4. **Print the plan and wait for confirmation.** Group by PR:
    ```
    #<N> <title>
      Checks to fix:      <count> (auto-fixable=<n>, bug=<n>, flaky=<n>, ambiguous=<n>)
-     Comments to address: <count>
+     Comments to address: <count> (humans=<n>, bots=<n>)
+     Bot review used:    <bot> at <timestamp>, reviewed <sha> (head <sha>); <n> older posts ignored
+     Review pending:     <bot>   (only when an in-progress review is newer; nothing taken from that bot)
    ```
    **If the user does not confirm: stop. Do not create worktrees. Do not fanout.**
 
@@ -84,6 +99,8 @@ The workflow runs **one sub-agent per PR in parallel, each in its own isolated `
 9. **Summary — always print this last**, covering every open PR so the stop condition is unambiguous:
    - **Clean (no work needed, checks green):** list `#<PR> <title>`.
    - **Addressed:** list each PR, its checks fixed and comments resolved, the pushed commit SHAs, and the PR URL.
+   - **Already addressed:** `comments_already_addressed` entries (current review findings the sub-agent found already fixed in the code).
+   - **Review pending:** PRs where a bot review is still running, so nothing was taken from that bot. Re-run once it finishes.
    - **Needs your input:** every `needs_input` entry from every sub-agent, verbatim, with its PR number and `kind`.
    - **Worktrees:** `<N> removed, <M> leaked` — name the leaked paths if any.
 
@@ -91,4 +108,4 @@ The workflow runs **one sub-agent per PR in parallel, each in its own isolated `
 
 ## Rules
 
-Only push to PRs authored by `@me`. Never resolve or dismiss a reviewer thread without a real change. Never `gh run rerun` a check whose log shows a clear code-level failure — fix the code instead. Surface ambiguous or behavior-changing feedback (or unclear CI failures) as `needs_input` rather than guessing. The main agent must never `cd` into a sub-agent's worktree; every path passes through the sub-agent prompt. Sub-agent count is capped at 8 concurrent per batch to keep GH API polling under rate limits (`--interval 60` on `gh pr checks --watch` gives roughly 480 calls/hour at full concurrency, well below the 5000/hour cap).
+Only push to PRs authored by `@me`. Never resolve or dismiss a reviewer thread without a real change. Never act on a bot's older reviews: only its most recent completed review counts, so an earlier finding that the latest review no longer raises stays untouched. Never `gh run rerun` a check whose log shows a clear code-level failure — fix the code instead. Surface ambiguous or behavior-changing feedback (or unclear CI failures) as `needs_input` rather than guessing. The main agent must never `cd` into a sub-agent's worktree; every path passes through the sub-agent prompt. Sub-agent count is capped at 8 concurrent per batch to keep GH API polling under rate limits (`--interval 60` on `gh pr checks --watch` gives roughly 480 calls/hour at full concurrency, well below the 5000/hour cap).
