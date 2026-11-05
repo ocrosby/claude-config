@@ -46,6 +46,15 @@ High-quality code communicates **why**, not just **what**. Before changing code,
 - **Tool language selection** → `rules/tool-language-selection.md`. Rust for tree-sitter / AST-heavy scans / stylua-shelf ecosystem; Go for CI plumbing / cloud-native / existing-Go-tool code-sharing. Name the signal that drove the pick.
 - **Electron security & IPC** → `rules/electron-security.md`, `rules/electron-ipc.md`, `rules/electron-process-model.md`. Auto-loaded via the `paths:` frontmatter for main/preload/BrowserWindow files. Non-negotiable defaults: `sandbox: true`, `contextIsolation: true`, `nodeIntegration: false`; `contextBridge` never exposes `ipcRenderer`; every `ipcMain.handle`/`.on` validates arguments and sender-frame origin.
 
+# Secrets in Files (never display a credential)
+
+Never `Read`, `cat`, `head`, `tail`, `rg` or `grep -n` a file that may hold a credential: `settings.local.json`, `~/.claude.json`, `.env*`, `~/.zshrc.private`, `*.tfvars`, `credentials`, `*.pem`, keychain or token caches, anything named `secret*`/`token*`. A tool result is shown to the user and kept in the transcript, so one read leaks the value.
+
+- **To inspect one:** `scripts/show_redacted.py <file>` (JSON or `KEY=VALUE`; masks values whose key or shape looks secret). To change one, `Read` is still required by `Edit`, so first view it redacted, then edit with a targeted `python3 -I` or `jq` write that touches only the key you need and prints nothing.
+- **If a value is shown anyway:** say so in the very next message, name the credential, and recommend rotation. Do not confirm, compare or re-read it.
+
+**Why:** 2026-10-20, reading `~/.claude/settings.local.json` to add one `permissions.allow` entry printed its `ANTHROPIC_AUTH_TOKEN` in full. The file was only being edited, never needed to be read in the clear.
+
 # Task Tracking
 
 For multi-step work, create `TODO.md` at the repo root with a checklist; add to `.gitignore` on first write.
