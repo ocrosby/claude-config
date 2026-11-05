@@ -77,5 +77,5 @@ Given a {user} with email {email}
 
 - Feature name matches the filename: `registration.feature` → `Feature: Registration`
 - Scenarios ordered from happy path to edge cases to error cases
-- Use the user story format in the feature description: As a / I want / So that
+- Describe the capability in the feature description; keep the user story (As a / I want / So that) in the ticket, not the feature file
 - One blank line between scenarios, two blank lines between sections
