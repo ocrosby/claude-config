@@ -50,6 +50,17 @@ High-quality code communicates **why**, not just **what**. Before changing code,
 
 For multi-step work, create `TODO.md` at the repo root with a checklist; add to `.gitignore` on first write.
 
+# Jira Defaults (`/user-story` and any ticket creation)
+
+Do not ask for these — use them. They pre-answer the batch questions in the `user-story` skill's STEP 9 (project, target, sprint, `unplanned` label, assignee).
+
+- **Site/project:** `weather.atlassian.net`, project `TRI` (SUN Triangulum), issue type `Story`. Not `SUNTRI`.
+- **Sprint:** my team's sprint on board 122 is the open `Jetstream Sprint N` — pick it from `sprint in openSprints()` by name; ignore `Azimuth Sprint N`. Target the current sprint, not the backlog, unless I say otherwise.
+- **Fields:** assign to me (`atlassianUserInfo`), label `unplanned` on any story filed into the current sprint, Priority `Standard`, story points `1`.
+- **Still confirm:** the drafted stories once per batch, and any Repos value that can't be read from the story text.
+
+**Why:** I answered these identically (TRI / Jetstream / unplanned / assigned to me) when creating the 2026-10-14 API-key stories; asking again is friction.
+
 # Commit Messages
 
 Conventional Commits: `<type>(<scope>): <description>` — lowercase, imperative, no period. Types: `feat|fix|docs|style|refactor|perf|test|build|ci|chore`. Breaking = `!` + `BREAKING CHANGE:` footer.
