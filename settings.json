@@ -152,5 +152,34 @@
   "tui": "fullscreen",
   "skipAutoPermissionPrompt": true,
   "voiceEnabled": true,
-  "autoApprove": true
+  "autoApprove": true,
+  "autoMode": {
+    "environment": [
+      "### Org-wide",
+      "**Organization**: TheWeatherCompany (GitHub org; repo TheWeatherCompany/sun-micro-acceptance-tests)",
+      "**Cloud provider(s)**: None configured",
+      "**Repository visibility**: Private (confirmed via gh)",
+      "**Internal sharing / snippet hosting**: None configured — treat public paste/gist services as outside the trust boundary",
+      "**Secrets management**: CI secret `GH_TOKEN` referenced (deploy key exists, not its value) — scoped to this repo's CI only",
+      "**Default / protected branches**: `main` and `stage`, both protected via active rulesets (`main`, `main-integrity`, `stage`, `stage-integrity`); treat any push to either as requiring a PR regardless of legacy branch-protection output",
+      "**CI/CD deploy targets**: None configured — Jenkins runs acceptance tests (not deploys) against qa/prod service endpoints per CLAUDE.md, e.g. `hod-service-use1-01.qa.sun.weather.com` / `hod-service-use1-01.prod.sun.weather.com`",
+      "**Network posture**: None configured",
+      "**Host containment**: None configured — assume Claude Code runs on an ordinary developer machine with open internet",
+      "**Source control**: The trusted repo (TheWeatherCompany/sun-micro-acceptance-tests) and its origin remote only",
+      "**Trusted internal domains**: `*.sun.weather.com` (qa/prod service hostnames referenced in this repo's docs, e.g. hod-service-use1-01.qa.sun.weather.com, hod-service-use1-01.prod.sun.weather.com), `api.weather.com` (published v3 contract host)",
+      "**Trusted cloud buckets**: None configured",
+      "**Key internal services**: Lightning, flux, date-time, and HoD microservices under test in this repo (origin ALBs and Akamai/Fastly edge per `ingress-mapping.yaml`); `weather.atlassian.net` (Jira, project TRI)",
+      "**Internal package registry**: None configured",
+      "**Sensitive data locations & audiences**: any file or store holding personal data, confidential business data, credentials, regulated data, or similarly sensitive material; preserve exact handles when known and share only with audiences cleared at the [named+specifics] bar",
+      "**Data retention / declassification**: None configured",
+      "**Sensitive remote targets**: any namespace, host, or container whose name carries `prod` or `production` as a whole word or name segment — in this repo this includes the prod origin ALBs (e.g. `hod-service-use1-01.prod.sun.weather.com`) and prod entries in `ingress-mapping.yaml`",
+      "**Protected deployment namespaces / environments**: `prod` tier/region entries in `ingress-mapping.yaml` (use1, usw2, euw1 as applicable) — fall back to the Sensitive remote targets heuristic otherwise",
+      "**Protected IaC scopes**: IAM, RBAC, networking, quota, and node-pool resources; anything whose name or tag carries `prod` or `production` as a whole word or name segment",
+      "### User-specific",
+      "**Primary use of Claude Code**: software development (acceptance-test authoring/maintenance for SUN microservices)",
+      "**Trusted repo**: /Users/omar.crosby/src/github/TheWeatherCompany/qa/testing/sun-micro-acceptance-tests and its origin remote (TheWeatherCompany/sun-micro-acceptance-tests, private)",
+      "**Org-specific CLIs**: `uv` (uv run invoke ...) is the routine test/task runner for this repo; `gh` for PR/branch-protection checks; `inv`/`invoke` tasks (tasks.py) — routine under this repo's working directory",
+      "**routine under <user>/ prefix qualifiers**: none found"
+    ]
+  }
 }
