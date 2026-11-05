@@ -46,6 +46,15 @@ High-quality code communicates **why**, not just **what**. Before changing code,
 - **Tool language selection** → `rules/tool-language-selection.md`. Rust for tree-sitter / AST-heavy scans / stylua-shelf ecosystem; Go for CI plumbing / cloud-native / existing-Go-tool code-sharing. Name the signal that drove the pick.
 - **Electron security & IPC** → `rules/electron-security.md`, `rules/electron-ipc.md`, `rules/electron-process-model.md`. Auto-loaded via the `paths:` frontmatter for main/preload/BrowserWindow files. Non-negotiable defaults: `sandbox: true`, `contextIsolation: true`, `nodeIntegration: false`; `contextBridge` never exposes `ipcRenderer`; every `ipcMain.handle`/`.on` validates arguments and sender-frame origin.
 
+# Secrets in Files (never display a credential)
+
+Never `Read`, `cat`, `head`, `tail`, `rg` or `grep -n` a file that may hold a credential: `settings.local.json`, `~/.claude.json`, `.env*`, `~/.zshrc.private`, `*.tfvars`, `credentials`, `*.pem`, keychain or token caches, anything named `secret*`/`token*`. A tool result is shown to the user and kept in the transcript, so one read leaks the value.
+
+- **To inspect one:** `scripts/show_redacted.py <file>` (JSON or `KEY=VALUE`; masks values whose key or shape looks secret). To change one, `Read` is still required by `Edit`, so first view it redacted, then edit with a targeted `python3 -I` or `jq` write that touches only the key you need and prints nothing.
+- **If a value is shown anyway:** say so in the very next message, name the credential, and recommend rotation. Do not confirm, compare or re-read it.
+
+**Why:** 2026-10-20, reading `~/.claude/settings.local.json` to add one `permissions.allow` entry printed its `ANTHROPIC_AUTH_TOKEN` in full. The file was only being edited, never needed to be read in the clear.
+
 # Task Tracking
 
 For multi-step work, create `TODO.md` at the repo root with a checklist; add to `.gitignore` on first write.
@@ -60,6 +69,11 @@ Do not ask for these — use them. They pre-answer the batch questions in the `u
 - **Still confirm:** the drafted stories once per batch, and any Repos value that can't be read from the story text.
 
 **Why:** I answered these identically (TRI / Jetstream / unplanned / assigned to me) when creating the 2026-10-14 API-key stories; asking again is friction.
+# Slack Threads
+
+When I ask you to "create a thread" or "start a thread" in Slack: post a **single-line brief summary** as the thread's root message, then put the detail in **subsequent multi-line replies** to that root (`thread_ts` of the root; one reply per topic, not one wall of text). The root line must stand alone in a channel view. Still draft and get my "post it" first, per the Slack rules in memory (no Claude attribution).
+
+**Why:** my stated preference (2026-10-28): the channel shows only the one-line summary; the detail lives under it.
 
 # Commit Messages
 
@@ -71,11 +85,15 @@ One PR = one `type(scope)` pair. If the description contains "and", split the co
 
 **Never commit while `main`/`master` is checked out.** Even when the user just says "commit this" with no mention of branches or PRs, create/switch to a feature branch first (`git checkout -b <name>`, or `/branch-from-main`) before running `git commit` — do not commit to main and discover only at push time that the repo requires a PR. Moving a commit off main after the fact (branch, push, `reset --hard origin/main`) is avoidable rework; branching first avoids it entirely. This applies regardless of whether main turns out to be protected — branch first, verify protection at push time per the check below.
 
+**Target the repo's integration branch, not blindly `main`.** Some repos land feature work on a staging branch (`stage`, `develop`) and only promote to `main` via release/promote PRs — `sun-oapi-acceptance-tests` is one (feature PRs → `stage`; `main` receives only `promote/*`). Before the first `gh pr create`, check where recent PRs actually went: `gh pr list --state merged --limit 12 --json baseRefName --jq '.[].baseRefName' | sort | uniq -c`. Branch from that branch, pass `--base <branch>` explicitly, and rebase onto it. A PR cut from `main` but opened against `stage` drags `main`'s extra commits into its diff.
+
 **Always self-assign.** Every `gh pr create` call must include `--assignee "@me"` explicitly. Do not rely on repo-side auto-assign automation — it has been observed to fire inconsistently (assigned on some PRs, silently skipped on others, same repo, same call shape). If a PR already exists without an assignee, `gh pr edit <N> --add-assignee "@me"`.
 
-**Mixed concerns mid-stream:** `git stash push -u -m "split: <desc>"` → one branch from main per concern → apply relevant files → PR each targeting main.
+**Delete the remote branch once its PR is merged.** Merge with `gh pr merge <N> --merge --delete-branch` (or the repo's merge method) so the head branch goes with it; if a PR was merged without it, run `git push origin --delete <branch>`. Not every repo auto-deletes (`delete_branch_on_merge` is `false` on `sun-oapi-acceptance-tests`), so do not assume it. Exceptions: never delete `main`/`master`/`stage`/`develop` or any long-lived branch, and keep a branch another open PR is still based on until that PR is retargeted. Before deleting, confirm the PR shows `MERGED` and the branch still exists (`git ls-remote --heads origin <branch>`) — it may already be gone. After merging, also prune the local ref (`git fetch --prune`; `git branch -d <branch>`).
 
-**Before pushing:** `git fetch origin main` and rebase if branch's changed files also changed on main.
+**Mixed concerns mid-stream:** `git stash push -u -m "split: <desc>"` → one branch from the integration branch per concern → apply relevant files → PR each targeting that branch.
+
+**Before pushing:** `git fetch origin <integration-branch>` and rebase if branch's changed files also changed there.
 
 **Before pushing to any protected branch (main/master/etc.):** check **both** legacy branch protection **and** rulesets — separate GitHub features; a 404 from one is not proof of "unprotected."
 
