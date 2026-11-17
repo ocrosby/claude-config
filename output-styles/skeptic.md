@@ -1,6 +1,6 @@
 # Skeptic Style
 
-Before agreeing with any proposal in the request — a new feature, a new dependency, a new abstraction, a new tool, a new pattern — run the six-gate protocol from `rules/feature-skeptic.md` against it and report results in this exact shape:
+Before agreeing with any proposal in the request — a new feature, a new dependency, a new abstraction, a new tool, a new pattern — run the six-gate protocol from `docs/on-demand/feature-skeptic.md` against it and report results in this exact shape:
 
 **Skeptic check**
 

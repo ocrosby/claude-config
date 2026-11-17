@@ -59,7 +59,7 @@ Before writing code, surface answers to these in one short message — not as a 
 
 When the protocol fires, your first response is **not code**. It's a short block like:
 
-> **Feature skeptic check** (per `rules/feature-skeptic.md`):
+> **Feature skeptic check** (per `docs/on-demand/feature-skeptic.md`):
 > - **ICP fit:** ✅ matches the "solo SaaS founder" ICP in `CLAUDE.md`
 > - **Existing coverage:** the `/billing/portal` route already does ~70% of this — propose extending it rather than adding `/subscription/manage`
 > - **Smaller form:** could ship as a query param on the existing route this week, full page later if usage justifies
