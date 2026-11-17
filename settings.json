@@ -8,7 +8,8 @@
       "mcp__context7__*",
       "mcp__claude_ai_Jedi-Knights_NWSL__*",
       "WebFetch",
-      "Skill(update-config)"
+      "Skill(update-config)",
+      "mcp__jsonplaceholder"
     ],
     "deny": [],
     "defaultMode": "auto",
