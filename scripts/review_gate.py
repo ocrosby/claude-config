@@ -37,10 +37,18 @@ SEVERITY_ALIASES = {
     "minor": "minor",
     "consider": "minor",
 }
+# `[\W_]*?` absorbs whatever sits between the # markers and the severity word:
+# bold asterisks, and emoji such as the "#### <warning> Minor" that
+# twc-mercury-reviewer emits. Without it the section never opens and every
+# finding under it is invisible.
 HEADING = re.compile(
-    r"^\s*(?:#{1,6}\s*)?\**\s*(critical|must fix|moderate|should fix|minor|consider)\b[^\n]*$",
+    r"^\s*(?:#{1,6}\s*)?[\W_]*?(critical|must fix|moderate|should fix|minor|consider)\b[^\n]*$",
     re.IGNORECASE,
 )
+ANY_HEADING = re.compile(r"^\s*(?:#{1,6}\s+\S|\*\*[^*]+\*\*\s*$)")
+# Findings arrive as "- item", "* item" or "1. item" depending on the bot.
+BULLET = re.compile(r"^\s*(?:[-*+]|\d+[.)])\s+\S")
+BULLET_PREFIX = re.compile(r"^\s*(?:[-*+]|\d+[.)])\s+")
 STATUS_ONLY = re.compile(
     r"encountered an error|is reviewing|in progress|- \[ \]", re.IGNORECASE
 )
@@ -66,17 +74,20 @@ def parse_findings(body: str) -> dict[str, list[str]]:
     current: str | None = None
     for line in body.split("\n"):
         m = HEADING.match(line)
-        if m and len(line) < 140 and not line.lstrip().startswith("- "):
+        if m and len(line) < 140 and not BULLET.match(line):
             current = SEVERITY_ALIASES[m.group(1).lower()]
             continue
-        if line.startswith("## ") or line.strip() == "---":
-            if current and not HEADING.match(line):
-                current = None
+        # Any other heading, or a horizontal rule, closes the current section.
+        # Scoping this to "## " alone let a deeper non-severity heading (e.g.
+        # "#### Strengths") keep an earlier severity section open, so its
+        # bullets were counted as findings.
+        if ANY_HEADING.match(line) or line.strip() == "---":
+            current = None
             continue
         if current is None:
             continue
-        if re.match(r"^\s*[-*]\s+\S", line):
-            found[current].append(re.sub(r"^\s*[-*]\s+", "", line).strip())
+        if BULLET.match(line):
+            found[current].append(BULLET_PREFIX.sub("", line).strip())
         elif line.strip() and found[current] and not line.startswith("<!--"):
             found[current][-1] += " " + line.strip()
     return found
